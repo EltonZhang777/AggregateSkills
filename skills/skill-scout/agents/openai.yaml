@@ -1,0 +1,6 @@
+interface:
+  display_name: "Skill Scout"
+  short_description: "Find local skills and prerequisites with SkillRoute"
+policy:
+  # Keep caller-skill invocation available while disabling implicit discovery.
+  allow_implicit_invocation: false
