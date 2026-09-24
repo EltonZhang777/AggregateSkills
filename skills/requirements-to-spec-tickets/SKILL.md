@@ -68,6 +68,12 @@ In every child session, re-read the current dependency files immediately before 
 2. After that phase reaches its own shared-understanding gate, read and follow `to-spec/SKILL.md`.
 3. After the spec and its required seam confirmation are complete, read and follow `to-tickets/SKILL.md`.
 
+After `to-tickets` finishes, this orchestrator links the published GitHub ticket issues as native sub-issues of their spec issue. Keep this phase outside the `to-tickets` run so its existing parent-issue boundary stays intact:
+
+- Start linking only after every planned ticket issue has been published and the existing seam, ticket-granularity, blocking-edge, and publication gates have passed. Add each ticket with `gh issue edit <spec-issue-number> --add-sub-issue <ticket-issue-number>`.
+- Preserve ticket and spec issue titles, bodies, labels, states, and blocking edges. Do not use a textual or task-list fallback. If the configured tracker is not GitHub, or native sub-issues are unavailable or permission prevents association, stop and report the blocker while retaining published issues and any successful links.
+- Read the relevant issue fields and blocking edges before linking. Afterward, verify every planned ticket appears as a native sub-issue and that those fields and edges, plus the spec issue state, remain unchanged.
+
 Reading the live files is the dependency mechanism for this workflow. It keeps the child aligned with dependency updates without modifying or duplicating those skills. If a required file becomes unavailable, stop that child and report the missing dependency.
 
 The child must preserve the dependencies' own confirmation gates. In particular, it must let the user clarify the requirement, confirm proposed seams, approve ticket granularity and blocking edges, and approve publication wherever the dependency requires it. The child must not answer user-facing clarification questions on the user's behalf.
