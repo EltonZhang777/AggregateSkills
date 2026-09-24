@@ -42,6 +42,32 @@ Also require:
 
 Record the starting `HEAD` for review and commit accounting. Do not re-check dependency origins over the network during normal execution.
 
+## Root-run lifecycle
+
+The coordinator tracks the active root, ticket, lifecycle state, and resume point only for the current session. Reconstruct them from the authoritative source after interruption; do not create a local authoritative state database.
+
+| State | Meaning and permitted transition |
+| --- | --- |
+| intake | Validate the approved input, complete preflight, and read its explicit issue graph. Move to ready only when at least one ticket meets the ready guard; unclear or oversized scope enters blocked. |
+| ready | Select one ticket whose explicit blockers are satisfied, acceptance criteria are clear, and required permissions and environment are available. For GitHub, every blocking Issue must be closed. Move to implement. |
+| implement | Change only the selected ticket's scope. Move to verify when the implementation is ready; a technical failure or scope decision enters blocked. |
+| verify | Run the ticket's acceptance checks. Pass moves to review; failure enters blocked with the failing evidence and a safe resume point. |
+| review | For a ticket, a passing review moves to commit; findings move to remediate only through the review approval gates. For the final root review, no findings moves to completed only if every completion guard holds. |
+| remediate | Work only on approved review repairs through the normal ticket loop. Move to verify, then review the repaired batch; do not re-review a partial batch. |
+| commit | Create exactly one focused commit only after explicit user approval and passing ticket checks and review. Reconcile Git first if the commit result is uncertain. Move to push only after the commit is confirmed and push is separately approved. |
+| push | Push only after explicit user approval. Follow the bounded retry rules in Issue loop; reconcile an uncertain result before retrying. Confirmed success moves to status_sync; exhausted retries or an unreconciled result enters blocked. Never amend or rewrite history. |
+| status_sync | After a confirmed push, perform approved issue/status writes. Follow the bounded retries in Issue loop and reconcile uncertain results using the recovery rules above. Confirmed sync moves to ready for the next queue-ordered ticket that passes the ready guard, including a newly unblocked ticket, or to final review when the queue is drained. Exhausted retries or an unreconciled result enters blocked; never roll back pushed code. |
+| blocked | Stop the affected dependency chain and record the reason class, evidence, recovery condition, and safe resume state. Resume only when the condition is met and relevant source and Git state have been reconciled. |
+| completed | No non-deferred ticket or approved repair remains; acceptance checks and the full suite pass; final review passes; required push and status sync are confirmed. |
+
+Classify dependency when a required blocker remains unsatisfied; technical for an implementation or verification failure; external-service for a known service or network failure; operator-decision for missing approval or an unresolved user choice; decomposition when scope needs further ticketing; and needs-reconcile when a side-effect result is uncertain. A review repair uses remediate, not a generic blocked state. A blocker pauses only its dependent work; continue another independent root queue when it has a ready ticket.
+
+A missing approval is operator-decision: pause at that operation and do not commit, push, or write issue/status until approval is given. This lifecycle adds no PR or merge gate.
+
+For GitHub inputs, the Issue task contract and native dependency edges are authoritative; use the ready guard above when checking dependency completion. Read comments and labels as relevant evidence. Keep durable decisions, blocker evidence, and handoffs in the repository-approved Issue record; never overwrite an Issue body as a progress log or add status labels. Issue/status writes still require explicit approval. For inline and local-file inputs, the supplied source remains authoritative. Session lifecycle state is temporary execution state, not a second source of truth.
+
+After a restart or interruption, re-read the authoritative input (Issue, local file, or supplied inline spec). For GitHub inputs, also re-read the relevant Issue comments, labels, explicit child links, and dependency edges. Inspect the current branch, worktree, local commits, upstream, and remote branch state before resuming. Before retrying an operation whose result is uncertain, reconcile the relevant Issue and local/remote Git evidence. If the operation is confirmed successful, continue from its next state without repeating it. If confirmed not applied, retry only when the required approval is still valid. If its result cannot be established, enter blocked with needs-reconcile and stop for user input. Never repeat a commit, push, or Issue/status write until reconciliation proves it did not succeed.
+
 ## Intake and frontier
 
 Accept one or more inline specs, local spec/ticket paths, or GitHub issue URLs/identifiers. Preserve each root's source and keep multiple roots as independent queues unless an explicit dependency joins them.
@@ -52,7 +78,7 @@ Discover descendants only from explicit parent/child links, checklists, issue li
 - If a root is clearly too large for one implementation round, pause and ask for approval to load and run `to-tickets`.
 - If a root is only planning material and has no clear acceptance criteria, pause and report; do not create tickets automatically.
 
-A ticket is ready when its blockers are complete, its acceptance criteria are clear, and required permissions and environment are available. Process one ready ticket at a time, preferring dependency order and then the root's order or issue number. Exclude tickets generated and marked `deferred` during the current run.
+Use the source-specific ready guard above. Process one ready ticket at a time, preferring dependency order and then the root's order or issue number. Exclude tickets generated and marked `deferred` during the current run.
 
 ## Issue loop
 
