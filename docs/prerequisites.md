@@ -11,7 +11,7 @@ Install this repository with the general Agent Skills command in the [README](..
 | code-review | [mattpocock/skills](https://github.com/mattpocock/skills) | npx skills@latest add mattpocock/skills --skill=code-review | spec-implement-loop |
 | domain-modeling | [mattpocock/skills](https://github.com/mattpocock/skills) | npx skills@latest add mattpocock/skills --skill=domain-modeling | requirements-to-spec-tickets, spec-implement-loop |
 | grill-with-docs | [mattpocock/skills](https://github.com/mattpocock/skills) | npx skills@latest add mattpocock/skills --skill=grill-with-docs | requirements-to-spec-tickets, spec-implement-loop |
-| grilling | [mattpocock/skills](https://github.com/mattpocock/skills) | npx skills@latest add mattpocock/skills --skill=grilling | requirements-to-spec-tickets, spec-implement-loop |
+| grilling | [mattpocock/skills](https://github.com/mattpocock/skills) | npx skills@latest add mattpocock/skills --skill=grilling | grill-duo, requirements-to-spec-tickets, spec-implement-loop |
 | implement | [mattpocock/skills](https://github.com/mattpocock/skills) | npx skills@latest add mattpocock/skills --skill=implement | spec-implement-loop |
 | ponytail-review | [DietrichGebert/ponytail](https://github.com/DietrichGebert/ponytail) | npx skills@latest add DietrichGebert/ponytail --skill=ponytail-review | spec-implement-loop |
 | setup-matt-pocock-skills | [mattpocock/skills](https://github.com/mattpocock/skills) | npx skills@latest add mattpocock/skills --skill=setup-matt-pocock-skills | requirements-to-spec-tickets, spec-implement-loop |
