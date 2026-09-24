@@ -84,12 +84,13 @@ Use the source-specific ready guard above. Process one ready ticket at a time, p
 
 For each ready ticket:
 
-1. Read and follow the original `implement/SKILL.md`; use its `tdd` and `code-review` discipline. Implement only the ticket's scope and use the ticket's agreed seams.
-2. Run the smallest relevant tests and verification for the ticket. Do not call an issue complete until its acceptance criteria, tests, and issue-level review pass.
-3. Read and follow the original `caveman-commit/SKILL.md` to produce the commit message.
-4. Create exactly one focused commit for the completed ticket. The outer loop owns this commit boundary; treat `implement`'s commit instruction as satisfied by this commit and never create a duplicate commit.
-5. Push the commit to the current branch. If push fails, choose a small, finite retry count based on the error and retry. After retries fail, stop and report the local commit and error; do not amend or rewrite history.
-6. Update the completed ticket and root progress only after the push succeeds. Retry a failed tracker/status update a small, finite number of times; if it still fails, stop and report that code is pushed but status is unsynchronised. Do not roll back the code.
+1. Read and follow the original `implement/SKILL.md`; use its `tdd` and `code-review` discipline. Implement only the ticket scope and use its agreed seams.
+2. Run every acceptance check, including the smallest relevant tests and any other specified verification. If a check fails, enter `blocked` with the reason class selected by its cause (for example, an implementation or verification defect is `technical`, while a known service or network failure is `external-service`), and preserve the failure evidence and safe resume point. Resume only when the recorded recovery condition is met; resume implementation for a `technical` failure only when its correction stays within the approved scope, otherwise stop for the required user decision. Do not call the issue complete until its acceptance criteria, tests, and issue-level review pass.
+3. Read the original `caveman-commit/SKILL.md` to produce the commit message. Resolve `show-me` dynamically at this step and use its smallest useful view for this commit's user-readable impact explanation; do not auto-invoke `wait-what`.
+4. After acceptance checks and ticket-level review pass, create exactly one focused commit only after explicit user approval. The outer loop owns this commit boundary; treat `implement`'s commit instruction as satisfied by this commit and never create a duplicate.
+5. Push only after explicit user approval. For a confirmed transient failure, choose a retry count based on the error, capped at three total attempts including the first; do not retry permanent or unsafe-to-repeat errors. Before retrying an uncertain result, reconcile the local commit and remote branch state. Never repeat a confirmed successful push, amend, or rewrite history. After retries fail, stop and report the local commit and error.
+6. Only after push succeeds, update the completed ticket and root progress, with explicit approval for each tracker/status write. Retry only transient update failures, up to three total attempts including the first; reconcile uncertain results before retrying. If retries fail, stop and report that code is pushed but status is unsynchronised; do not roll back the code.
+7. After status sync succeeds, continue with the next ticket that passes the ready guard, including newly unblocked tickets; enter final review when no non-deferred ready ticket remains.
 
 If a decision, user preference, permission, security concern, or scope boundary is unclear, stop and load the original `grill-with-docs/SKILL.md`. A purely local, objective blocker may be recorded and skipped while independent ready tickets continue; do not bypass a user decision.
 
@@ -132,4 +133,4 @@ Report `complete` only when all of these hold:
 
 Otherwise report `waiting for approval`, `blocked`, or `failed`, with the exact condition.
 
-The final report includes root and ticket states, test evidence, review-round count, deferred ticket identifiers, blockers or required approvals, and every commit in oldest-to-newest order. For each commit, state its summary and explain its effect in plain language with the missing context restored; do not auto-invoke `wait-what`.
+The final report includes root and ticket states, test evidence, review-round count, deferred ticket identifiers, blockers or required approvals, and every commit in oldest-to-newest order. For each commit, use `show-me` to explain its effect with the missing context restored; use `show-me` for the final summary, and do not auto-invoke `wait-what`.
