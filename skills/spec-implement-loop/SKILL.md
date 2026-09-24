@@ -2,6 +2,8 @@
 name: spec-implement-loop
 description: Run an explicitly approved root spec or ticket tree through implementation, verification, commit, push, status sync, and bounded review remediation.
 disable-model-invocation: true
+metadata:
+  prerequisites: '{"skills":[["implement","mattpocock/skills"],["tdd","mattpocock/skills"],["code-review","mattpocock/skills"],["grill-with-docs","mattpocock/skills"],["grilling","mattpocock/skills"],["domain-modeling","mattpocock/skills"],["to-spec","mattpocock/skills"],["to-tickets","mattpocock/skills"],["setup-matt-pocock-skills","mattpocock/skills"],["ponytail-review","DietrichGebert/ponytail"],["caveman-commit","JuliusBrussee/caveman"]],"mcps":[],"tools":[]}'
 ---
 
 # Spec Implement Loop

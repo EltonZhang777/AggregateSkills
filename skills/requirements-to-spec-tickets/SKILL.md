@@ -2,6 +2,8 @@
 name: requirements-to-spec-tickets
 description: Turn one or more codebase ideas into approved, independently scoped specs and tracer-bullet tickets through interactive child sessions.
 disable-model-invocation: true
+metadata:
+  prerequisites: '{"skills":[["grill-with-docs","mattpocock/skills"],["to-spec","mattpocock/skills"],["to-tickets","mattpocock/skills"],["grilling","mattpocock/skills"],["domain-modeling","mattpocock/skills"],["setup-matt-pocock-skills","mattpocock/skills"]],"mcps":[],"tools":[]}'
 ---
 
 # Requirements to specs and tickets
