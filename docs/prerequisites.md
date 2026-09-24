@@ -9,7 +9,8 @@ Install this repository with the general Agent Skills command in the [README](..
 | --- | --- | --- | --- |
 | caveman-commit | [JuliusBrussee/caveman](https://github.com/JuliusBrussee/caveman) | npx skills@latest add JuliusBrussee/caveman --skill=caveman-commit | spec-implement-loop |
 | code-review | [mattpocock/skills](https://github.com/mattpocock/skills) | npx skills@latest add mattpocock/skills --skill=code-review | spec-implement-loop |
-| domain-modeling | [mattpocock/skills](https://github.com/mattpocock/skills) | npx skills@latest add mattpocock/skills --skill=domain-modeling | requirements-to-spec-tickets, spec-implement-loop |
+| domain-modeling | [mattpocock/skills](https://github.com/mattpocock/skills) | npx skills@latest add mattpocock/skills --skill=domain-modeling | grill-duo-with-docs, requirements-to-spec-tickets, spec-implement-loop |
+| grill-duo | [EltonZhang777/AggregateSkills](https://github.com/EltonZhang777/AggregateSkills) | npx skills@latest add EltonZhang777/AggregateSkills --skill=grill-duo | grill-duo-with-docs |
 | grill-with-docs | [mattpocock/skills](https://github.com/mattpocock/skills) | npx skills@latest add mattpocock/skills --skill=grill-with-docs | requirements-to-spec-tickets, spec-implement-loop |
 | grilling | [mattpocock/skills](https://github.com/mattpocock/skills) | npx skills@latest add mattpocock/skills --skill=grilling | grill-duo, requirements-to-spec-tickets, spec-implement-loop |
 | implement | [mattpocock/skills](https://github.com/mattpocock/skills) | npx skills@latest add mattpocock/skills --skill=implement | spec-implement-loop |
