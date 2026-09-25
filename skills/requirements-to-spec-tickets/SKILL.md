@@ -14,15 +14,15 @@ Use this skill only when the user wants to turn one or more codebase ideas into 
 
 Resolve and read the current `SKILL.md` for each required dependency from the active skill roots:
 
-- `grill-with-docs`
-- `to-spec`
-- `to-tickets`
+- `/grill-with-docs`
+- `/to-spec`
+- `/to-tickets`
 
 Read the files at runtime. Treat them as the source of truth, not as text to copy into this skill. If a dependency is missing or unreadable, stop and tell the user that it can be installed from [mattpocock/skills](https://github.com/mattpocock/skills/). Do not install it automatically.
 
 When a dependency points to another skill, resolve and read that skill's current `SKILL.md` at the point of use; apply the same missing-file stop rule. Do not replace a referenced skill with a copied summary.
 
-After the dependency check, verify that `setup-matt-pocock-skills` has supplied the issue tracker and triage-label configuration required by `to-spec` and `to-tickets`. If the setup or tracker configuration is absent, stop and tell the user to run `/setup-mattpocock-skills`. Do not create child sessions.
+After the dependency check, verify that `/setup-matt-pocock-skills` has supplied the issue tracker and triage-label configuration required by `/to-spec` and `/to-tickets`. If the setup or tracker configuration is absent, stop and tell the user to run `/setup-matt-pocock-skills`. Do not create child sessions.
 
 Preflight is complete only when all three dependency files are readable and the tracker configuration is available.
 
@@ -38,7 +38,7 @@ Read the user's current conversation as the source of the requirements. For each
 
 For several requests, make one group per independently implementable, single-target behavior. Shared implementation details do not justify merging groups. A single request is one group, but still follows the approval gate.
 
-Show the complete proposed grouping and wait for an explicit approval such as "Approve grouping" before creating any child session. A tentative response is not approval. If the user objects but the requested change is unclear, read and follow the current `grill-with-docs/SKILL.md` in this parent session, then present a revised complete grouping and wait again.
+Show the complete proposed grouping and wait for an explicit approval such as "Approve grouping" before creating any child session. A tentative response is not approval. If the user objects but the requested change is unclear, read and follow the current `SKILL.md` for `/grill-with-docs` in this parent session, then present a revised complete grouping and wait again.
 
 The grouping step is complete only when the user has explicitly approved the current complete grouping.
 
@@ -46,7 +46,7 @@ The grouping step is complete only when the user has explicitly approved the cur
 
 Create one child session per approved group. Each child must be visible to and directly interactive with the user: the user can enter it, answer its questions, and let it continue. A background subagent does not satisfy this requirement.
 
-For independent groups, create child sessions in parallel when the host supports it. For groups with a decision dependency, process the blocker first or make the dependent child wait for the blocker's relevant conclusion. Ticket-level implementation dependencies remain the responsibility of `to-tickets`.
+For independent groups, create child sessions in parallel when the host supports it. For groups with a decision dependency, process the blocker first or make the dependent child wait for the blocker's relevant conclusion. Ticket-level implementation dependencies remain the responsibility of `/to-tickets`.
 
 ### Codex Desktop
 
@@ -64,9 +64,9 @@ Child-session creation is complete only when every approved group has either a r
 
 In every child session, re-read the current dependency files immediately before proceeding:
 
-1. Read and follow `grill-with-docs/SKILL.md`.
-2. After that phase reaches its own shared-understanding gate, read and follow `to-spec/SKILL.md`.
-3. After the spec and its required seam confirmation are complete, read and follow `to-tickets/SKILL.md`.
+1. Read and follow the `SKILL.md` for `/grill-with-docs`.
+2. After that phase reaches its own shared-understanding gate, read and follow the `SKILL.md` for `/to-spec`.
+3. After the spec and its required seam confirmation are complete, read and follow the `SKILL.md` for `/to-tickets`.
 
 Reading the live files is the dependency mechanism for this workflow. It keeps the child aligned with dependency updates without modifying or duplicating those skills. If a required file becomes unavailable, stop that child and report the missing dependency.
 

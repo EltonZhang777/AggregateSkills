@@ -1,4 +1,4 @@
-# grill-duo manual scenarios
+# `/grill-duo` manual scenarios
 
 Run these at the user-facing skill boundary in a host that can invoke an independent subagent. Record reviewer requests and responses separately from the host's user-visible messages.
 

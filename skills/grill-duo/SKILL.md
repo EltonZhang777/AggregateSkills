@@ -1,19 +1,19 @@
 ---
 name: grill-duo
-description: "Use only when the user explicitly asks for a fixed independent subagent to review a multi-round grilling session. Use grill-duo-with-docs when maintaining project documents; do not use for solo grilling or unrelated requests."
+description: "Use only when the user explicitly asks for a fixed independent subagent to review a multi-round grilling session. Use `/grill-duo-with-docs` when maintaining project documents; do not use for solo grilling or unrelated requests."
 metadata:
   prerequisites: '{"skills":[["grilling","mattpocock/skills"]],"mcps":[],"tools":[]}'
 ---
 
-# Grill Duo
+# `/grill-duo`
 
 Run a portable two-agent grilling session. The host interviews the user; one independent reviewer assesses each current round. The host remains the user's only conversational counterpart.
 
 ## Activation and dependency
 
-Use this entrypoint only when the user explicitly requests independent two-agent review while clarifying or pressure-testing a plan, requirement, design, or decision. Use grill-duo-with-docs when the session needs to maintain confirmed project documents. Do not activate for ordinary solo grilling, group discussion, or unrelated implementation work.
+Use this entrypoint only when the user explicitly requests independent two-agent review while clarifying or pressure-testing a plan, requirement, design, or decision. Use `/grill-duo-with-docs` when the session needs to maintain confirmed project documents. Do not activate for ordinary solo grilling, group discussion, or unrelated implementation work.
 
-At activation, resolve the exact grilling skill through an authoritative, complete skill catalog or runtime and read its original SKILL.md. Use Skill Scout when available; otherwise use the host runtime's complete skill-discovery facility. Do not infer that the skill is missing from the loaded-skills list alone, and do not vendor or silently replace it. If no authoritative resolver can find it, stop and tell the user it cannot be verified and can be installed with:
+At activation, resolve the exact `/grilling` skill through an authoritative, complete skill catalog or runtime and read its original SKILL.md. Use Skill Scout when available; otherwise use the host runtime's complete skill-discovery facility. Do not infer that the skill is missing from the loaded-skills list alone, and do not vendor or silently replace it. If no authoritative resolver can find it, stop and tell the user it cannot be verified and can be installed with:
 
     npx skills@latest add mattpocock/skills --skill=grilling
 
@@ -31,7 +31,7 @@ This missing-dependency stop is different from an unavailable reviewer: only the
 
 Maintain the user's goal, confirmed decisions and constraints, the open questions, their dependencies, the reviewer handle, and the active review request ID.
 
-- Follow the current grilling skill's design-tree method. Ask every decision whose prerequisites are settled and that can be answered now. Defer questions that depend on an unresolved answer. There is no fixed question-count cap.
+- Follow the current `/grilling` skill's design-tree method. Ask every decision whose prerequisites are settled and that can be answered now. Defer questions that depend on an unresolved answer. There is no fixed question-count cap.
 - Give each question a stable ID such as Q1. Do not reuse an ID during the session. Keep an unanswered question's ID and wording when it remains unchanged. Do not add newly answerable questions to an open round; recompute the frontier after that round closes.
 - Research facts with available tools or agents instead of asking the user to supply facts they could not decide. Keep genuine preferences and trade-offs for the user.
 - Form the host's recommendation independently. Do not send it to the reviewer before the reviewer returns.

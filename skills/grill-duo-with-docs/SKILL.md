@@ -1,24 +1,24 @@
 ---
 name: grill-duo-with-docs
-description: "Use when the user explicitly requests two-agent grilling that must maintain confirmed domain language or project decisions. Use grill-duo alone when project-document maintenance is not needed."
+description: "Use when the user explicitly requests two-agent grilling that must maintain confirmed domain language or project decisions. Use `/grill-duo` alone when project-document maintenance is not needed."
 metadata:
   prerequisites: '{"skills":[["grill-duo","EltonZhang777/AggregateSkills"],["domain-modeling","mattpocock/skills"]],"mcps":[],"tools":[]}'
 ---
 
-# Grill Duo with Docs
+# `/grill-duo-with-docs`
 
-Use the portable grill-duo protocol with repository-aware documentation maintenance. The host remains the only user-facing agent and the only project-document writer.
+Use the portable `/grill-duo` protocol with repository-aware documentation maintenance. The host remains the only user-facing agent and the only project-document writer.
 
 ## Activation and dependencies
 
-Use this entrypoint when the user explicitly wants a grilling session that records confirmed domain terms or project decisions in project documentation. Use grill-duo when no project-document maintenance is needed.
+Use this entrypoint when the user explicitly wants a grilling session that records confirmed domain terms or project decisions in project documentation. Use `/grill-duo` when no project-document maintenance is needed.
 
-Before starting, resolve the exact grill-duo and domain-modeling skills through an authoritative, complete skill catalog or runtime, then read their current original SKILL.md files. Use Skill Scout when available; otherwise use the host runtime's complete skill-discovery facility. Do not infer that either dependency is missing from the loaded-skills list alone, and do not vendor or silently replace either skill. If a dependency cannot be resolved, stop and tell the user how to install it:
+Before starting, resolve the exact `/grill-duo` and `/domain-modeling` skills through an authoritative, complete skill catalog or runtime, then read their current original SKILL.md files. Use Skill Scout when available; otherwise use the host runtime's complete skill-discovery facility. Do not infer that either dependency is missing from the loaded-skills list alone, and do not vendor or silently replace either skill. If a dependency cannot be resolved, stop and tell the user how to install it:
 
     npx skills@latest add EltonZhang777/AggregateSkills --skill=grill-duo
     npx skills@latest add mattpocock/skills --skill=domain-modeling
 
-Follow grill-duo for activation, reviewer continuity and boundaries, round IDs, frontier handling, current-request correlation, solo fallback, and final shared-understanding confirmation. Follow the current domain-modeling skill and its referenced materials for glossary and decision discipline. Do not copy either skill's body into this entrypoint.
+Follow `/grill-duo` for activation, reviewer continuity and boundaries, round IDs, frontier handling, current-request correlation, solo fallback, and final shared-understanding confirmation. Follow the current `/domain-modeling` skill and its referenced materials for glossary and decision discipline. Do not copy either skill's body into this entrypoint.
 
 ## Read the repository's documentation map
 
@@ -31,7 +31,7 @@ Before a documentation write, the host reads the active repository's AGENTS.md, 
 The host may update documentation as each item is confirmed; it need not wait for the entire grilling session to finish. Before each write:
 
 1. Confirm the specific term or decision came from the user, not from an assumption, an unanswered question, or a reviewer suggestion.
-2. Select the authoritative document using the repository's routing rules and the current domain-modeling instructions.
+2. Select the authoritative document using the repository's routing rules and the current `/domain-modeling` instructions.
 3. Read its latest contents. Apply the confirmed information additively, preserving independent content and deduplicating exact repeats.
 4. If the new statement conflicts semantically with existing project knowledge, do not write it or silently choose a side. Show the existing and proposed meanings to the user and pause that documentation decision until it is resolved.
 
