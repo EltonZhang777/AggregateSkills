@@ -11,50 +11,54 @@ Use this skill only when the user explicitly requests `review-duo` or strict `co
 
 ## Resolve and run the upstream skill
 
-Resolve the current `code-review` skill through the host's native skill resolver at runtime, then follow that skill once. If it is unavailable, stop and tell the user to install it with `npx skills@latest add mattpocock/skills --skill=code-review`. Never copy a fallback body or continue with a locally vendored version.
+Resolve the current `code-review` skill through the host's native skill resolver at runtime, then follow that skill once. If it is unavailable, stop and tell the user to install it with `npx skills@latest add mattpocock/skills --skill=code-review`. Never copy a fallback body or continue with a locally vendored version. Record the resolver's stable source URI and SHA-256 of its LF-normalized UTF-8 text in the frozen manifest; do not copy or vendor its body.
 
-Keep the upstream workflow and its two-agent topology. Pass the strict scope and axis instructions below to those two agents in that one run. Do not start another review pair or nest a second `code-review` run. If this invocation cannot start two independent agents, set the overall status to `blocked` before reviewing; do not simulate two reviewers in one context. Ask the user to retry in a host with parallel-agent support or explicitly approve single-agent degradation. If the host cannot pass the same fixed inputs to both agents, stop with status `blocked`.
+Keep the upstream workflow and its two-agent topology. Pass the strict scope and axis instructions below to those two agents in that one run. Do not start another review pair or nest a second code-review run.
 
 ## Freeze the review inputs
 
 Use upstream `code-review`'s fixed-point flow for Git reviews. For a supplied patch or uncommitted work, replace the moving-ref input with one immutable patch snapshot and pass that exact diff to the same two agents. Give both agents the same pinned inputs:
 
-- For Git reviews, resolve and record the full base, merge-base, and head commit SHAs once. Use that immutable range for both agents.
-- For a supplied patch or uncommitted work, capture one content-addressed patch snapshot, including the intended staged, unstaged, and new files. Record its SHA-256, byte size, and included paths. Pass its exact bytes or immutable shared path and hash instead of manufacturing a Git diff command or commit list. Both agents must read that exact snapshot; never substitute separate live-workspace reads.
+- For Git reviews, resolve and record the full base, merge-base, and head commit SHAs once. Capture one patch snapshot from that immutable range, and record its SHA-256, exact byte size, and included paths.
+- For a supplied patch or uncommitted work, capture one content-addressed patch snapshot, including the intended staged, unstaged, and new files. Record its SHA-256, exact byte size, and included paths. Pass its exact bytes or immutable shared path and hash instead of manufacturing a Git diff command or commit list. Both agents must read that exact snapshot; never substitute separate live-workspace reads.
 - Pin requirement sources from the user's request, issue/PR body and acceptance criteria, design docs, and applicable contracts or ADRs. Record their revision or content hash. Commit messages, branch names, tests, and existing implementation are not requirements. If no requirement source exists, the Spec axis is `not_assessed`; do not infer requirements from code.
 - Pin applicable repository standards, including root and relevant-path `AGENTS.md`, domain docs, ADRs, and formatter, lint, type-check, build, and test configuration. Give both agents the same source contents or immutable revisions and record their hashes.
 
 Before starting the agents, freeze one coverage manifest containing the code scope, pinned requirement and standards sources, relevant implementation and test sources, explicit exclusions, and relevant checks. For each source, record its path or stable URI, role, pinned revision or SHA-256, and included or excluded status; give exclusions a reason. For each relevant check, record its name, command, observed result, or `not run` with a reason. A source an axis did not inspect remains unchecked.
 
-Serialize the manifest as canonical UTF-8 JSON with sorted keys and source entries ordered by path. Hash its exact bytes with SHA-256 and keep the digest outside the manifest. Give both agents the identical manifest bytes and digest, or the same immutable path and digest. Do not reconstruct it from separate live-workspace reads or change it during the review.
+Normalize text source files by converting CRLF or CR line endings to LF and encoding as UTF-8 before hashing or measuring. Hash and measure a frozen patch snapshot using its exact bytes without newline normalization. Serialize the manifest as canonical UTF-8 JSON with sorted keys and source entries ordered by path or URI. Hash the exact manifest bytes with SHA-256 and keep the digest outside the manifest. Give both agents the identical manifest bytes and digest, or the same immutable path and digest. Do not reconstruct it from separate live-workspace reads or change it during the review. Each agent must echo the manifest digest, patch hash and exact byte size, included paths, and its checked and unchecked sources and checks in its own report.
 
-At finalization, report the manifest digest and, for each axis, the checked and unchecked sources and checks. A missing or unreadable declared source makes coverage partial. If a pinned source, manifest, or recorded check result changes after the freeze, mark the report stale.
+At finalization, compare each agent's attestation against the frozen manifest and the other agent's report before reporting the review as current. A mismatch in manifest digest, patch hash or size, included paths, or fixed scope makes the overall status blocked. If the patch or range, a pinned source, manifest, or recorded check result changed after the freeze, mark the report stale and do not present it as current or silently rerun it. A missing or unreadable declared source makes the affected axis partial; name the gap.
 
-If either agent cannot read or verify the same fixed code scope, set the overall status to `blocked`, preserve any completed axis results, and pause. If a relevant evidence source is unavailable to an axis, mark that axis `partial` and state the gap. Before finalizing, verify that the patch/range and source hashes still match. If any pinned input changed, mark the report `stale`; do not present it as current or silently rerun it.
+## Agent availability and failure handling
+
+Before review, if the host cannot start two independent agents or pass identical fixed inputs, set the overall status to blocked and pause before reviewing. If either agent cannot read or verify the shared scope, set the overall status to blocked, preserve any completed axis results, and pause. Ask the user to retry on a host that supports parallel agents or explicitly approve single-agent degradation. Never simulate a second reviewer. Proceed with one agent only after approval, label the mode single-agent degradation, keep axes separate, and disclose the loss of independence.
+
 
 ## Independent review axes
 
 Start the upstream workflow's two agents in parallel, with no cross-agent discussion:
 
 - **Standards and Quality** checks repository rules, correctness, error handling, security, concurrency, retries, consistency, APIs, databases, migrations, lifecycle, important test gaps, and material maintenance cost. It does not decide whether the change satisfies product requirements.
-- **Spec Conformance** checks only missing, partial, or incorrect requirements, unmet acceptance criteria, unrequested behavior, and conflicts or gaps in requirement sources. It does not report style or preference opinions.
+- **Spec Conformance** checks only missing, partial, or incorrect requirements, unmet acceptance criteria, unrequested behavior, and conflicts or gaps in requirement sources. Derive severity from the pinned requirements and their stated impact; do not inherit severity from a Standards finding about the same defect. Do not report style or preference opinions.
 
 A finding must have a concrete location and evidence, an actual impact, and a recommendation. Exclude preference-only observations. Use only these severities:
 
 - `blocker`: severe data or security risk, unusable core flow, or unsafe acceptance failure.
-- `high`: major correctness failure, inconsistent persisted state, or a key requirement missed.
-- `medium`: meaningful boundary, reliability, or test-coverage issue.
+- `high`: major correctness failure, inconsistent persisted state, or a key requirement missed with material user or business impact.
+- `medium`: meaningful boundary, reliability, or test-coverage issue. A requirement miss with limited impact, such as a display-only value that cannot affect persisted or charged data, also counts as medium.
 - `low`: localized quality issue with limited impact.
 
 Assign stable per-axis IDs in the form `STD-01` and `SPEC-01`, in each agent's original finding order. Each finding includes location, problem, evidence, impact, recommendation, and severity. Preserve every axis's findings, severity, and order. The same issue may appear on both axes; never merge, remove, rerank, or change severity across axes. Do not give one overall score.
 
-Mark an axis `partial` when its evidence or coverage is incomplete and state the limitation. The Spec axis may be `not_assessed` only when no requirement source exists. If the second agent cannot start or read the fixed scope, mark the review `blocked` and pause. Do not degrade to one agent unless the user explicitly approves; after approval, label the mode `single-agent degradation`, keep the two axes separate, and state that the results lack dual-agent independence.
+Mark an axis partial when its evidence or coverage is incomplete and state the limitation. The Spec axis may be not_assessed only when no requirement source exists.
 
 ## Final report
 
 Return a read-only report in the user's language. Include:
 
 - Fixed scope: immutable commit range or patch SHA-256, byte size, and included paths.
+- Each axis echoes the same manifest digest, patch hash and exact byte size, included paths, and its checked and unchecked sources and checks.
 - Mode: `dual-agent` or explicitly approved `single-agent degradation`; overall status: `current`, `stale`, or `blocked`.
 - Requirement and standards sources with their pinned revisions or hashes.
 - Separate `Standards and Quality` and `Spec Conformance` sections. For each, include status (`complete`, `partial`, `blocked`, or `not_assessed`), finding count, all findings in original order, and checked/unchecked coverage.

@@ -1,0 +1,14 @@
+diff --git a/src/pricing.py b/src/pricing.py
+new file mode 100644
+--- /dev/null
++++ b/src/pricing.py
+@@ -0,0 +1,9 @@
++from decimal import Decimal
++
++def apply_coupon(total: Decimal, code: str) -> Decimal:
++    if code == "SAVE10":
++        return total * Decimal("0.9")
++    return total
++
++def preview_total_with_tax(subtotal: Decimal) -> Decimal:
++    return Decimal(str(float(subtotal) * 1.08))
