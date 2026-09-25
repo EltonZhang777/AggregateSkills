@@ -5,6 +5,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
+MARKDOWN_TICK = chr(96)
 START = "<!-- prerequisite-list:start -->"
 END = "<!-- prerequisite-list:end -->"
 
@@ -57,12 +58,15 @@ def dependency_rows(category):
         source = dependency["source"]
         source_url = f"https://github.com/{source}" if category == "skills" else source
         source_label = source if category == "skills" else f"{name} project"
+        required_by = ", ".join(
+            f"{MARKDOWN_TICK}/{skill_name}{MARKDOWN_TICK}" for skill_name in sorted(dependency["required_by"])
+        )
         rows.append(
             (
-                name,
+                f"{MARKDOWN_TICK}/{name}{MARKDOWN_TICK}" if category == "skills" else name,
                 f"[{source_label}]({source_url})",
                 dependency["install"] + ("; " + dependency["setup"] if dependency["setup"] else ""),
-                ", ".join(sorted(dependency["required_by"])),
+                required_by,
             )
         )
     return rows

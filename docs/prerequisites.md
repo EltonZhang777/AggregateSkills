@@ -7,17 +7,18 @@ Install this repository with the general Agent Skills command in the [README](..
 
 | Skill | Source | Install | Required by |
 | --- | --- | --- | --- |
-| caveman-commit | [JuliusBrussee/caveman](https://github.com/JuliusBrussee/caveman) | npx skills@latest add JuliusBrussee/caveman --skill=caveman-commit | spec-implement-loop |
-| code-review | [mattpocock/skills](https://github.com/mattpocock/skills) | npx skills@latest add mattpocock/skills --skill=code-review | spec-implement-loop |
-| domain-modeling | [mattpocock/skills](https://github.com/mattpocock/skills) | npx skills@latest add mattpocock/skills --skill=domain-modeling | requirements-to-spec-tickets, spec-implement-loop |
-| grill-with-docs | [mattpocock/skills](https://github.com/mattpocock/skills) | npx skills@latest add mattpocock/skills --skill=grill-with-docs | requirements-to-spec-tickets, spec-implement-loop |
-| grilling | [mattpocock/skills](https://github.com/mattpocock/skills) | npx skills@latest add mattpocock/skills --skill=grilling | requirements-to-spec-tickets, spec-implement-loop |
-| implement | [mattpocock/skills](https://github.com/mattpocock/skills) | npx skills@latest add mattpocock/skills --skill=implement | spec-implement-loop |
-| ponytail-review | [DietrichGebert/ponytail](https://github.com/DietrichGebert/ponytail) | npx skills@latest add DietrichGebert/ponytail --skill=ponytail-review | spec-implement-loop |
-| setup-matt-pocock-skills | [mattpocock/skills](https://github.com/mattpocock/skills) | npx skills@latest add mattpocock/skills --skill=setup-matt-pocock-skills | requirements-to-spec-tickets, spec-implement-loop |
-| tdd | [mattpocock/skills](https://github.com/mattpocock/skills) | npx skills@latest add mattpocock/skills --skill=tdd | spec-implement-loop |
-| to-spec | [mattpocock/skills](https://github.com/mattpocock/skills) | npx skills@latest add mattpocock/skills --skill=to-spec | requirements-to-spec-tickets, spec-implement-loop |
-| to-tickets | [mattpocock/skills](https://github.com/mattpocock/skills) | npx skills@latest add mattpocock/skills --skill=to-tickets | requirements-to-spec-tickets, spec-implement-loop |
+| `/caveman-commit` | [JuliusBrussee/caveman](https://github.com/JuliusBrussee/caveman) | npx skills@latest add JuliusBrussee/caveman --skill=caveman-commit | `/spec-implement-loop` |
+| `/code-review` | [mattpocock/skills](https://github.com/mattpocock/skills) | npx skills@latest add mattpocock/skills --skill=code-review | `/spec-implement-loop` |
+| `/domain-modeling` | [mattpocock/skills](https://github.com/mattpocock/skills) | npx skills@latest add mattpocock/skills --skill=domain-modeling | `/grill-duo-with-docs`, `/requirements-to-spec-tickets`, `/spec-implement-loop` |
+| `/grill-duo` | [EltonZhang777/AggregateSkills](https://github.com/EltonZhang777/AggregateSkills) | npx skills@latest add EltonZhang777/AggregateSkills --skill=grill-duo | `/grill-duo-with-docs` |
+| `/grill-with-docs` | [mattpocock/skills](https://github.com/mattpocock/skills) | npx skills@latest add mattpocock/skills --skill=grill-with-docs | `/requirements-to-spec-tickets`, `/spec-implement-loop` |
+| `/grilling` | [mattpocock/skills](https://github.com/mattpocock/skills) | npx skills@latest add mattpocock/skills --skill=grilling | `/grill-duo`, `/requirements-to-spec-tickets`, `/spec-implement-loop` |
+| `/implement` | [mattpocock/skills](https://github.com/mattpocock/skills) | npx skills@latest add mattpocock/skills --skill=implement | `/spec-implement-loop` |
+| `/ponytail-review` | [DietrichGebert/ponytail](https://github.com/DietrichGebert/ponytail) | npx skills@latest add DietrichGebert/ponytail --skill=ponytail-review | `/spec-implement-loop` |
+| `/setup-matt-pocock-skills` | [mattpocock/skills](https://github.com/mattpocock/skills) | npx skills@latest add mattpocock/skills --skill=setup-matt-pocock-skills | `/requirements-to-spec-tickets`, `/spec-implement-loop` |
+| `/tdd` | [mattpocock/skills](https://github.com/mattpocock/skills) | npx skills@latest add mattpocock/skills --skill=tdd | `/spec-implement-loop` |
+| `/to-spec` | [mattpocock/skills](https://github.com/mattpocock/skills) | npx skills@latest add mattpocock/skills --skill=to-spec | `/requirements-to-spec-tickets`, `/spec-implement-loop` |
+| `/to-tickets` | [mattpocock/skills](https://github.com/mattpocock/skills) | npx skills@latest add mattpocock/skills --skill=to-tickets | `/requirements-to-spec-tickets`, `/spec-implement-loop` |
 
 ### MCPs
 
@@ -27,7 +28,7 @@ None currently.
 
 | Tool | Source | Install | Required by |
 | --- | --- | --- | --- |
-| SkillRoute CLI | [SkillRoute CLI project](https://github.com/erichare/skillroute) | uv tool install skillroute; Prepare a local catalog using the SkillRoute documentation | skill-scout |
+| SkillRoute CLI | [SkillRoute CLI project](https://github.com/erichare/skillroute) | uv tool install skillroute; Prepare a local catalog using the SkillRoute documentation | `/skill-scout` |
 <!-- prerequisite-list:end -->
 
 ## Runtime checks
