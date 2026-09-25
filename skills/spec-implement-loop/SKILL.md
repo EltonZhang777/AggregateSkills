@@ -58,7 +58,7 @@ The coordinator tracks the active root, ticket, lifecycle state, and resume poin
 | push | Push only after explicit user approval. Follow the bounded retry rules in Issue loop; reconcile an uncertain result before retrying. Confirmed success moves to status_sync; exhausted retries or an unreconciled result enters blocked. Never amend or rewrite history. |
 | status_sync | After a confirmed push, perform approved issue/status writes. Follow the bounded retries in Issue loop and reconcile uncertain results using the recovery rules above. Confirmed sync moves to ready for the next queue-ordered ticket that passes the ready guard, including a newly unblocked ticket, or to final review when the queue is drained. Exhausted retries or an unreconciled result enters blocked; never roll back pushed code. |
 | blocked | Stop the affected dependency chain and record the reason class, evidence, recovery condition, and safe resume state. Resume only when the condition is met and relevant source and Git state have been reconciled. |
-| completed | No non-deferred ticket or approved repair remains; acceptance checks and the full suite pass; final review passes; required push and status sync are confirmed. |
+| completed | Every non-deferred ticket and approved review repair is complete; acceptance checks and the full suite pass; final review passes; required push and status sync are confirmed. |
 
 Classify dependency when a required blocker remains unsatisfied; technical for an implementation or verification failure; external-service for a known service or network failure; operator-decision for missing approval or an unresolved user choice; decomposition when scope needs further ticketing; and needs-reconcile when a side-effect result is uncertain. A review repair uses remediate, not a generic blocked state. A blocker pauses only its dependent work; continue another independent root queue when it has a ready ticket.
 
@@ -123,7 +123,7 @@ Do not close or modify a parent issue inside `to-tickets`; the outer loop update
 
 Report `complete` only when all of these hold:
 
-- no uncompleted, non-deferred ready ticket remains;
+- no uncompleted, non-deferred ticket remains;
 - every completed ticket meets its acceptance criteria;
 - the full test suite passes after the final implementation batch;
 - final review is complete;
