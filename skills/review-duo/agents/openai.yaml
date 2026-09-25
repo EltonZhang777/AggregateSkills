@@ -1,0 +1,5 @@
+interface:
+  display_name: "Review Duo"
+  short_description: "Run code-review with strict dual-agent guarantees"
+policy:
+  allow_implicit_invocation: false
