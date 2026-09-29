@@ -8,13 +8,14 @@ Install this repository with the general Agent Skills command in the [README](..
 | Skill | Source | Install | Required by |
 | --- | --- | --- | --- |
 | `/code-review` | [mattpocock/skills](https://github.com/mattpocock/skills) | npx skills@latest add mattpocock/skills --skill=code-review | `/review-duo`, `/spec-implement-loop` |
-| `/conventional-git-messages` | [EltonZhang777/AggregateSkills](https://github.com/EltonZhang777/AggregateSkills) | npx skills@latest add EltonZhang777/AggregateSkills --skill=conventional-git-messages | `/spec-implement-loop` |
+| `/conventional-git-messages` | [EltonZhang777/AggregateSkills](https://github.com/EltonZhang777/AggregateSkills) | npx skills@latest add EltonZhang777/AggregateSkills --skill=conventional-git-messages | `/pr-and-merge`, `/spec-implement-loop` |
 | `/domain-modeling` | [mattpocock/skills](https://github.com/mattpocock/skills) | npx skills@latest add mattpocock/skills --skill=domain-modeling | `/grill-duo-with-docs`, `/requirements-to-spec-tickets`, `/spec-implement-loop` |
 | `/grill-duo` | [EltonZhang777/AggregateSkills](https://github.com/EltonZhang777/AggregateSkills) | npx skills@latest add EltonZhang777/AggregateSkills --skill=grill-duo | `/grill-duo-with-docs` |
 | `/grill-with-docs` | [mattpocock/skills](https://github.com/mattpocock/skills) | npx skills@latest add mattpocock/skills --skill=grill-with-docs | `/requirements-to-spec-tickets`, `/spec-implement-loop` |
 | `/grilling` | [mattpocock/skills](https://github.com/mattpocock/skills) | npx skills@latest add mattpocock/skills --skill=grilling | `/grill-duo`, `/requirements-to-spec-tickets`, `/spec-implement-loop` |
 | `/implement` | [mattpocock/skills](https://github.com/mattpocock/skills) | npx skills@latest add mattpocock/skills --skill=implement | `/spec-implement-loop` |
 | `/ponytail-review` | [DietrichGebert/ponytail](https://github.com/DietrichGebert/ponytail) | npx skills@latest add DietrichGebert/ponytail --skill=ponytail-review | `/spec-implement-loop` |
+| `/resolving-merge-conflicts` | [mattpocock/skills](https://github.com/mattpocock/skills) | npx skills@latest add mattpocock/skills --skill=resolving-merge-conflicts | `/pr-and-merge` |
 | `/setup-matt-pocock-skills` | [mattpocock/skills](https://github.com/mattpocock/skills) | npx skills@latest add mattpocock/skills --skill=setup-matt-pocock-skills | `/requirements-to-spec-tickets`, `/spec-implement-loop` |
 | `/tdd` | [mattpocock/skills](https://github.com/mattpocock/skills) | npx skills@latest add mattpocock/skills --skill=tdd | `/spec-implement-loop` |
 | `/to-spec` | [mattpocock/skills](https://github.com/mattpocock/skills) | npx skills@latest add mattpocock/skills --skill=to-spec | `/requirements-to-spec-tickets`, `/spec-implement-loop` |
@@ -28,6 +29,7 @@ None currently.
 
 | Tool | Source | Install | Required by |
 | --- | --- | --- | --- |
+| GitHub CLI (gh) | [GitHub CLI (gh) project](https://cli.github.com/) | Install from https://cli.github.com/; Authenticate with `gh auth login` | `/pr-and-merge` |
 | SkillRoute CLI | [SkillRoute CLI project](https://github.com/erichare/skillroute) | uv tool install skillroute; Prepare a local catalog using the SkillRoute documentation | `/skill-scout` |
 <!-- prerequisite-list:end -->
 
