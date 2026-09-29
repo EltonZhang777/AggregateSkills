@@ -3,7 +3,7 @@ name: spec-implement-loop
 description: Run an explicitly approved root spec or ticket tree through implementation, verification, commit, push, status sync, and bounded review remediation.
 disable-model-invocation: true
 metadata:
-  prerequisites: '{"skills":[["implement","mattpocock/skills"],["tdd","mattpocock/skills"],["code-review","mattpocock/skills"],["grill-with-docs","mattpocock/skills"],["grilling","mattpocock/skills"],["domain-modeling","mattpocock/skills"],["to-spec","mattpocock/skills"],["to-tickets","mattpocock/skills"],["setup-matt-pocock-skills","mattpocock/skills"],["ponytail-review","DietrichGebert/ponytail"],["caveman-commit","JuliusBrussee/caveman"]],"mcps":[],"tools":[]}'
+  prerequisites: '{"skills":[["implement","mattpocock/skills"],["tdd","mattpocock/skills"],["code-review","mattpocock/skills"],["grill-with-docs","mattpocock/skills"],["grilling","mattpocock/skills"],["domain-modeling","mattpocock/skills"],["to-spec","mattpocock/skills"],["to-tickets","mattpocock/skills"],["setup-matt-pocock-skills","mattpocock/skills"],["ponytail-review","DietrichGebert/ponytail"],["conventional-git-messages","EltonZhang777/AggregateSkills"]],"mcps":[],"tools":[]}'
 ---
 
 # `/spec-implement-loop`
@@ -18,7 +18,7 @@ Required skills:
 
 - `mattpocock/skills`: `/implement`, `/tdd`, `/code-review`, `/grill-with-docs`, `/grilling`, `/domain-modeling`, `/to-spec`, `/to-tickets`, `/setup-matt-pocock-skills`
 - `DietrichGebert/ponytail`: `/ponytail-review`
-- `JuliusBrussee/caveman`: `/caveman-commit`
+- `EltonZhang777/AggregateSkills`: `/conventional-git-messages`
 
 `/wait-what` is optional and is not an automatic step. `/skill-creator`, `/writing-for-agents`, and `/grill-me` are authoring-time skills, not runtime dependencies.
 
@@ -29,7 +29,7 @@ If a dependency is missing, show the relevant installation hint and stop:
 ```text
 npx skills@latest add mattpocock/skills --skill=<skill-name>
 npx skills@latest add DietrichGebert/ponytail --skill=ponytail-review
-npx skills@latest add JuliusBrussee/caveman --skill=caveman-commit
+npx skills@latest add EltonZhang777/AggregateSkills --skill=conventional-git-messages
 ```
 
 Read the original `SKILL.md` for `/setup-matt-pocock-skills`, then verify the configured issue-tracker files and vocabulary it requires. Do not run setup automatically. If setup or tracker configuration is missing or invalid, stop.
@@ -86,7 +86,7 @@ For each ready ticket:
 
 1. Read and follow the original `SKILL.md` for `/implement`; use its `/tdd` and `/code-review` discipline. Implement only the ticket scope and use its agreed seams.
 2. Run every acceptance check, including the smallest relevant tests and any other specified verification. If a check fails, enter `blocked` with the reason class selected by its cause (for example, an implementation or verification defect is `technical`, while a known service or network failure is `external-service`), and preserve the failure evidence and safe resume point. Resume only when the recorded recovery condition is met; resume implementation for a `technical` failure only when its correction stays within the approved scope, otherwise stop for the required user decision. Do not call the issue complete until its acceptance criteria, tests, and issue-level review pass.
-3. Read the original `SKILL.md` for `/caveman-commit` to produce the commit message. Resolve `/show-me` dynamically at this step and use its smallest useful view for this commit's user-readable impact explanation; do not auto-invoke `/wait-what`.
+3. Read the original `SKILL.md` for `/conventional-git-messages` and use its commit mode to produce the commit message. Resolve `/show-me` dynamically at this step and use its smallest useful view for this commit's user-readable impact explanation; do not auto-invoke `/wait-what`.
 4. After acceptance checks and ticket-level review pass, create exactly one focused commit only after explicit user approval. The outer loop owns this commit boundary; treat `/implement`'s commit instruction as satisfied by this commit and never create a duplicate commit.
 5. Push only after explicit user approval. For a confirmed transient failure, choose a retry count based on the error, capped at three total attempts including the first; do not retry permanent or unsafe-to-repeat errors. Before retrying an uncertain result, reconcile the local commit and remote branch state. Never repeat a confirmed successful push, amend, or rewrite history. After retries fail, stop and report the local commit and error.
 6. Only after push succeeds, update the completed ticket and root progress, with explicit approval for each tracker/status write. Retry only transient update failures, up to three total attempts including the first; reconcile uncertain results before retrying. If retries fail, stop and report that code is pushed but status is unsynchronised; do not roll back the code.
