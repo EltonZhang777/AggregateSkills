@@ -1,0 +1,3 @@
+# ADR 0002: Compress Docs cross-platform replacement outcome
+
+Accepted: the workflow accepts user-selected files across Agent Skills hosts without probing OS, filesystem, or storage provider. For each file, retain a verified original backup, stage the candidate beside the source, and use the host's replace operation. A successful return is success; skip post-replace readback. If replacement reports an error, report the source state as unknown, retain and report the backup, and do not roll back. The workflow makes no universal filesystem transaction or restoration guarantee, and files in a batch remain independent: one failure does not undo another file's successful replacement.
