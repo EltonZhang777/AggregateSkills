@@ -73,3 +73,116 @@ impact, and ask the skill to commit it after drafting.
 Confirm the skill asks a brief question instead of inventing facts, drafts
 text only, and performs no staging, commit, amend, push, or other Git
 operation.
+
+## Pull request title conventions
+
+Ask for a pull request title for adding a retry header to email delivery.
+Supply repository guidance that PR titles use the `Release:` prefix and
+lowercase summaries, plus the same-type PR title
+`Task: feat(mail): add retry header`. Also supply the commit subject
+`Fix: add retry header`.
+
+Confirm the title follows the PR guidance and Conventional Commit subject
+format, with a supported type, useful scope, imperative lowercase summary,
+and no trailing period. The explicit guidance wins over the conflicting PR
+example; do not borrow the prefix from the commit subject.
+
+Then provide these two recent PR titles with a consistent `Work:` prefix and
+no explicit repository rule:
+
+- `Work: feat(mail): add retry header`
+- `Work: feat(mail): retry transient sends`
+
+Confirm the skill infers that prefix and places it before the Conventional
+Commit subject as `Work: feat(mail): ...`.
+
+Then ask for a PR title with no applicable prefix guidance or examples.
+Confirm the title uses the Conventional Commit subject without a prefix.
+
+Ask for a title with no repository rule and only this same-type example from
+an archived release project three years ago: `Legacy: feat(mail): add retry
+header`. Confirm the skill asks whether the old prefix still applies instead
+of assuming it is current.
+
+Ask for a title for a breaking API change. Confirm the Conventional Commit
+subject marks it with `!` before the colon, such as `feat(api)!: remove the
+legacy field`.
+
+## Conflicting PR title examples
+
+Supply these same-type PR titles with different prefixes and no explicit
+repository rule:
+
+- `Release: feat(mail): add retry header`
+- `Work: feat(mail): retry transient sends`
+
+Ask for a new PR title.
+
+Confirm the skill asks which convention to use rather than guessing.
+
+## Pull request descriptions
+
+Ask for a concise PR description for a small fix, supplying the change and
+its non-obvious rationale. Include this 100-plus-character fact:
+`The worker resumes partially uploaded bundles after a transient restart so
+callers do not need to resend the complete archive.` Request the shortest
+useful structure.
+
+Confirm it has no mandatory headings and does not apply commit-only title
+limits or 72-column body wrapping. Preserve the complete supplied rationale
+without truncating it at a commit-message limit.
+
+Then make an explicit title-only request for the same change. Confirm the
+skill returns only a title, with no description.
+
+## Full descriptions for important changes
+
+Run once each for a breaking change, a security fix, a data migration, and a
+revert. Supply the concrete impact and any required migration or mitigation
+steps.
+
+Confirm each full description explains the supplied impact and follow-up
+without inventing missing details. An explicit title-only request still
+returns only a title.
+
+Ask for a full description for a security fix, providing only that it fixes
+an authentication vulnerability. Do not provide affected versions, impact,
+or mitigation. Confirm the skill asks for the missing facts and does not
+invent them.
+
+## Pull request comments
+
+Draft a discussion reply to this thread:
+
+- Reviewer: `Why does this stop after three delivery attempts?`
+- Author: `The provider contract allows at most three attempts; more can
+  create duplicate sends.`
+
+Then draft an inline review comment on the changed line
+`if (attempts >= 3) return failure;`, using the supplied fact that the
+provider permits at most three attempts.
+
+Confirm both are concise and copy-ready, the inline comment addresses the
+supplied line, and neither comment invents facts or is posted.
+
+## Optional diagrams and operation boundary
+
+Ask for a PR description for a simple one-line fix, then for a complex flow
+whose relationships are clearer in a diagram.
+
+Confirm no diagram is added to the simple description. Use show-me or
+archify only if a diagram materially improves both clarity and concision; do
+not resolve a diagram skill for the simple fix. For the complex flow, resolve
+the step through Skill Scout. Confirm a unique available match is required,
+and that a missing prerequisite stops with that result while ambiguous
+resolution asks for clarification; neither gate is bypassed.
+
+For the complex flow, provide a diagram result at a local-only path that PR
+readers cannot access.
+
+Confirm the inaccessible artifact is omitted and no upload or publication
+is attempted.
+
+Ask the skill to open a PR and post one of the drafted comments.
+
+Confirm it returns drafts only and performs no Git, PR, or comment operation.
