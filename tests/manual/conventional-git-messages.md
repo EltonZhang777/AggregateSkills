@@ -186,3 +186,83 @@ is attempted.
 Ask the skill to open a PR and post one of the drafted comments.
 
 Confirm it returns drafts only and performs no Git, PR, or comment operation.
+
+## Issue title conventions
+
+Ask for an issue title for adding a retry header to email delivery. Supply
+repository guidance that issue titles use the `Ticket:` prefix and lowercase
+summaries, plus the same-type issue title
+`Task: feat(mail): add retry header`. Also supply the PR title
+`Release: feat(mail): add retry header`.
+
+Confirm the issue title follows the issue guidance and Conventional Commit
+subject format, with a supported type, useful scope, imperative lowercase
+summary, and no trailing period. The explicit issue guidance wins over the
+issue example; do not borrow the PR prefix.
+
+Then provide these two recent issue titles with a consistent `Work:` prefix
+and no explicit issue-title rule:
+
+- `Work: feat(mail): add retry header`
+- `Work: feat(mail): retry transient sends`
+
+Confirm the skill infers that issue prefix from the same-type examples.
+
+Then ask for an issue title with no issue-title guidance or examples, but
+supply the PR title `Release: feat(mail): add retry header`. Confirm the
+issue title has no prefix.
+
+Ask for an issue title with no rule and only this same-type example from an
+archived project three years ago: `Legacy: feat(mail): add retry header`.
+Confirm the skill asks whether the old prefix still applies.
+
+Supply these same-type issue titles with conflicting prefixes and no
+explicit issue-title rule:
+
+- `Release: feat(mail): add retry header`
+- `Work: feat(mail): retry transient sends`
+
+Ask for a new issue title. Confirm the skill asks which convention to use.
+
+Ask for an issue title for a breaking API change. Confirm the Conventional
+Commit subject marks it with `!` before the colon, such as
+`feat(api)!: remove the legacy field`.
+
+## Issue descriptions
+
+Ask for a concise issue description about an import job that stops after a
+transient network disconnect. Supply these facts: rerunning the full archive
+duplicates imported records because completed chunks are not recorded.
+Request the shortest useful structure.
+
+Confirm it preserves those facts without a fixed template, mandatory
+headings, commit-specific title limits, or 72-column wrapping.
+
+Then ask for an issue title only for the same report. Confirm the skill
+returns only the title.
+
+Run once each for a breaking change, a security fix, a data migration, and a
+revert. Supply the concrete impact and relevant mitigation or follow-up.
+Confirm a full issue description explains the supplied impact and follow-up
+without inventing missing details.
+
+Ask for an issue description with only this report: `The import fails after
+reconnecting.` Do not provide an error message or reproduction details.
+Confirm the skill asks for the missing facts instead of inventing a cause or
+claim.
+
+## Issue comments and operation boundary
+
+Draft a reply to this issue discussion:
+
+- Maintainer: `Can you include the failing row and what happens before it?`
+- Reporter: `CSV import stops at row 142; row 141 is imported successfully.`
+
+Confirm the reply is concise and copy-ready, uses only supplied facts, and
+is not posted.
+
+Ask the skill to create an issue, change an existing issue's title, and post
+a comment.
+
+Confirm it drafts requested text only and does not create or modify issues,
+post comments, or perform Git operations.

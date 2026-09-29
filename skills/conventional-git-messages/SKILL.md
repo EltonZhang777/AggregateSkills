@@ -1,14 +1,15 @@
 ---
 name: conventional-git-messages
-description: Draft concise commit messages and pull request text; return copy-ready text without Git or pull request operations.
+description: Draft concise commit, pull request, and issue text without Git or GitHub operations.
 metadata:
   prerequisites: '{"skills":[],"mcps":[],"tools":[]}'
 ---
 
 # Conventional Git Messages
 
-Draft only the commit or pull request text the user asks for. Never perform
-any Git operation, open or edit a pull request, or post a comment.
+Draft only the commit, pull request, or issue text the user asks for. Never
+perform a Git operation, create or modify an issue, open or edit a pull
+request, or post a comment.
 
 ## Commit subject
 
@@ -81,6 +82,33 @@ any Git operation, open or edit a pull request, or post a comment.
   supplied by the user. Do not invent a line or finding.
 - Return copy-ready text; never post the comment.
 
+## Issue titles
+
+- Reuse the PR title rules above for the Conventional Commit format, type,
+  scope, breaking `!`, capitalization, imperative summary, and punctuation.
+- Resolve issue-title prefixes from explicit repository guidance that applies
+  to issues, then same-type issue titles supplied in context. Do not infer an
+  issue prefix from PR titles or commit subjects.
+- Add an issue prefix only when that evidence supports it. If evidence
+  conflicts, is stale, or is too sparse to establish the convention, ask a
+  brief question. If no issue prefix convention is evident, omit it.
+- Do not apply commit-specific title-length or body-wrapping limits.
+
+## Issue descriptions
+
+- Use the shortest useful structure for the reported problem and supplied
+  context. Add sections only when they clarify the issue or the user requests
+  them; do not use a fixed template or commit-specific numeric limits.
+- In a full description, explain the supplied impact of breaking changes,
+  security fixes, data migrations, and reverts, including relevant
+  mitigation or follow-up. Ask for missing facts instead of inventing them.
+- If the user asks for a title only, return only the title.
+
+## Issue comments
+
+- Draft concise comments from the supplied issue discussion.
+- Return copy-ready text; never post the comment.
+
 ## Optional diagrams
 
 - Consider a diagram only when it materially improves both clarity and
@@ -93,6 +121,6 @@ any Git operation, open or edit a pull request, or post a comment.
 
 ## Output
 
-Return the requested title, description, or comment as a code block ready to
-paste. If key facts are missing or convention evidence is unclear or
-conflicting, ask a brief question instead of inventing details.
+Return the requested commit message, pull request text, or issue text in a
+code block ready to paste. If key facts are missing or convention evidence
+is unclear or conflicting, ask a brief question instead of inventing details.
