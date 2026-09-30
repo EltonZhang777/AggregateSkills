@@ -4,7 +4,7 @@
 
 本指南用于端到端检查 `/pr-and-merge` 的单 PR 与多 PR 批次创建、复用、检查和合并审批流程。标准手测使用隔离的 GitHub 仓库；本次 #42 按用户指示在当前仓库执行，所有测试 PR 只允许以 `codex/issue-40-pr-and-merge` 为目标分支，不能使用默认分支。详细场景及预期结果见 [`tests/manual/pr-and-merge.md`](../../tests/manual/pr-and-merge.md)。
 
-本次 #42 的多 PR 仓库内手测尚未完成。执行后记录所有 PR、排序、阻断项、审批更新和未覆盖条件。
+本次 #42 手测的批次排序和脏项隔离场景已通过；堆叠 PR 的上游合并、重定向及再次审批仍待用户批准后验证。
 
 ## 准备
 
@@ -53,3 +53,13 @@ PR 链接（如有）：
 结果：通过 / 失败 / 未运行
 证据或备注：
 ```
+
+## 本次 #42 执行记录（2026-09-30）
+
+仓库：EltonZhang777/AggregateSkills（用户授权的同仓库手测，非隔离）。目标分支：codex/issue-40-pr-and-merge。
+
+首批输入顺序为 C（PR #58，堆叠在 A）、B（PR #56，独立）、A（PR #57，独立）；实际准备顺序为 #56 → #57 → #58，符合依赖优先及独立项输入顺序。PR #56：head 54d8e3d，base bbed05d；PR #57：head f307968，base bbed05d；PR #58：head c937391，base f307968。三者均为 OPEN 且 MERGEABLE。
+
+失败隔离批次：D（codex/issue-42-dirty-isolation）含未提交文件；E（codex/issue-42-dependent-isolation）干净并显式依赖 D；F 是独立的已有 PR #56。结果：D 因脏工作树阻断，E 因依赖阻断；F 继续并复用 #56。D、E 均未推送，也未创建 PR。
+
+目标分支未保护、没有活动 ruleset，也没有报告状态检查；仓库允许 merge commit、squash 和 rebase，本次按用户既定的 merge commit 方式。上游合并后的 PR #58 重定向和续批审批仍待执行。
