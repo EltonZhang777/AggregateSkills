@@ -169,6 +169,15 @@ a method from the available options alone. Merge with exactly one of
 `gh pr merge NUMBER --squash`, or `gh pr merge NUMBER --rebase`, as the policy
 requires. Do not use auto-merge.
 
+After the command succeeds, verify the PR result:
+
+```sh
+gh pr view NUMBER --repo OWNER/REPO --json state,mergedAt,url
+```
+
+Confirm `state` is `MERGED` and `mergedAt` is set before reporting success.
+Otherwise report the observed state and stop.
+
 Use `resolving-merge-conflicts` for a conflict, but stop before its commit
 step. Run required local checks on the resolved worktree and inspect its
 status. If any changed path is outside the conflict resolution, stop. Stage
