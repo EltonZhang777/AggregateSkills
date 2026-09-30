@@ -6,7 +6,7 @@ metadata:
   prerequisites: '{"skills":[["implement","mattpocock/skills"],["tdd","mattpocock/skills"],["code-review","mattpocock/skills"],["grill-with-docs","mattpocock/skills"],["grilling","mattpocock/skills"],["domain-modeling","mattpocock/skills"],["to-spec","mattpocock/skills"],["to-tickets","mattpocock/skills"],["setup-matt-pocock-skills","mattpocock/skills"],["ponytail-review","DietrichGebert/ponytail"],["conventional-git-messages","EltonZhang777/AggregateSkills"]],"mcps":[],"tools":[]}'
 ---
 
-# `/spec-implement-loop`
+# /spec-implement-loop
 
 Run the user's root spec(s) to verified delivery in the current branch or worktree. Keep the scope to the supplied roots and stop at approval, ambiguity, security, permission, or external-state gates.
 
@@ -22,15 +22,9 @@ Required skills:
 
 `/wait-what` is optional and is not an automatic step. `/skill-creator`, `/writing-for-agents`, and `/grill-me` are authoring-time skills, not runtime dependencies.
 
-For every required skill, verify that the current skill catalog exposes it, its original `SKILL.md` is readable, and its invocation metadata is compatible. Load the original file when its step is reached. Never edit, copy, or paraphrase a dependency skill as a substitute. User-only dependencies retain their own user-confirmation gates.
+For every required skill, resolve and read its original `SKILL.md` from the active skill roots regardless of whether a skill catalog exposes it or its invocation metadata permits automatic invocation. This exception permits source reading only. Before invoking a dependency, follow its invocation metadata and preserve all user-confirmation, authorization, and clarification gates in its instructions; if direct user invocation is required, pause at that gate. Load the original file again at its workflow step when needed. Never edit, copy, or paraphrase a dependency skill as a substitute.
 
-If a dependency is missing, show the relevant installation hint and stop:
-
-```text
-npx skills@latest add mattpocock/skills --skill=<skill-name>
-npx skills@latest add DietrichGebert/ponytail --skill=ponytail-review
-npx skills@latest add EltonZhang777/AggregateSkills --skill=conventional-git-messages
-```
+If a declared source is missing or unreadable, stop and direct the user to the corresponding entry in the [prerequisite guide](../../docs/prerequisites.md). Do not install dependencies automatically.
 
 Read the original `SKILL.md` for `/setup-matt-pocock-skills`, then verify the configured issue-tracker files and vocabulary it requires. Do not run setup automatically. If setup or tracker configuration is missing or invalid, stop.
 
@@ -90,8 +84,7 @@ For each ready ticket:
 4. After acceptance checks and ticket-level review pass, create exactly one focused commit only after explicit user approval. The outer loop owns this commit boundary; treat `/implement`'s commit instruction as satisfied by this commit and never create a duplicate commit.
 5. Push only after explicit user approval. For a confirmed transient failure, choose a retry count based on the error, capped at three total attempts including the first; do not retry permanent or unsafe-to-repeat errors. Before retrying an uncertain result, reconcile the local commit and remote branch state. Never repeat a confirmed successful push, amend, or rewrite history. After retries fail, stop and report the local commit and error.
 6. Only after push succeeds, update the completed ticket and root progress, with explicit approval for each tracker/status write. Retry only transient update failures, up to three total attempts including the first; reconcile uncertain results before retrying. If retries fail, stop and report that code is pushed but status is unsynchronised; do not roll back the code.
-7. After status sync succeeds, continue with the next ticket that passes the ready guard, including newly unblocked tickets; enter final review when no non-deferred ready ticket remains.
-If a decision, user preference, permission, security concern, or scope boundary is unclear, stop and load the original `SKILL.md` for `/grill-with-docs`. A purely local, objective blocker may be recorded and skipped while independent ready tickets continue; do not bypass a user decision.
+7. After status sync succeeds, continue with the next ticket that passes the ready guard, including newly unblocked tickets; enter final review when no non-deferred ready ticket remains. If a decision, user preference, permission, security concern, or scope boundary is unclear, stop and load the original `SKILL.md` for `/grill-with-docs`. A purely local, objective blocker may be recorded and skipped while independent ready tickets continue; do not bypass a user decision.
 
 ## Final review and remediation
 

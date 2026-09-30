@@ -5,20 +5,19 @@ metadata:
   prerequisites: '{"skills":[["grill-duo","EltonZhang777/AggregateSkills"],["domain-modeling","mattpocock/skills"]],"mcps":[],"tools":[]}'
 ---
 
-# `/grill-duo-with-docs`
+# /grill-duo-with-docs
 
 Use the portable `/grill-duo` protocol with repository-aware documentation maintenance. The host remains the only user-facing agent and the only project-document writer.
 
-## Activation and dependencies
+## Activation Criteria & Objective
 
 Use this entrypoint when the user explicitly wants a grilling session that records confirmed domain terms or project decisions in project documentation. Use `/grill-duo` when no project-document maintenance is needed.
 
-Before starting, resolve the exact `/grill-duo` and `/domain-modeling` skills through an authoritative, complete skill catalog or runtime, then read their current original SKILL.md files. Use Skill Scout when available; otherwise use the host runtime's complete skill-discovery facility. Do not infer that either dependency is missing from the loaded-skills list alone, and do not vendor or silently replace either skill. If a dependency cannot be resolved, stop and tell the user how to install it:
+## Dependencies
 
-    npx skills@latest add EltonZhang777/AggregateSkills --skill=grill-duo
-    npx skills@latest add mattpocock/skills --skill=domain-modeling
+Read the original `SKILL.md` files for `/grill-duo` and `/domain-modeling` from the active skill roots regardless of their invocation metadata. This exception permits source reading only. Before invoking a dependency, follow its invocation metadata and preserve all user-confirmation, authorization, and clarification gates in its instructions; if direct user invocation is required, pause at that gate. If either source is missing or unreadable, stop and direct the user to the matching entry in the [prerequisite guide](../../docs/prerequisites.md).
 
-Follow `/grill-duo` for activation, reviewer continuity and boundaries, round IDs, frontier handling, current-request correlation, solo fallback, and final shared-understanding confirmation. Follow the current `/domain-modeling` skill and its referenced materials for glossary and decision discipline. Do not copy either skill's body into this entrypoint.
+Follow `/grill-duo` for activation, reviewer continuity and boundaries, round IDs, frontier handling, current-request correlation, solo fallback, and final shared-understanding confirmation. Follow `/domain-modeling` and its referenced materials for glossary and decision discipline. Do not copy either skill's body into this entrypoint.
 
 ## Read the repository's documentation map
 

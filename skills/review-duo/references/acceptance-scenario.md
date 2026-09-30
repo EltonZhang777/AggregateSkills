@@ -1,4 +1,4 @@
-# Review Duo manual acceptance scenario
+# /review-duo manual acceptance scenario
 
 Operator instructions only. Do not send this file to reviewers because it contains expected findings.
 
@@ -13,7 +13,7 @@ The patch has two deliberate defects: it silently accepts an unknown coupon and 
 
 ## Procedure
 
-1. Verify the resolved upstream code-review skill URI and normalized-text SHA-256, every other source SHA-256, and the code-scope patch SHA-256 and exact byte size. Normalize text sources by converting CRLF or CR line endings to LF and encoding as UTF-8. Hash and measure the frozen patch using its exact bytes. Compute the SHA-256 of the exact manifest file bytes once before dispatch.
+1. Verify the resolved upstream /code-review skill URI and normalized-text SHA-256, every other source SHA-256, and the code-scope patch SHA-256 and exact byte size. Normalize text sources by converting CRLF or CR line endings to LF and encoding as UTF-8. Hash and measure the frozen patch using its exact bytes. Compute the SHA-256 of the exact manifest file bytes once before dispatch.
 2. Start one strict review with independent Standards and Spec agents. Give both the exact patch, requirements, standard, applicable repository sources, resolved skill URI and hash, manifest bytes, and manifest digest. The orchestrator verifies the pinned hashes before dispatch. Permit read-only verification tools; prohibit writes.
 3. Collect both reports before comparing them. Confirm each echoes the manifest digest, patch SHA-256 and exact byte size, included paths, and its checked and unchecked sources and checks. Compare each report with the frozen manifest and the other report before marking the review current; a mismatch in the shared scope makes the overall status blocked. Confirm the expected findings below appear with their stated IDs and severities, and were not merged or reordered.
 4. Confirm repository tests are shown as not run with a reason. Confirm the fixture patch was not applied and no review agent wrote files.
