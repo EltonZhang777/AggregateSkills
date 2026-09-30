@@ -119,6 +119,25 @@ class ApplyCandidateTests(unittest.TestCase):
         self.assertEqual(self.source.read_bytes(), self.candidate)
         self.assertEqual(Path(result["backup_path"]).read_bytes(), self.original)
 
+    def test_one_file_failure_does_not_undo_another_file(self):
+        other = Path(self.temp_dir.name) / "other.md"
+        other_original = b"Another document with enough prose to shorten.\n"
+        other.write_bytes(other_original)
+        other_backup = Path(f"{other}.original.md")
+        other_backup.write_bytes(b"Conflicting backup.\n")
+
+        first = apply_candidate.apply_candidate(
+            self.source, self.expected_hash, self.candidate
+        )
+        second = apply_candidate.apply_candidate(
+            other, hashlib.sha256(other_original).hexdigest(), self.candidate
+        )
+
+        self.assertEqual(first["status"], "applied")
+        self.assertEqual(second["status"], "not_applied")
+        self.assertEqual(self.source.read_bytes(), self.candidate)
+        self.assertEqual(other.read_bytes(), other_original)
+
 
 if __name__ == "__main__":
     unittest.main()
