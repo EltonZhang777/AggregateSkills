@@ -1,6 +1,14 @@
 # Compress Docs manual scenarios
 
-Run the user-facing skill on each intended Agent Skills host with disposable files on an ordinary local writable filesystem. This ticket covers one explicitly named file or a user-approved list of explicitly named files; directory and pattern discovery is covered separately.
+Run the user-facing skill on each intended Agent Skills host with disposable files on an ordinary local writable filesystem. Cover explicit files plus directory, glob, and all-under-root discovery.
+
+## Bounded discovery
+
+- Give the skill a root containing documents plus a sibling/outside document. Confirm a directory selector, root-relative glob, and “all” find only eligible files under the explicit root; reject absolute or `..` selectors. “All” must not expand to the workspace.
+- Add nested dot-prefixed and host-hidden directories, a symlink directory/file, and `.original.md` backups. Confirm discovery skips them without reading contents; duplicate matches appear only once.
+- While list approval is pending, redirect the selected root or one of its parent directories through a symlink/junction to an outside directory. Confirm the root/target recheck skips the changed target before reading or sending content.
+- Confirm discovery reads only paths and metadata before approval. It lists candidates in relative-path order with path-level skip reasons, and a refusal of the final list approval leaves all candidate contents unread and unchanged, even when one file was found.
+- With root depth 0, create a path reaching depth 5 and confirm the scan pauses before that subtree. Add at least 50 path-level eligible files and confirm it pauses immediately after the 50th. Declining continuation stops the incomplete selection without reading or compressing files; approving continuation resumes discovery only, pauses again at later 50-file boundaries, and still requires a separate final list approval. Where useful, confirm it suggests a narrower selector.
 
 ## Selection and compression
 
