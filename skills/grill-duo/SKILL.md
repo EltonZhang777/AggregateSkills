@@ -5,19 +5,19 @@ metadata:
   prerequisites: '{"skills":[["grilling","mattpocock/skills"]],"mcps":[],"tools":[]}'
 ---
 
-# `/grill-duo`
+# /grill-duo
 
 Run a portable two-agent grilling session. The host interviews the user; one independent reviewer assesses each current round. The host remains the user's only conversational counterpart.
 
-## Activation and dependency
+## Activation Criteria & Objective
 
 Use this entrypoint only when the user explicitly requests independent two-agent review while clarifying or pressure-testing a plan, requirement, design, or decision. Use `/grill-duo-with-docs` when the session needs to maintain confirmed project documents. Do not activate for ordinary solo grilling, group discussion, or unrelated implementation work.
 
-At activation, resolve the exact `/grilling` skill through an authoritative, complete skill catalog or runtime and read its original SKILL.md. Use Skill Scout when available; otherwise use the host runtime's complete skill-discovery facility. Do not infer that the skill is missing from the loaded-skills list alone, and do not vendor or silently replace it. If no authoritative resolver can find it, stop and tell the user it cannot be verified and can be installed with:
+## Dependencies
 
-    npx skills@latest add mattpocock/skills --skill=grilling
+Read the original `/grilling` `SKILL.md` from the active skill roots regardless of its invocation metadata. This exception permits source reading only. Before invoking the dependency, follow its invocation metadata and preserve all user-confirmation, authorization, and clarification gates in its instructions; if direct user invocation is required, pause at that gate. If the source is missing or unreadable, stop and direct the user to `/grilling` in the [prerequisite guide](../../docs/prerequisites.md).
 
-This missing-dependency stop is different from an unavailable reviewer: only the latter uses solo mode.
+An unavailable reviewer is different from a missing dependency: only reviewer unavailability uses solo mode.
 
 ## Roles and continuity
 
