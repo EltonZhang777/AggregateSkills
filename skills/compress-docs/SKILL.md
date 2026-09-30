@@ -51,7 +51,7 @@ If validation fails, send that file's same agent a precise repair request for on
 
 ## Apply the candidate
 
-For each valid candidate, run `scripts/apply_candidate.py` with that source path and its original snapshot SHA-256 as separate arguments, and send candidate bytes on standard input. Use the host's Python 3 standard-library runtime and pass arguments without shell-string interpolation. If the runtime is unavailable, report that file as not applied and continue other files.
+For each valid candidate, run `scripts/apply_candidate.py` with that source path and its original snapshot SHA-256 as separate arguments, and send candidate bytes on standard input. For a discovered file, also pass the recorded resolved root with `--approved-root`; the script rechecks containment before backup/staging and immediately before replacement. Omit this option for explicitly supplied paths. Use the host's Python 3 standard-library runtime and pass arguments without shell-string interpolation. If the runtime is unavailable, report that file as not applied and continue other files.
 
 The script verifies the original snapshot, creates or verifies the adjacent backup formed by appending `.original.md` to the full source filename, stages the candidate in the source directory, rechecks the source snapshot, and calls the host's replace operation. It preserves the available file mode. It does not probe storage semantics, read the source after replacement, or roll back.
 

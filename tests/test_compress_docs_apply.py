@@ -25,9 +25,9 @@ class ApplyCandidateTests(unittest.TestCase):
         self.source.write_bytes(self.original)
         self.expected_hash = hashlib.sha256(self.original).hexdigest()
 
-    def apply_candidate(self):
+    def apply_candidate(self, approved_root=None):
         return apply_candidate.apply_candidate(
-            self.source, self.expected_hash, self.candidate
+            self.source, self.expected_hash, self.candidate, approved_root=approved_root
         )
 
     def test_success_keeps_exact_backup_and_replaces_source(self):
@@ -137,6 +137,34 @@ class ApplyCandidateTests(unittest.TestCase):
         self.assertEqual(second["status"], "not_applied")
         self.assertEqual(self.source.read_bytes(), self.candidate)
         self.assertEqual(other.read_bytes(), other_original)
+
+    def test_source_outside_approved_root_is_rejected_before_backup(self):
+        approved_root = Path(self.temp_dir.name) / "approved"
+        approved_root.mkdir()
+
+        result = self.apply_candidate(approved_root=approved_root)
+
+        self.assertEqual(result["status"], "not_applied")
+        self.assertEqual(result["reason"], "outside_approved_root")
+        self.assertEqual(self.source.read_bytes(), self.original)
+        self.assertFalse(Path(f"{self.source}.original.md").exists())
+
+    def test_root_containment_is_rechecked_before_replace(self):
+        approved_root = self.temp_dir.name
+        with patch.object(
+            apply_candidate,
+            "_within_approved_root",
+            side_effect=[True, True, True, True, True, False, False],
+        ), patch.object(apply_candidate.os, "replace") as replace, patch.object(
+            Path, "unlink"
+        ) as unlink:
+            result = self.apply_candidate(approved_root=approved_root)
+
+        self.assertEqual(result["status"], "not_applied")
+        self.assertEqual(result["reason"], "outside_approved_root")
+        self.assertEqual(self.source.read_bytes(), self.original)
+        replace.assert_not_called()
+        unlink.assert_not_called()
 
 
 if __name__ == "__main__":
