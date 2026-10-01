@@ -84,6 +84,16 @@ Approve and merge branch A. Confirm branch C is retargeted from A to A's former 
 
 In a separate batch, supply a dirty branch D, branch E explicitly stacked on D, and a clean independent branch F. Confirm D and dependent E are blocked without publishing them, while F continues through its own prechecks and PR preparation. Repeat with a required check failing for one entry if the test repository can configure that check; confirm only that entry and its dependents stop.
 
+## Complete batch outcome summary
+
+In a disposable repository, supply five entries in one batch: A's repository, source branch, and resolved base exactly match an already merged PR, and A's current source OID matches that PR's head OID; B and E are independent open PRs with passing checks; C has a failing required check; and D's exact existing PR targets C. At the initial review pause, confirm A is completed, B and E are pending, and C and D are blocked. Approve and merge B only, then inspect the final stop summary: A and B are completed, E is pending, and C and D remain blocked.
+
+At every summary boundary, confirm every source appears exactly once with its repository and branch/worktree, and its PR link when one exists. Give B and E their own waiting reason and separate head/base names and OIDs at the initial pause; do not combine snapshots. In the final summary, verify E remains pending with its own current head/base names and OIDs. Give C its failed-check reason and D the unmet prerequisite C. Repeat with C's required check pending and then unknown/unavailable; in both runs, C and D must be blocked with the exact check state or uncertainty reported. No unapproved PR is merged.
+
+Also test a source with one matching merged PR and one matching open PR for the same repository, source branch, and base. Reuse the open PR, classify the entry as pending with its own approval snapshot, and do not mark it completed based on the merged history.
+
+Advance a source branch after its matching PR is merged. On the next batch, verify the old PR's `headRefOid` differs from the recorded source OID, report both, and classify the entry as `blocked` until the user decides whether to prepare a new PR; do not mark the newer source `completed`.
+
 ## Other hosting platform
 
 Invoke the skill for a repository hosted outside GitHub.
