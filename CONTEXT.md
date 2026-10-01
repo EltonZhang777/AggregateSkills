@@ -1,8 +1,10 @@
-# Agent Skill Review
+# Agent Skill Workflows
 
-This context defines the shared language for code review skills and their review reports.
+This context defines shared language for code review and document-compression workflows.
 
 ## Language
+
+### Code review
 
 **双代理代码评审**:
 两位代理针对同一评审范围，分别从规范与质量、需求符合度两个审阅轴独立评估，并分别报告结论。
@@ -19,3 +21,10 @@ _Avoid_: 总评（会掩盖两个视角之间的差异）
 **Finding**:
 一项有具体证据和实际影响支撑的评审问题，并保留其所属审阅轴。
 _Avoid_: 观点、偏好
+
+### Document compression
+
+**替换结果不确定**:
+源文档替换操作报告错误，无法确认源路径当前保留原文还是已采用压缩候选。
+_Avoid_: 操作失败（容易被理解为源文件未改变）
+
