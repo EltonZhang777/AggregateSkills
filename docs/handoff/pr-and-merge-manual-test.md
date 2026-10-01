@@ -4,7 +4,7 @@
 
 本指南用于端到端检查 `/pr-and-merge` 的单 PR 与多 PR 批次创建、复用、检查和合并审批流程。标准手测使用隔离的 GitHub 仓库；本次 #42 按用户指示在当前仓库执行，所有测试 PR 只允许以 `codex/issue-40-pr-and-merge` 为目标分支，不能使用默认分支。详细场景及预期结果见 [`tests/manual/pr-and-merge.md`](../../tests/manual/pr-and-merge.md)。
 
-本次 #42 手测的批次排序和脏项隔离场景已通过；堆叠 PR 的上游合并、重定向及再次审批仍待用户批准后验证。
+本次 #42 手测已通过批次排序、脏项隔离、堆叠 PR 重定向及再次审批：PR #57 合并后，PR #58 重定向到 #57 原目标分支，重新检查差异、检查状态和可合并性，并在再次批准后完成合并。该测试使用同一仓库，未使用隔离仓库。Issue #40 于 2026-10-01 续测：失败门禁与实时门禁翻转已验证；隔离仓库覆盖按用户指示跳过；周期依赖场景作规则推演；冲突修复已提交并推送验证，PR #62 未合并。
 
 ## 准备
 
@@ -62,4 +62,10 @@ PR 链接（如有）：
 
 失败隔离批次：D（codex/issue-42-dirty-isolation）含未提交文件；E（codex/issue-42-dependent-isolation）干净并显式依赖 D；F 是独立的已有 PR #56。结果：D 因脏工作树阻断，E 因依赖阻断；F 继续并复用 #56。D、E 均未推送，也未创建 PR。
 
-目标分支未保护、没有活动 ruleset，也没有报告状态检查；仓库允许 merge commit、squash 和 rebase，本次按用户既定的 merge commit 方式。上游合并后的 PR #58 重定向和续批审批仍待执行。
+目标分支未保护、没有活动 ruleset，也没有报告状态检查；仓库允许 merge commit、squash 和 rebase，本次按用户既定的 merge commit 方式。PR #57 合并后，PR #58 从 `codex/issue-42-multi-pr-batches` 重定向到 `codex/issue-40-pr-and-merge`，复核差异、检查状态和可合并性，并在用户再次批准后合并；PR #58 的合并提交为 `ab74658`。
+
+## 本次续测记录（2026-10-01）
+
+Issue #40 仍为 OPEN。隔离仓库覆盖按用户指示跳过。宿主 GitHub CLI 登录有效；普通沙箱命令因隔离的 keyring/代理配置失败，后续通过宿主命令完成 `gh` 操作。
+
+本次在 `codex/issue-40-pr-and-merge` 上创建临时规则集 24292288，仅要求状态 `issue-40-manual-gate`，并创建三个以该分支为目标的临时 PR。#60 的失败状态使 PR 显示 BLOCKED；#61 初始为 CLEAN/MERGEABLE，将状态翻转为 failure 后显示 BLOCKED，恢复 success 后重新为 CLEAN/MERGEABLE。周期依赖规则推演将 #60 ↔ #61 判为互相阻塞，等待用户澄清，不改 base、不合并。#62 在本地合入目标分支时复现单行冲突，按目标分支描述解决，并以 merge commit `ca97ed6` 推送；必需状态通过，PR 最终为 CLEAN/MERGEABLE 且与 base 无文件差异，随后关闭但未合并。Issue #63 已作为 #40 的 `ready-for-agent` 子 issue 发布，跟踪 P1 批次结果汇总缺口。清理已完成：PR #60–#62 均关闭未合并；远端/本地临时分支、三个临时工作树及规则集 24292288 已删除。
