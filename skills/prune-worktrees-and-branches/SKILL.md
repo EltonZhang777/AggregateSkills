@@ -5,7 +5,7 @@ metadata:
   prerequisites: '{"skills":[],"mcps":[],"tools":[]}'
 ---
 
-# Prune worktrees and branches
+# /prune-worktrees-and-branches
 
 Run this skill only for a cleanup request. The preview is the required first phase of cleanup. Do not use it as a general inventory or status-reporting mode.
 

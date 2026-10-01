@@ -1,9 +1,6 @@
-# `pr-and-merge` manual scenarios
+# /pr-and-merge manual scenarios
 
-Run these through the user-visible skill invocation in a disposable GitHub
-repository. Use one supplied branch or worktree per invocation. Record the
-repository, source branch, target branch, PR link, required checks, and every
-approval boundary. Do not use a production repository or branch.
+Run these through the user-visible `/pr-and-merge` skill invocation in a disposable GitHub repository unless the user explicitly authorizes a same-repository test. For issue #42, the user authorized this repository; use only `codex/issue-40-pr-and-merge` as the target. Use one or more supplied branches or worktrees per invocation. Record the repository, source branches, target branches, PR links, required checks, dependency order, and each approval boundary. Do not use a production repository or important branch.
 
 ## Clean single-branch PR
 
@@ -14,7 +11,7 @@ pass. Ask the skill to prepare a PR for that branch without naming a target.
 Confirm the skill verifies the exact repository and branch, reads the repo
 instructions, selects the repository default branch, checks the required
 status, and creates one PR with that head and base. The title and body follow
-the repository evidence and `conventional-git-messages` rules. It returns
+the repository evidence and `/conventional-git-messages` rules. It returns
 the PR link, diff, and required-check status, then pauses without merging.
 Repeat with a second clean branch and an explicit non-default target; confirm
 it uses the requested base.
@@ -29,7 +26,7 @@ naming a target.
 Confirm it pushes only that branch normally, refreshes the PR head, diff, and
 checks, preserves the existing base, reuses the exact open PR, and updates
 only inaccurate PR text using repository evidence and
-`conventional-git-messages`. Repeat with an explicit target that conflicts
+`/conventional-git-messages`. Repeat with an explicit target that conflicts
 with the existing PR; confirm it reports the conflict and asks before opening
 another PR. A closed PR must also be reported before another is opened.
 
@@ -72,12 +69,20 @@ merging.
 Create a branch that conflicts with its target. Prepare its PR, then approve
 that exact PR for merging.
 
-Confirm the skill uses `resolving-merge-conflicts`, runs the required checks,
+Confirm the skill uses `/resolving-merge-conflicts`, runs the required checks,
 and presents the resolved diff and results. It must pause for a second
 explicit approval covering the conflict-fix commit, its push, and that PR's
 merge. After the approved push, confirm it checks the PR's required CI gates
 again and that the published diff matches the approved resolution before
 merging. Confirm any later head or base OID change requires renewed approval.
+
+## Multi-PR batch: ordering, stacked retarget, and failure isolation
+
+Prepare three clean worktrees in one test repository: branch A and branch B independently target the same base, and branch C is explicitly stacked on branch A. Supply them in the order C, B, A in one /pr-and-merge invocation. Confirm the workflow processes B, then A, then C: the dependency requires A before C, while the input order puts independent B before A. Confirm it creates or reuses one exact PR per eligible source, then returns separate review snapshots and pauses before merging.
+
+Approve and merge branch A. Confirm branch C is retargeted from A to A's former base, then its head and base OIDs, diff, mergeability, and required checks are refreshed. If retargeting changes either OID, materially changes the diff, or invalidates approval, confirm the workflow asks for renewed approval before merging C. Branch B remains independent and can proceed only with its own approval and passing gates.
+
+In a separate batch, supply a dirty branch D, branch E explicitly stacked on D, and a clean independent branch F. Confirm D and dependent E are blocked without publishing them, while F continues through its own prechecks and PR preparation. Repeat with a required check failing for one entry if the test repository can configure that check; confirm only that entry and its dependents stop.
 
 ## Other hosting platform
 

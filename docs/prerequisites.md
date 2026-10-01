@@ -35,7 +35,7 @@ None currently.
 
 ## Runtime checks
 
-Use Skill Scout to check runtime prerequisites. If it reports a missing skill, tool, or local catalog, stop and follow the matching source and install instructions above. This guide does not inspect your environment, download, install, or index dependencies.
+Use `/skill-scout` to check runtime prerequisites. If it reports a missing skill, tool, or local catalog, stop and follow the matching source and install instructions above. This guide does not inspect your environment, download, install, or index dependencies.
 
 ## Keep this guide current
 
