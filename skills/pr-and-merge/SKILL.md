@@ -1,6 +1,6 @@
 ---
 name: pr-and-merge
-description: Prepare GitHub pull requests from one supplied branch or worktree, then merge only after explicit per-PR approval.
+description: Prepare GitHub pull requests from selected branches, merging after review.
 metadata:
   prerequisites: '{"skills":[["conventional-git-messages","EltonZhang777/AggregateSkills"],["resolving-merge-conflicts","mattpocock/skills"]],"mcps":[],"tools":[["GitHub CLI (gh)","https://cli.github.com/","Install from https://cli.github.com/","Authenticate with `gh auth login`"]]}'
 ---
