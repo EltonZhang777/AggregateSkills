@@ -1,23 +1,23 @@
 ---
 name: review-duo
-description: Run code-review in opt-in strict mode with one fixed scope, independent review axes, and evidence-based findings.
+description: Run `/code-review` in opt-in strict mode with one fixed scope, independent review axes, and evidence-based findings.
 metadata:
   prerequisites: '{"skills":[["code-review","mattpocock/skills"]],"mcps":[],"tools":[]}'
 ---
 
-# Review Duo
+# /review-duo
 
-Use this skill only when the user explicitly requests `review-duo` or strict `code-review`. It adds a strict contract to the existing `code-review` workflow; it is not a second review implementation.
+Use this skill only when the user explicitly requests `/review-duo` or strict `/code-review`. It adds a strict contract to the existing `/code-review` workflow; it is not a second review implementation.
 
 ## Resolve and run the upstream skill
 
-Resolve the current `code-review` skill through the host's native skill resolver at runtime, then follow that skill once. If it is unavailable, stop and tell the user to install it with `npx skills@latest add mattpocock/skills --skill=code-review`. Never copy a fallback body or continue with a locally vendored version. Record the resolver's stable source URI and SHA-256 of its LF-normalized UTF-8 text in the frozen manifest; do not copy or vendor its body.
+Resolve and read the original `/code-review` `SKILL.md` from the active skill roots regardless of its invocation metadata; reading is read-only and does not invoke it. Before invoking `/code-review`, follow its invocation metadata and preserve its user-confirmation, authorization, and clarification gates. If direct user invocation is required, pause at that gate. Preserve its other stated requirements when applying the skill. If the source is missing or unreadable, stop and direct the user to `/code-review` in the [prerequisite guide](../../docs/prerequisites.md). Never copy a fallback body or continue with a locally vendored version. Record the resolved source URI and SHA-256 of its LF-normalized UTF-8 text in the frozen manifest; do not copy or vendor its body.
 
-Keep the upstream workflow and its two-agent topology. Pass the strict scope and axis instructions below to those two agents in that one run. Do not start another review pair or nest a second code-review run.
+Keep the `/code-review` workflow and its two-agent topology. Pass the strict scope and axis instructions below to those two agents in that one run. Do not start another review pair or nest a second `/code-review` run.
 
 ## Freeze the review inputs
 
-Use upstream `code-review`'s fixed-point flow for Git reviews. For a supplied patch or uncommitted work, replace the moving-ref input with one immutable patch snapshot and pass that exact diff to the same two agents. Give both agents the same pinned inputs:
+Use `/code-review`'s fixed-point flow for Git reviews. For a supplied patch or uncommitted work, replace the moving-ref input with one immutable patch snapshot and pass that exact diff to the same two agents. Give both agents the same pinned inputs:
 
 - For Git reviews, resolve and record the full base, merge-base, and head commit SHAs once. Capture one patch snapshot from that immutable range, and record its SHA-256, exact byte size, and included paths.
 - For a supplied patch or uncommitted work, capture one content-addressed patch snapshot, including the intended staged, unstaged, and new files. Record its SHA-256, exact byte size, and included paths. Pass its exact bytes or immutable shared path and hash instead of manufacturing a Git diff command or commit list. Both agents must read that exact snapshot; never substitute separate live-workspace reads.
@@ -37,7 +37,7 @@ Before review, if the host cannot start two independent agents or pass identical
 
 ## Independent review axes
 
-Start the upstream workflow's two agents in parallel, with no cross-agent discussion:
+Start the `/code-review` workflow's two agents in parallel, with no cross-agent discussion:
 
 - **Standards and Quality** checks repository rules, correctness, error handling, security, concurrency, retries, consistency, APIs, databases, migrations, lifecycle, important test gaps, and material maintenance cost. It does not decide whether the change satisfies product requirements.
 - **Spec Conformance** checks only missing, partial, or incorrect requirements, unmet acceptance criteria, unrequested behavior, and conflicts or gaps in requirement sources. Derive severity from the pinned requirements and their stated impact; do not inherit severity from a Standards finding about the same defect. Do not report style or preference opinions.
