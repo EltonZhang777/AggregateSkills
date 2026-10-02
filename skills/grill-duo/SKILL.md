@@ -56,7 +56,7 @@ If the runtime cannot correlate a response to its invocation, require the review
 
 Explicit abstention and completed partial coverage are normal outcomes, not invocation failures. Disclose each coverage gap and do not replace the reviewer for that reason. Runtime failure, interruption, or blank, invalid, or truncated output is abnormal; start a new invocation for the same reviewer without asking the user for approval. Give every attempt a new `invocation_id`. Keep the `review_request_id` for a retry only while the semantic request is unchanged, as defined above.
 
-While an invocation is `running`, inspect its visible history. Do not interrupt it because time has passed or history has not changed. Explicit abnormal execution evidence tied to the active invocation may trigger recovery even while its status is `running`.
+While an invocation is `running`, inspect its visible history. Do not interrupt it or trigger recovery because time has passed or history has not changed. Explicit abnormal execution evidence tied to the active invocation may trigger recovery even while its status is `running`.
 
 Use visible history for host continuity, but build the replacement request from the original bounded request and current frontier; do not include the previous invocation's analysis. If history is unavailable, reconstruct the request from host-held context.
 
