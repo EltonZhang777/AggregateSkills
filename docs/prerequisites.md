@@ -11,7 +11,8 @@ Install this repository with the general Agent Skills command in the [README](..
 | `/conventional-git-messages` | [EltonZhang777/AggregateSkills](https://github.com/EltonZhang777/AggregateSkills) | npx skills@latest add EltonZhang777/AggregateSkills --skill=conventional-git-messages | `/pr-and-merge`, `/spec-implement-loop` |
 | `/domain-modeling` | [mattpocock/skills](https://github.com/mattpocock/skills) | npx skills@latest add mattpocock/skills --skill=domain-modeling | `/grill-duo-with-docs`, `/requirements-to-spec-tickets`, `/spec-implement-loop` |
 | `/grill-duo` | [EltonZhang777/AggregateSkills](https://github.com/EltonZhang777/AggregateSkills) | npx skills@latest add EltonZhang777/AggregateSkills --skill=grill-duo | `/grill-duo-with-docs` |
-| `/grill-with-docs` | [mattpocock/skills](https://github.com/mattpocock/skills) | npx skills@latest add mattpocock/skills --skill=grill-with-docs | `/requirements-to-spec-tickets`, `/spec-implement-loop` |
+| `/grill-duo-with-docs` | [mattpocock/skills](https://github.com/mattpocock/skills) | npx skills@latest add mattpocock/skills --skill=grill-duo-with-docs | `/spec-implement-loop` |
+| `/grill-with-docs` | [mattpocock/skills](https://github.com/mattpocock/skills) | npx skills@latest add mattpocock/skills --skill=grill-with-docs | `/requirements-to-spec-tickets` |
 | `/grilling` | [mattpocock/skills](https://github.com/mattpocock/skills) | npx skills@latest add mattpocock/skills --skill=grilling | `/grill-duo`, `/requirements-to-spec-tickets`, `/spec-implement-loop` |
 | `/implement` | [mattpocock/skills](https://github.com/mattpocock/skills) | npx skills@latest add mattpocock/skills --skill=implement | `/spec-implement-loop` |
 | `/ponytail-review` | [DietrichGebert/ponytail](https://github.com/DietrichGebert/ponytail) | npx skills@latest add DietrichGebert/ponytail --skill=ponytail-review | `/spec-implement-loop` |
