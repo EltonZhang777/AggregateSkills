@@ -25,6 +25,8 @@ The host owns documentation context; the reviewer does not read project document
 
 Before a documentation write, the host reads the active repository's AGENTS.md, its domain-document routing rules, and the applicable glossary/context and relevant decisions. Follow repository-owned routing over generic defaults. If CONTEXT-MAP.md exists, follow it to read the relevant context's CONTEXT.md; otherwise read the root CONTEXT.md. Read relevant docs/adr/ files, plus context-specific docs/adr/ files in a multi-context repository. Also read any architecture, contract, version-decision, or other authoritative files named by repository rules before choosing a destination. If the route is unclear, stop that write and ask the user rather than inventing a file location.
 
+Before every documentation write, apply the durable-project-text language rule in the repository root AGENTS.md. Use only its normative prose; pause if mixed with no discernible dominant language, preserve untouched passages, and report any resulting language mixture. Pass this rule to /grill-duo and /domain-modeling; do not modify their external sources.
+
 ## Record only confirmed content
 
 The host may update documentation as each item is confirmed; it need not wait for the entire grilling session to finish. Before each write:

@@ -66,6 +66,8 @@ Never overwrite a conflicting backup or apply an invalid or non-shorter candidat
 
 ## Compression rules
 
+When the target is project documentation, use only the repository root AGENTS.md normative prose to choose the language for new or materially rewritten prose. If it is mixed with no discernible dominant language, pause and ask. Preserve untouched text and report any resulting language mixture. Spelling-only and formatting-only edits are exempt.
+
 - Keep every heading exactly as written and in the same order. Preserve list hierarchy, numbering, indentation, nesting, and table rows and columns.
 - Copy code blocks, indented code, inline code, and comments exactly. Do not remove or reorder code comments.
 - Preserve URLs, Markdown links, paths, commands, technical terms, proper nouns, dates, version strings, numbers, and environment variables exactly.

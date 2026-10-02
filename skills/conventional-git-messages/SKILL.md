@@ -9,6 +9,8 @@ metadata:
 
 Draft only the commit, pull request, or issue text the user asks for. Never perform a Git operation, create or modify an issue, open or edit a pull request, or post a comment.
 
+For GitHub issue and pull request titles, bodies, and comments, use only the normative language of the repository root AGENTS.md. Pause before drafting if it is mixed with no discernible dominant language. Preserve untouched text when revising, use the root language for new or materially rewritten passages, and report resulting language mixtures. Spelling-only and formatting-only edits and commit messages are excluded.
+
 ## Commit subject
 
 - Use `<type>(<scope>): <imperative summary>`; omit the scope when it adds no useful context.

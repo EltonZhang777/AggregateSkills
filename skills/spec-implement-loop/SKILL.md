@@ -76,6 +76,8 @@ Use the source-specific ready guard above. Process one ready ticket at a time, p
 
 ## Issue loop
 
+For new or materially rewritten project text, apply the language rule in the root AGENTS.md, using only its normative prose. Pause if no dominant language is discernible, preserve untouched text, and report resulting language mixtures. Pass this rule to /grill-with-docs, /domain-modeling, /to-spec, and /to-tickets whenever invoked.
+
 For each ready ticket:
 
 1. Read and follow the original `SKILL.md` for `/implement`; use its `/tdd` and `/code-review` discipline. Implement only the ticket scope and use its agreed seams.
@@ -83,7 +85,7 @@ For each ready ticket:
 3. Read the original `SKILL.md` for `/conventional-git-messages` and use its commit mode to produce the commit message. Resolve `/show-me` dynamically at this step and use its smallest useful view for this commit's user-readable impact explanation; do not auto-invoke `/wait-what`.
 4. After acceptance checks and ticket-level review pass, create exactly one focused commit only after explicit user approval. The outer loop owns this commit boundary; treat `/implement`'s commit instruction as satisfied by this commit and never create a duplicate commit.
 5. Push only after explicit user approval. For a confirmed transient failure, choose a retry count based on the error, capped at three total attempts including the first; do not retry permanent or unsafe-to-repeat errors. Before retrying an uncertain result, reconcile the local commit and remote branch state. Never repeat a confirmed successful push, amend, or rewrite history. After retries fail, stop and report the local commit and error.
-6. Only after push succeeds, update the completed ticket and root progress, with explicit approval for each tracker/status write. Retry only transient update failures, up to three total attempts including the first; reconcile uncertain results before retrying. If retries fail, stop and report that code is pushed but status is unsynchronised; do not roll back the code.
+6. Only after push succeeds, update the completed ticket and root progress, with explicit approval for each tracker/status write. Any new or materially rewritten issue text must follow the root language rule; preserve untouched text and report resulting language mixtures. Retry only transient update failures, up to three total attempts including the first; reconcile uncertain results before retrying. If retries fail, stop and report that code is pushed but status is unsynchronised; do not roll back the code.
 7. After status sync succeeds, continue with the next ticket that passes the ready guard, including newly unblocked tickets; enter final review when no non-deferred ready ticket remains. If a decision, user preference, permission, security concern, or scope boundary is unclear, stop and load the original `SKILL.md` for `/grill-with-docs`. A purely local, objective blocker may be recorded and skipped while independent ready tickets continue; do not bypass a user decision.
 
 ## Final review and remediation

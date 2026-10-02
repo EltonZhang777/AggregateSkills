@@ -60,6 +60,8 @@ Use the platform's equivalent visible child conversation or a new terminal sessi
 
 Give each child only its approved group, global workflow rules, dependency information, repository/workspace context, and known group dependencies. Keep unrelated sibling requirements and parent-history noise out of the child prompt.
 
+Include the root AGENTS.md durable-project-text language rule in every child prompt, and require the child to pass it to /grill-with-docs, /to-spec, and /to-tickets. Use only the root file's normative prose, pause if no dominant language is discernible, preserve untouched text, and report resulting language mixtures. Do not modify the external dependency skills.
+
 Child-session creation is complete only when every approved group has either a real interactive child-session identifier or an explicit manual handoff with a reported reason.
 
 ## 4. Child-session protocol
