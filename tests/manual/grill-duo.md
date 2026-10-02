@@ -1,10 +1,10 @@
 # `/grill-duo` manual scenarios
 
-Run these at the user-facing skill boundary in a host that can invoke an independent subagent. Record reviewer requests and responses separately from the host's user-visible messages.
+Run these at the user-facing skill boundary through both `/grill-duo` and `/grill-duo-with-docs`, in a host that can invoke an independent subagent. Record reviewer requests and responses separately from the host's user-visible messages.
 
 ## Complete frontier and bounded review
 
-Ask the host to pressure-test a plan with five independent decisions and a sixth decision that depends on Q1. Confirm one bounded request goes to the reviewer with the goal, confirmed decisions, options, constraints, and the full open question set: Q1-Q5 are marked answerable now and Q6 is included as deferred because it depends on Q1. The host's recommendations stay private until the review returns. The reviewer should give advice, rationale, risks, and relevant factual findings for each requested question; it must not assess Q6 yet. Confirm the host presents all five answerable questions together with stable IDs and recommendations. This checks that there is no four-question cap.
+Ask the host to pressure-test a plan with five independent decisions and a sixth decision that depends on Q1. Confirm one bounded request goes to the reviewer with the goal, confirmed decisions, options, constraints, and the full open question set: Q1-Q5 are marked answerable now and Q6 is included as deferred because it depends on Q1. The host's recommendations stay private until the review returns. The reviewer should give advice, rationale, risks, and relevant factual findings for each requested question; it must not assess Q6 yet. Confirm the host presents Q1-Q5 together in one ordinary-text message with stable IDs, meaningful options, host recommendations, and valid reviewer advice with its rationale, risks, and relevant factual findings. Q6 must not be presented as answerable while Q1 is unresolved; after Q1 is answered and the round closes, it can appear in a later frontier with the same ID. The host must not use a harness or question component and must wait for the user's batch response. This checks that there is no four-question cap.
 
 ## Partial answers, revisions, and reviewer continuity
 

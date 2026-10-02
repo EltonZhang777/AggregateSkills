@@ -53,8 +53,8 @@ If the runtime cannot correlate a response to its invocation, require the review
 
 ## Present and continue
 
-After a valid review arrives, combine it with the host's independent analysis. Present the entire current frontier to the user at once. For every question, show its stable ID, the meaningful options, the host's recommendation, and the reviewer's advice, reason, and risks. State factual findings separately from value judgments and accurately describe any disagreement.
+After a valid review arrives, combine it with the host's independent analysis. Present all currently answerable questions together in one ordinary-text message. Do not use a harness or an agent question component. For every question, show its stable ID, meaningful options, the host's recommendation, and the reviewer's advice, rationale, risks, and relevant factual findings. State factual findings separately from value judgments and accurately describe any disagreement.
 
-Wait for the user's answers. Close only answered, cancelled, or invalidated questions. Keep unanswered questions and their IDs open. After the current round closes, update confirmed decisions and constraints, recompute the tree, and review the next answerable frontier. Do not treat silence, a reviewer suggestion, or an assumption as the user's decision.
+Wait for the user's batch response. Close only answered, cancelled, or invalidated questions; keep unanswered questions and their IDs open for later rounds. After the current round closes, update confirmed decisions and constraints, recompute the tree, and review the next answerable frontier. Do not treat silence, a reviewer suggestion, or an assumption as the user's decision.
 
 When no decision remains open, summarize the goal, confirmed decisions, constraints, and material risks. Ask the user to confirm that shared understanding. Do not begin the user's underlying implementation until they confirm.
