@@ -12,7 +12,11 @@ Answer only some questions. Confirm answered items close while unanswered items 
 
 ## Reviewer boundary and fallback
 
-Run once with reviewer invocation unavailable and once with a reviewer that abstains. Confirm the host discloses that no independent review occurred and continues in solo mode. If a reviewer response adds questions, chooses for the user, addresses the user, delegates, or writes project files, confirm the host ignores that content and never presents it as review advice.
+Run once with reviewer invocation unavailable, once with explicit abstention, and once with completed partial coverage. Confirm unavailable invocation uses solo mode; abstention and partial coverage disclose the gap without replacing the reviewer. If a reviewer response adds questions, chooses for the user, addresses the user, delegates, or writes project files, confirm the host ignores that content and never presents it as review advice. When noncompliant content cannot be separated from valid feedback, confirm the host discards it and recovers rather than falling back to solo mode.
+
+## Abnormal invocation recovery and identity
+
+Exercise runtime failure, interruption, and blank, invalid, or truncated output. Confirm each triggers a new invocation for the same reviewer without user approval. While an invocation is `running`, leave visible history unchanged and let time pass; confirm neither alone triggers recovery. Then provide explicit failure evidence for that active invocation while it still reports `running`; confirm recovery starts. Keep the semantic request unchanged and verify the `review_request_id` stays the same while `invocation_id` changes. Give the replacement the original bounded request and current frontier, not the previous invocation's analysis. Repeat with unavailable history and confirm the host reconstructs that request from saved context. Return a late result from the superseded invocation and confirm it is ignored; change the reviewed scope, user goal, or a confirmed decision and confirm a new `review_request_id` is used. If the runtime cannot correlate responses, require both IDs and accept only the exact active pair.
 
 ## Final confirmation gate
 
