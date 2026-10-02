@@ -58,13 +58,13 @@ Use the Codex project/thread creation capability. Identify the current project w
 
 Use the platform's equivalent visible child conversation or a new terminal session in the same working directory. If the platform cannot create one, provide a complete handoff prompt containing the approved group, repository path, dependency-reading rule, phase order, shared-workspace rules, and completion report format. State that the child session still needs to be started by the user. Do not claim that it was created.
 
-Give each child only its approved group, global workflow rules, dependency information, repository/workspace context, and known group dependencies. Keep unrelated sibling requirements and parent-history noise out of the child prompt.
+Give each child only its approved group, global workflow rules, dependency information, repository/workspace context, and known group dependencies. Include the first-response requirement from Section 4. Keep unrelated sibling requirements and parent-history noise out of the child prompt.
 
-Child-session creation is complete only when every approved group has either a real interactive child-session identifier or an explicit manual handoff with a reported reason.
+Child-session creation is complete only when every approved group has a real interactive child-session identifier. If the platform cannot create one, provide the complete manual handoff described above and report the group as blocked; a manual handoff is not a ready child and cannot count toward successful handoff.
 
 ## 4. Child-session protocol
 
-In every child session, re-read the current dependency files immediately before proceeding:
+In every child session, re-read the current dependency files immediately before proceeding. The child's first response must briefly restate the group's outcome, scope and non-goals, and key workflow constraints, then post the first actual grilling turn. That turn must cover the complete currently answerable decision frontier, with stable IDs, options, and recommendations, and then wait for the user's response. If no decisions remain, present the shared-understanding summary and request the confirmation required by the live grilling skill. The child prompt alone does not establish readiness.
 
 1. Read and follow the `SKILL.md` for `/grill-with-docs`.
 2. After that phase reaches its own shared-understanding gate, read and follow the `SKILL.md` for `/to-spec`.
@@ -99,21 +99,29 @@ For shared ADRs, glossaries, and other public documents, use additive reconcilia
 
 Before writing a shared file, read its latest contents. If a semantic conflict appears, pause the affected child and report both conclusions, the affected specs and documents, and the decision the user must make. Do not silently choose one conclusion.
 
-## 6. Completion, failure, and resumption
+## 6. Child readiness, handoff, and resumption
 
-The parent session aggregates each child as it completes or needs attention. For every group, report:
+Before a successful handoff, the parent tracks only child creation and readiness. For each group, the parent checks observable child-session evidence:
 
-- spec name and status;
-- spec path or tracker link;
-- ADR, glossary, or other document changes;
-- ticket links and blocking edges;
-- unresolved questions or conflicts;
-- whether the group is complete.
+- the first response satisfies Section 4's restatement requirements, covers the group's essentials, and contains no substantive contradiction;
+- the first actual grilling turn satisfies Section 4's decision-frontier requirements or no-decisions confirmation path, and waits for the user's response;
+- the child is a real interactive session the user can enter and continue.
 
-Keep completed groups when another group fails or pauses. Continue unaffected groups, do not roll back published results, and retry only clear transient tool failures. Semantic conflicts and missing user decisions require user input.
+A group is ready only when it is a real interactive child and both readiness checks pass. A prompt, returned session identifier, child status, or elapsed time alone is not readiness evidence. Keep each group's state distinct. Continue unaffected groups where possible and preserve already-created sessions; do not roll back or duplicate them.
 
-On a later run, inspect existing child-session status and spec/ticket artifacts before acting. Skip completed phases, continue incomplete phases, and avoid duplicate publication. Report ambiguous state instead of guessing.
+Handle creation and startup outcomes as follows:
 
-The workflow is complete when every approved group is either complete with its spec and tickets published through the dependency process, or explicitly reported as blocked with the required user action.
+- A pending child with no first response remains pending. Ask the user whether to wait or authorize a retry; a timeout never changes it to ready.
+- Report explicit creation or child errors and wait for the user's decision before retrying.
+- Reconcile an ambiguous creation result against the known operation or child-session state before considering any retry. If the result remains uncertain, report the evidence and ask the user how to proceed. Never retry automatically or create a duplicate.
+- A manual handoff under Section 3 remains blocked and does not satisfy the interactive-child requirement.
+
+If not every group is ready, report each group's child link or missing-session state, readiness evidence, and concrete blocker. Do not claim successful handoff. Ask only for the action needed to resolve pending, failed, or uncertain states.
+
+When every approved group is ready, give one handoff summary containing, for each group, the interactive child link, evidence for both readiness checks, known blockers, and artifacts available at that point (such as spec, document, or ticket links, or that none exist yet). Send this successful handoff once. Then stop tracking or aggregating the children's later grilling, specs, tickets, shared documents, conflicts, or issue links. Each child reports its later results directly to the user.
+
+Before a successful handoff, on resumption inspect existing child-session status and first-turn evidence, reuse known session identifiers, and reconcile uncertain creation outcomes before taking action. Do not duplicate a child creation or repeat a successful handoff. After the successful handoff, this parent workflow performs no further child tracking or aggregation.
+
+The parent workflow is complete only after every approved group has a ready interactive child and the one-time handoff has been delivered. Otherwise report the per-group state and the user action required.
 
 Do not install skills, run setup, modify the dependency skills, implement code, create commits, push changes, or open pull requests as part of this workflow.
