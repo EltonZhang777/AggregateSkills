@@ -8,7 +8,7 @@ metadata:
 
 # /requirements-to-spec-tickets
 
-Use this skill only when the user wants to turn one or more codebase ideas into clarified specs and tickets. This workflow produces requirements documentation; it does not implement code.
+Use this skill only when the user wants to turn one or more codebase ideas into clarified specs and tickets. It can publish approved local repository artifacts on a task branch; it does not implement application code.
 
 ## 1. Preflight
 
@@ -36,6 +36,7 @@ Read the user's current conversation as the source of the requirements. For each
 - one independent user outcome;
 - scope and non-goals;
 - acceptance intent;
+- local repository artifacts included in the approved output, if any;
 - dependencies on other groups, if any.
 
 For several requests, make one group per independently implementable, single-target behavior. Shared implementation details do not justify merging groups. A single request is one group, but still follows the approval gate.
@@ -50,9 +51,11 @@ Create one child session per approved group. Each child must be visible to and d
 
 For independent groups, create child sessions in parallel when the host supports it. For groups with a decision dependency, process the blocker first or make the dependent child wait for the blocker's relevant conclusion. Ticket-level implementation dependencies remain the responsibility of `/to-tickets`.
 
+When multiple approved groups will change local repository files in the shared checkout, serialize their file-writing work. Do not switch branches while another group may write to that checkout. Issue-only groups can still run in parallel.
+
 ### Codex Desktop
 
-Use the Codex project/thread creation capability. Identify the current project with `list_projects`, require a unique match, and create each child with the same project and a `local` environment. Use a new task window and do not create a worktree. If the project cannot be identified uniquely, pause and ask the user to select or open it; never guess.
+Use the Codex project/thread creation capability. Identify the current project with `list_projects`, require a unique match, and create each child with the same project and a `local` environment. Use a new task window. Create a worktree only when the user explicitly requests one; otherwise use the shared checkout and follow the task-branch rules below. If the project cannot be identified uniquely, pause and ask the user to select or open it; never guess.
 
 ### CLI and other coding agents
 
@@ -84,7 +87,20 @@ The child must preserve the dependencies' own confirmation gates. In particular,
 
 The child protocol is complete only when the three dependency processes have finished in order, or the child has reported a specific blocker and stopped.
 
-## 5. Shared workspace and document writes
+## 5. Task branches and Git publication
+
+Decide from the approved group whether it changes files inside this repository:
+
+- For an issue-only group, do not create or switch branches, create worktrees, commit, or push. Keep issue creation, status changes, and sub-issue linking under their existing approval gates.
+- For a group with local repository artifacts, use one dedicated task branch for that group. Reuse the current branch only when it is dedicated to the same group and clean; otherwise create a branch from the current clean `HEAD` before the first local file write. Follow repository and active agent framework naming conventions as guidance; do not require a fixed prefix.
+- If the user explicitly requests a worktree, its branch must differ from its source branch. Configure the task remote (normally `origin`) and confirm the matching remote ref. The first normal push may create that ref; verify the exact ref after the push. Reconcile a divergent or uncertain remote state before continuing, and never force-push.
+- Approval of the complete grouping grants the main agent standing authorization for routine, focused commits and normal pushes of that group's local artifacts, including its task branch, any explicitly requested worktree, and the initial push. This authorization ends when the assigned group is complete, does not carry to unrelated groups or later tasks, and resumes after interruption only after reconciling the approved group, worktree, branch, local commits, upstream, and exact remote state.
+- This Git authorization does not cover issue creation, status changes, or sub-issue relationships. Preserve their existing approval gates, along with the seam, ticket-granularity, blocking-edge, and publication confirmations. This workflow does not open pull requests or merge branches.
+- After the group's local artifacts pass their agreed checks, create one focused commit for them and push the confirmed commit to the exact task branch. Retry only a clearly transient push failure after reconciliation, with at most three total attempts for the same ref and commit. Block uncertain outcomes; never repeat a confirmed commit or push. Preserve local artifacts, commits, remote branches, and created issues after later failures; do not delete branches, roll back, amend, or rewrite history.
+
+An issue-only group completes without any Git operation. A local-artifact group is not complete until its approved artifacts are committed and pushed and the group's existing issue-publication steps finish. Do not use a successful push as approval for any issue or status write.
+
+## 6. Shared workspace and document writes
 
 All child sessions use the current shared working directory. Keep spec-specific documents and ticket files uniquely named by feature slug. Follow existing repository conventions and the live dependency skills for document locations and tracker publication.
 
@@ -99,7 +115,7 @@ For shared ADRs, glossaries, and other public documents, use additive reconcilia
 
 Before writing a shared file, read its latest contents. If a semantic conflict appears, pause the affected child and report both conclusions, the affected specs and documents, and the decision the user must make. Do not silently choose one conclusion.
 
-## 6. Completion, failure, and resumption
+## 7. Completion, failure, and resumption
 
 The parent session aggregates each child as it completes or needs attention. For every group, report:
 
@@ -112,8 +128,8 @@ The parent session aggregates each child as it completes or needs attention. For
 
 Keep completed groups when another group fails or pauses. Continue unaffected groups, do not roll back published results, and retry only clear transient tool failures. Semantic conflicts and missing user decisions require user input.
 
-On a later run, inspect existing child-session status and spec/ticket artifacts before acting. Skip completed phases, continue incomplete phases, and avoid duplicate publication. Report ambiguous state instead of guessing.
+On a later run, inspect existing child-session status and spec/ticket artifacts before acting. For local-artifact groups, also reconcile the checkout, task branch, local commits, upstream, and exact remote ref before resuming Git authorization. Skip completed phases, continue incomplete phases, and avoid duplicate publication. Report ambiguous state instead of guessing.
 
 The workflow is complete when every approved group is either complete with its spec and tickets published through the dependency process, or explicitly reported as blocked with the required user action.
 
-Do not install skills, run setup, modify the dependency skills, implement code, create commits, push changes, or open pull requests as part of this workflow.
+Do not install skills, run setup, modify the dependency skills, implement application code, or open pull requests as part of this workflow. Apply task-scoped Git publication only to approved local repository artifacts; issue-only groups use no branch or push.
