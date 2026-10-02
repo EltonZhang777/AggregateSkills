@@ -22,9 +22,10 @@ Also ask /compress-docs to materially compress prose in a project document
 while leaving a separate Chinese passage untouched.
 
 Confirm only new or materially revised passages use English, untouched
-passages remain unchanged, and each resulting mixed-language
-artifact is reported. Confirm compressed candidates still pass all existing
-compression and protected-content checks.
+passages remain unchanged, and each resulting mixed-language artifact is
+reported. For /compress-docs, verify this both after apply and in candidates-only
+mode, where the candidate report must mention the mixture. Confirm compressed
+candidates still pass all existing compression and protected-content checks.
 
 ## Ambiguous root language
 
@@ -34,6 +35,31 @@ an issue or PR draft, and a publishing workflow.
 
 Confirm each pauses before writing or publishing and asks the user. No draft,
 file change, issue write, or PR write occurs.
+
+Also run /compress-docs in candidates-only mode on a project-document fixture
+with compressible prose. With an ambiguous root, confirm the host asks which
+language to use and waits before starting the compressor; no candidate is
+returned before the answer. After the user selects English, confirm the
+returned candidate's rewritten prose is English and the source file remains
+unchanged.
+
+Repeat with the native subagent unavailable. Confirm the host completes the
+same language preflight before asking for inline-compression approval. After
+the user selects English and approves, confirm the returned candidate uses
+English and the source remains unchanged in candidates-only mode.
+
+## Candidate language validation
+
+Set the root AGENTS.md normative prose to English. Simulate a compressor
+returning materially rewritten Chinese prose. Confirm the host requests a
+targeted repair or rejects that candidate before apply; no wrong-language
+candidate is applied.
+
+## Nested language instructions
+
+Set the root AGENTS.md normative prose to English and a nested AGENTS.md to
+Chinese. Compress project documentation under the nested directory and confirm
+the host preflight and returned candidate use English, following the root file.
 
 ## Minor edits and exclusions
 

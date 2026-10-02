@@ -38,6 +38,8 @@ After approval, handle each eligible file independently. Immediately before read
 
 ## Produce and validate a candidate
 
+For each project-document compression request, the host resolves the language using only the normative prose of the repository-root AGENTS.md before producing a candidate by agent or inline. Nested files do not override it. For requests limited to spelling-only or formatting-only edits, skip this preflight. If no dominant language is discernible, ask the user which language to use and wait. Pass the resolved language in the agent's compression rules or use it for inline work.
+
 Use the host's native subagent capability to run one isolated, non-interactive agent per document. Send each agent only that document's text and the [compression rules](#compression-rules). Agents must return only candidate text; they must not read or write files, use other tools, or ask questions. Compress independent documents in parallel where available. Do not invoke a vendor API, CLI, or platform-specific subagent command.
 
 If no native subagent is available, ask the user once whether to approve inline compression for the approved list. Continue inline only after an explicit yes; otherwise stop without changing any file.
@@ -46,8 +48,9 @@ Validate each returned candidate against its own saved snapshot; do not rely on 
 
 - Frontmatter and any BOM are unchanged byte-for-byte. Preserve the original newline style and final-newline state.
 - The body is non-empty and strictly shorter in UTF-8 bytes than the original body.
+- For project documentation, the host confirms that new or materially rewritten prose uses the language resolved for this request. Do not apply a candidate that fails this check.
 
-If validation fails, send that file's same agent a precise repair request for only the failed check; do not request a fresh compression. Allow at most two targeted repairs per file, validating each result. If the same agent cannot be continued, or the final candidate still fails, reject that file and leave its source unchanged. Continue processing other files.
+If validation fails, send that file's same agent a precise repair request for only the failed check; do not request a fresh compression. For inline candidates, make a targeted correction for only the failed check. Allow at most two targeted repairs per file, validating each result. If a repair cannot be made or the final candidate still fails, reject that file and leave its source unchanged. Continue processing other files.
 
 ## Apply the candidate
 
@@ -62,11 +65,13 @@ Report the result from the script:
 - `replacement_unknown`: report "replacement result uncertain", give the verified backup path, and do not claim the source is unchanged.
 - If the script invocation ends without a valid result after it may have started, report "replacement result uncertain"; preserve and report the backup path if known. Do not read back or roll back.
 
+For each validated project-document candidate, whether applied or candidates-only, compare it with its original snapshot. If untouched prose in another language remains alongside new or materially rewritten prose in the resolved language, include the resulting language mixture in the user's result report. The host reports it; agents return candidate text only.
+
 Never overwrite a conflicting backup or apply an invalid or non-shorter candidate. A file's rejection, failure, or unknown replacement result does not stop, roll back, or change another file. Report each file's success, rejection, failure, or unknown state and reason; include the backup path when one exists.
 
 ## Compression rules
 
-When the target is project documentation, use only the repository root AGENTS.md normative prose to choose the language for new or materially rewritten prose. If it is mixed with no discernible dominant language, pause and ask. Preserve untouched text and report any resulting language mixture. Spelling-only and formatting-only edits are exempt.
+For project documentation with new or materially rewritten prose, use the language resolved by the host for this request. Preserve untouched text. Spelling-only and formatting-only edits are exempt.
 
 - Keep every heading exactly as written and in the same order. Preserve list hierarchy, numbering, indentation, nesting, and table rows and columns.
 - Copy code blocks, indented code, inline code, and comments exactly. Do not remove or reorder code comments.
