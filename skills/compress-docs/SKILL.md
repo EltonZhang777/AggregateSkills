@@ -38,7 +38,7 @@ After approval, handle each eligible file independently. Immediately before read
 
 ## Produce and validate a candidate
 
-For each project-document compression request, the host resolves the language using only the normative prose of the repository-root AGENTS.md before producing a candidate by agent or inline. Nested files do not override it. For requests limited to spelling-only or formatting-only edits, skip this preflight. If no dominant language is discernible, ask the user which language to use and wait. Pass the resolved language in the agent's compression rules or use it for inline work.
+Compression changes source-document content only. Preserve each sentence's original language; do not translate or normalize it to the target repository's language policy. For mixed-language documents, preserve the language sentence by sentence. Base new connective wording on nearby source context; when that context is unclear, omit a cross-language connection rather than guessing.
 
 Use the host's native subagent capability to run one isolated, non-interactive agent per document. Send each agent only that document's text and the [compression rules](#compression-rules). Agents must return only candidate text; they must not read or write files, use other tools, or ask questions. Compress independent documents in parallel where available. Do not invoke a vendor API, CLI, or platform-specific subagent command.
 
@@ -48,7 +48,7 @@ Validate each returned candidate against its own saved snapshot; do not rely on 
 
 - Frontmatter and any BOM are unchanged byte-for-byte. Preserve the original newline style and final-newline state.
 - The body is non-empty and strictly shorter in UTF-8 bytes than the original body.
-- For project documentation, the host confirms that new or materially rewritten prose uses the language resolved for this request. Do not apply a candidate that fails this check.
+- For every source document, the host confirms that new or materially rewritten sentences preserve the corresponding source language. Do not apply a translated candidate. For project documents, do not normalize source prose to the target repository's language policy.
 
 If validation fails, send that file's same agent a precise repair request for only the failed check; do not request a fresh compression. For inline candidates, make a targeted correction for only the failed check. Allow at most two targeted repairs per file, validating each result. If a repair cannot be made or the final candidate still fails, reject that file and leave its source unchanged. Continue processing other files.
 
@@ -65,13 +65,13 @@ Report the result from the script:
 - `replacement_unknown`: report "replacement result uncertain", give the verified backup path, and do not claim the source is unchanged.
 - If the script invocation ends without a valid result after it may have started, report "replacement result uncertain"; preserve and report the backup path if known. Do not read back or roll back.
 
-For each validated project-document candidate, whether applied or candidates-only, compare it with its original snapshot. If untouched prose in another language remains alongside new or materially rewritten prose in the resolved language, include the resulting language mixture in the user's result report. The host reports it; agents return candidate text only.
+Use the current conversation language for chat explanations and status reports. For each compressed project document, if the candidate contains more than one language, mention the resulting language mixture in the report. Repository instructions do not set or infer the conversation language, and the report language does not change the candidate's source-language rules.
 
 Never overwrite a conflicting backup or apply an invalid or non-shorter candidate. A file's rejection, failure, or unknown replacement result does not stop, roll back, or change another file. Report each file's success, rejection, failure, or unknown state and reason; include the backup path when one exists.
 
 ## Compression rules
 
-For project documentation with new or materially rewritten prose, use the language resolved by the host for this request. Preserve untouched text. Spelling-only and formatting-only edits are exempt.
+For compressed content, preserve the source language sentence by sentence and keep untouched text. Do not use the target repository's language policy or the conversation language to translate or normalize the source. Base connective wording on nearby source context; when it is unclear, avoid adding a cross-language connection.
 
 - Keep every heading exactly as written and in the same order. Preserve list hierarchy, numbering, indentation, nesting, and table rows and columns.
 - Copy code blocks, indented code, inline code, and comments exactly. Do not remove or reorder code comments.
