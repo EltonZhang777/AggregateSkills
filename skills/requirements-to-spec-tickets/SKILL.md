@@ -63,6 +63,8 @@ Use the platform's equivalent visible child conversation or a new terminal sessi
 
 Give each child only its approved group, global workflow rules, dependency information, repository/workspace context, and known group dependencies. Include the first-response requirement from Section 4. Keep unrelated sibling requirements and parent-history noise out of the child prompt.
 
+For new or materially rewritten project text, use only the normative prose in the root `AGENTS.md` of the repository receiving that text. When source and target differ, do not use the source or installation `AGENTS.md` as a substitute; when they are the same repository, the shared root is the target rule. Include the target repository's rule in each child prompt and require the child to pass it to `/grill-with-docs`, `/to-spec`, and `/to-tickets`. If the child will write to a different repository, it must read that repository's root rule before drafting. Pause if the target rule has no discernible dominant language, preserve untouched text, and report resulting language mixtures. Do not modify the external dependency skills.
+
 Child-session creation is complete only when every approved group has a real interactive child-session identifier. If the platform cannot create one, provide the complete manual handoff described above and report the group as blocked; a manual handoff is not a ready child and cannot count toward successful handoff.
 
 ## 4. Child-session protocol

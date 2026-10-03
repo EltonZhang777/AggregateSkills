@@ -39,7 +39,7 @@ Match the exact source repository using `headRepository.nameWithOwner` and the e
 
 ## Check repository requirements
 
-Read the target repository's `AGENTS.md`, contribution guidance, pull request template, and relevant GitHub workflow files. Identify the checks those sources require for this change. Read the target branch's protection state, applicable rulesets, and the repository's enabled merge methods and documented merge policy:
+Read the target repository's root `AGENTS.md`, contribution guidance, pull request template, and relevant GitHub workflow files. Identify the checks those sources require for this change. Read the target branch's protection state, applicable rulesets, and the repository's enabled merge methods and documented merge policy:
 
 ```sh
 gh api repos/OWNER/REPO/branches/BASE --jq '{name,protected}'
@@ -56,6 +56,8 @@ gh api repos/OWNER/REPO/branches/BASE/protection/required_status_checks
 If `protected` is false, there is no classic branch protection; still inspect rulesets. Match active rulesets to the exact target branch. Treat permission, network, or incomplete-response errors as unknown; do not infer that checks or rules are absent. Unknown or unavailable check requirements block this entry and its dependents from any source-branch push or PR creation/update; continue with independent entries. Run only required local checks named by repository instructions; a failed, unknown, or unavailable required precheck blocks this entry and its dependents, while independent entries continue. Once a PR exists, compare its results with the required checks using `gh pr checks NUMBER --repo OWNER/REPO`. Pending, failed, or unknown required checks block that PR and its dependents; continue with independent approved PRs.
 
 ## Reuse or prepare the PR
+
+Before drafting new PR title or body text, pass the durable-project-text language rule from the root `AGENTS.md` of the repository that will own the PR to `/conventional-git-messages`. If the target differs from this skill's source repository, do not use the source or installation `AGENTS.md` as target policy; if both are the same repository, use its root file as the target policy. Preserve untouched existing PR text; use the target language only for new or materially revised passages and report a resulting language mixture.
 
 From the PR candidates gathered above, match the exact source repository, source branch, and resolved base. If exactly one matching open PR exists, reuse it, even when matching merged PR history also exists. If multiple matching open PRs exist, report the candidates and ask. If no matching open PR exists and exactly one matching PR has `state=MERGED`, verify it with `gh pr view NUMBER --repo OWNER/REPO --json state,mergedAt,headRepository,headRefName,headRefOid,baseRefName`; require the returned repository, head branch, and base branch to still match, plus `state=MERGED`, a non-null `mergedAt`, and `headRefOid` equal to the recorded source OID, then mark the entry completed without pushing or creating or updating a PR. If the merged PR's head OID differs from the source OID, block the entry, report both OIDs, and ask before opening another PR; do not mark the entry completed. If the merge or identity cannot be verified, block the entry and report the uncertainty. If multiple remaining matches make the result ambiguous, report the candidates and ask. If only a closed unmerged or differently based PR exists, report the candidates and ask before opening another. Do not create a duplicate.
 
