@@ -1,6 +1,6 @@
 # Agent Skill Workflows
 
-This context defines shared language for code review and document-compression workflows.
+This context defines shared language for the repository's engineering skill workflows, including code review, document compression, and skill prerequisite governance.
 
 ## Language
 
@@ -27,4 +27,15 @@ _Avoid_: 观点、偏好
 **替换结果不确定**:
 源文档替换操作报告错误，无法确认源路径当前保留原文还是已采用压缩候选。
 _Avoid_: 操作失败（容易被理解为源文件未改变）
+
+### Skill prerequisite governance
+
+**Skill prerequisite**:
+A skill, MCP, or runtime tool that another skill requires to complete its documented workflow.
+
+**Prerequisite identity**:
+The stable name and publishing source that distinguish the intended prerequisite independently of its local installation path.
+
+**Prerequisite resolution**:
+Finding the skill package or tool that matches a prerequisite identity in the current runtime.
 
