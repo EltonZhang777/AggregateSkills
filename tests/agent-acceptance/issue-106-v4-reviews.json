@@ -1,0 +1,625 @@
+{
+  "schema_version": 1,
+  "fixture_id": "generic-agent-skills-host-v1",
+  "inventory_sha256": "30fea4780fc59cf0c48fff3f786ca808ea0ec133728f2c1a85c1c33de53db189",
+  "reviews": [
+    {
+      "schema_version": 1,
+      "skill_name": "spec-implement-loop",
+      "reviewer_id": "codex-106-v4-completeness-2026-10-04",
+      "reviewer_role": "completeness",
+      "fixture_id": "generic-agent-skills-host-v1",
+      "inventory_sha256": "30fea4780fc59cf0c48fff3f786ca808ea0ec133728f2c1a85c1c33de53db189",
+      "overall_status": "pass",
+      "criteria": [
+        {
+          "id": "entrypoint_and_format",
+          "status": "pass",
+          "evidence": [
+            {
+              "path": "SKILL.md",
+              "start_line": 2,
+              "end_line": 3,
+              "excerpt": "name: spec-implement-loop\ndescription: Run an explicitly approved root spec or ticket tree through implementation, verification, commit, push, status sync, and bounded review remediation. Invoke only on the user's explicit request."
+            },
+            {
+              "path": "agents/openai.yaml",
+              "start_line": 1,
+              "end_line": 5,
+              "excerpt": "interface:\n  display_name: \"Spec Implement Loop\"\n  short_description: \"Run a root spec through verified delivery\"\npolicy:\n  allow_implicit_invocation: false"
+            }
+          ],
+          "findings": []
+        },
+        {
+          "id": "resource_closure",
+          "status": "pass",
+          "evidence": [
+            {
+              "path": "SKILL.md",
+              "start_line": 5,
+              "end_line": 5,
+              "excerpt": "\"grill-duo-with-docs\",\"mattpocock/skills\""
+            },
+            {
+              "path": "SKILL.md",
+              "start_line": 24,
+              "end_line": 26,
+              "excerpt": "For every required skill, resolve and read its original `SKILL.md` from the active skill roots regardless of whether a skill catalog exposes it or its invocation metadata permits automatic invocation."
+            },
+            {
+              "path": "SKILL.md",
+              "start_line": 26,
+              "end_line": 26,
+              "excerpt": "If a declared source is missing or unreadable, stop and direct the user to the corresponding entry in the [prerequisite guide](../../docs/prerequisites.md)."
+            }
+          ],
+          "findings": [
+            {
+              "summary": "Governance disposition: declared external skill sources and the prerequisite-guide reference are unbundled prerequisite-owned references; record them with prerequisite governance rather than changing those sections for Issue #106.",
+              "impact": "The workflow depends on those sources being resolvable from active skill roots. The package explicitly stops when a declared source is unavailable, so this is a tracked prerequisite boundary, not a package closure failure under the stated acceptance."
+            }
+          ]
+        },
+        {
+          "id": "references_and_cycles",
+          "status": "pass",
+          "evidence": [
+            {
+              "path": "SKILL.md",
+              "start_line": 5,
+              "end_line": 5,
+              "excerpt": "\"grill-duo-with-docs\",\"mattpocock/skills\""
+            },
+            {
+              "path": "SKILL.md",
+              "start_line": 26,
+              "end_line": 26,
+              "excerpt": "[prerequisite guide](../../docs/prerequisites.md)"
+            },
+            {
+              "path": "SKILL.md",
+              "start_line": 92,
+              "end_line": 92,
+              "excerpt": "`/grill-duo-with-docs`"
+            }
+          ],
+          "findings": [
+            {
+              "summary": "The `/grill-duo-with-docs` reference matches its declared prerequisite. The package-local review found no in-package reference cycle; transitive relationships among external prerequisites remain assigned to prerequisite governance.",
+              "impact": "No in-scope name correction or package edit is required. External prerequisite graph closure is not asserted from this frozen package alone."
+            }
+          ]
+        },
+        {
+          "id": "all_files_classified",
+          "status": "pass",
+          "evidence": [
+            {
+              "path": "SKILL.md",
+              "start_line": 8,
+              "end_line": 10,
+              "excerpt": "# /spec-implement-loop\n\nRun the user's root spec(s) to verified delivery in the current branch or worktree."
+            },
+            {
+              "path": "agents/openai.yaml",
+              "start_line": 1,
+              "end_line": 5,
+              "excerpt": "interface:\n  display_name: \"Spec Implement Loop\"\n  short_description: \"Run a root spec through verified delivery\"\npolicy:\n  allow_implicit_invocation: false"
+            }
+          ],
+          "findings": []
+        }
+      ],
+      "required_capabilities": [
+        {
+          "name": "Read and resolve declared prerequisite skill sources; follow their invocation and authorization instructions",
+          "scope": "core",
+          "unavailable_behavior": "If a declared source is missing or unreadable, stop and direct the user to its prerequisite-guide entry; do not install automatically. If a dependency requires direct user invocation, pause at that gate. Availability of the external sources is recorded for prerequisite governance.",
+          "evidence": [
+            {
+              "path": "SKILL.md",
+              "start_line": 18,
+              "end_line": 26,
+              "excerpt": "For every required skill, resolve and read its original `SKILL.md` from the active skill roots regardless of whether a skill catalog exposes it or its invocation metadata permits automatic invocation."
+            },
+            {
+              "path": "SKILL.md",
+              "start_line": 26,
+              "end_line": 26,
+              "excerpt": "Do not install dependencies automatically."
+            }
+          ]
+        },
+        {
+          "name": "Authoritative task input and repository file access (inline, local-file, or GitHub input)",
+          "scope": "core",
+          "unavailable_behavior": "Complete preflight before work and stop on failures. Preserve the input-specific source of truth; do not substitute another source. If the root is unclear or too large, pause to ask or report instead of creating tickets automatically.",
+          "evidence": [
+            {
+              "path": "SKILL.md",
+              "start_line": 14,
+              "end_line": 14,
+              "excerpt": "Complete every check before doing any work; report all failures together and stop on any failure."
+            },
+            {
+              "path": "SKILL.md",
+              "start_line": 74,
+              "end_line": 80,
+              "excerpt": "For inline and local-file inputs, the supplied source remains authoritative."
+            },
+            {
+              "path": "SKILL.md",
+              "start_line": 85,
+              "end_line": 86,
+              "excerpt": "If a root is clearly too large for one implementation round, pause and ask for approval to load and run `/to-tickets`."
+            }
+          ]
+        },
+        {
+          "name": "Local worktree, branch, Git, and task-remote access",
+          "scope": "core",
+          "unavailable_behavior": "Preflight requires a clean worktree, a non-detached branch, and a resolvable task remote; report failures together and stop. For a confirmed transient push failure, retry within the three-attempt limit; after exhaustion, stop and report the local commit and error. Reconcile uncertain results before retrying.",
+          "evidence": [
+            {
+              "path": "SKILL.md",
+              "start_line": 30,
+              "end_line": 36,
+              "excerpt": "Also require:\n\n- a clean worktree;\n- a non-detached current branch;\n- a resolvable task remote and branch-to-remote mapping; a new remote ref may be created by the task's first push."
+            },
+            {
+              "path": "SKILL.md",
+              "start_line": 100,
+              "end_line": 100,
+              "excerpt": "For a confirmed transient failure, choose a retry count based on the error, capped at three total attempts for the same ref and commit including the first; do not retry permanent or unsafe-to-repeat errors."
+            }
+          ]
+        },
+        {
+          "name": "GitHub Issue input, comment/label reads, and status synchronization (conditional on GitHub input)",
+          "scope": "core",
+          "unavailable_behavior": "Keep GitHub as the authoritative source. Classify known service or network failures as external-service blockers and reconcile uncertain operations before retrying. Status writes have bounded transient retries and report an unsynchronized state after exhaustion. No dedicated retry or alternate-source policy is stated for initial Issue/comment/label reads.",
+          "evidence": [
+            {
+              "path": "SKILL.md",
+              "start_line": 70,
+              "end_line": 70,
+              "excerpt": "Classify dependency when a required blocker remains unsatisfied; technical for an implementation or verification failure; external-service for a known service or network failure;"
+            },
+            {
+              "path": "SKILL.md",
+              "start_line": 74,
+              "end_line": 74,
+              "excerpt": "For GitHub inputs, the Issue task contract and native dependency edges are authoritative; use the ready guard above when checking dependency completion."
+            },
+            {
+              "path": "SKILL.md",
+              "start_line": 101,
+              "end_line": 101,
+              "excerpt": "If retries fail, stop and report that code is pushed but status is unsynchronised; do not roll back the code."
+            }
+          ]
+        },
+        {
+          "name": "Acceptance-check and full-suite runner/environment",
+          "scope": "core",
+          "unavailable_behavior": "Mark an unavailable required check as not run, record the exact reason, and block the affected ticket; never treat it as passing.",
+          "evidence": [
+            {
+              "path": "SKILL.md",
+              "start_line": 97,
+              "end_line": 97,
+              "excerpt": "If a required check cannot run because its runner or environment is unavailable, mark it not run, record the exact reason, and enter `blocked` for the affected ticket; never treat it as passing."
+            },
+            {
+              "path": "SKILL.md",
+              "start_line": 135,
+              "end_line": 136,
+              "excerpt": "the full test suite passes after the final implementation batch;\n- final review is complete;"
+            }
+          ]
+        },
+        {
+          "name": "Human clarification, approval, and permission channel",
+          "scope": "core",
+          "unavailable_behavior": "Pause at the operation that needs a decision or authorization; do not perform the protected write or declare completion. Report waiting for approval when the gate remains unresolved.",
+          "evidence": [
+            {
+              "path": "SKILL.md",
+              "start_line": 72,
+              "end_line": 72,
+              "excerpt": "A missing approval for an issue/status or pull request action is operator-decision: pause at that operation and do not perform the write until approval is given."
+            },
+            {
+              "path": "SKILL.md",
+              "start_line": 122,
+              "end_line": 122,
+              "excerpt": "Show the complete P0/P1 batch and ask the user for approval. Execute only approved tickets."
+            }
+          ]
+        },
+        {
+          "name": "Read the target repository root AGENTS.md when drafting durable project text",
+          "scope": "core",
+          "unavailable_behavior": "If the target root AGENTS.md is missing or unreadable, pause that text write and ask the user to provide the applicable policy.",
+          "evidence": [
+            {
+              "path": "SKILL.md",
+              "start_line": 92,
+              "end_line": 92,
+              "excerpt": "If the target root `AGENTS.md` is missing or unreadable, pause that text write and ask the user to provide the applicable policy."
+            }
+          ]
+        },
+        {
+          "name": "Optional visual explanation via /show-me or /archify",
+          "scope": "optional",
+          "unavailable_behavior": "If neither capability is available, provide a concise plain-text explanation instead.",
+          "evidence": [
+            {
+              "path": "SKILL.md",
+              "start_line": 98,
+              "end_line": 98,
+              "excerpt": "If neither is available, provide a concise plain-text explanation instead."
+            },
+            {
+              "path": "SKILL.md",
+              "start_line": 144,
+              "end_line": 144,
+              "excerpt": "If neither is available, provide concise plain-text explanations with enough context to understand each commit and the delivered result, and state that no visual artifact was produced."
+            }
+          ]
+        }
+      ],
+      "file_coverage": [
+        {
+          "path": "SKILL.md",
+          "classification": "Skill entrypoint and workflow instructions; prerequisite-owned external skill and guide references are recorded for prerequisite governance.",
+          "disposition": "reviewed",
+          "evidence": [
+            {
+              "path": "SKILL.md",
+              "start_line": 8,
+              "end_line": 10,
+              "excerpt": "# /spec-implement-loop\n\nRun the user's root spec(s) to verified delivery in the current branch or worktree."
+            }
+          ]
+        },
+        {
+          "path": "agents/openai.yaml",
+          "classification": "Host-facing display metadata and explicit invocation policy.",
+          "disposition": "reviewed",
+          "evidence": [
+            {
+              "path": "agents/openai.yaml",
+              "start_line": 1,
+              "end_line": 5,
+              "excerpt": "interface:\n  display_name: \"Spec Implement Loop\"\n  short_description: \"Run a root spec through verified delivery\"\npolicy:\n  allow_implicit_invocation: false"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "schema_version": 1,
+      "skill_name": "spec-implement-loop",
+      "reviewer_id": "codex-106-v4-workflow_portability-2026-10-04",
+      "reviewer_role": "workflow_portability",
+      "fixture_id": "generic-agent-skills-host-v1",
+      "inventory_sha256": "30fea4780fc59cf0c48fff3f786ca808ea0ec133728f2c1a85c1c33de53db189",
+      "overall_status": "pass",
+      "criteria": [
+        {
+          "id": "generic_workflow_primary",
+          "status": "pass",
+          "evidence": [
+            {
+              "path": "SKILL.md",
+              "start_line": 10,
+              "end_line": 10,
+              "excerpt": "Run the user's root spec(s) to verified delivery in the current branch or worktree."
+            },
+            {
+              "path": "SKILL.md",
+              "start_line": 80,
+              "end_line": 80,
+              "excerpt": "Accept one or more inline specs, local spec/ticket paths, or GitHub issue URLs/identifiers."
+            },
+            {
+              "path": "SKILL.md",
+              "start_line": 74,
+              "end_line": 74,
+              "excerpt": "For inline and local-file inputs, the supplied source remains authoritative."
+            }
+          ],
+          "findings": []
+        },
+        {
+          "id": "harness_independence",
+          "status": "pass",
+          "evidence": [
+            {
+              "path": "SKILL.md",
+              "start_line": 24,
+              "end_line": 24,
+              "excerpt": "regardless of whether a skill catalog exposes it or its invocation metadata permits automatic invocation."
+            },
+            {
+              "path": "SKILL.md",
+              "start_line": 5,
+              "end_line": 5,
+              "excerpt": "\"mcps\":[],\"tools\":[]}"
+            },
+            {
+              "path": "SKILL.md",
+              "start_line": 98,
+              "end_line": 98,
+              "excerpt": "If neither is available, provide a concise plain-text explanation instead."
+            }
+          ],
+          "findings": []
+        },
+        {
+          "id": "capabilities_and_unavailable_behavior",
+          "status": "pass",
+          "evidence": [
+            {
+              "path": "SKILL.md",
+              "start_line": 14,
+              "end_line": 14,
+              "excerpt": "report all failures together and stop on any failure."
+            },
+            {
+              "path": "SKILL.md",
+              "start_line": 28,
+              "end_line": 28,
+              "excerpt": "If setup or tracker configuration is missing or invalid, stop."
+            },
+            {
+              "path": "SKILL.md",
+              "start_line": 97,
+              "end_line": 97,
+              "excerpt": "mark it not run, record the exact reason, and enter `blocked` for the affected ticket; never treat it as passing."
+            },
+            {
+              "path": "SKILL.md",
+              "start_line": 92,
+              "end_line": 92,
+              "excerpt": "If the target root `AGENTS.md` is missing or unreadable, pause that text write and ask the user to provide the applicable policy."
+            },
+            {
+              "path": "SKILL.md",
+              "start_line": 98,
+              "end_line": 98,
+              "excerpt": "If neither is available, provide a concise plain-text explanation instead."
+            }
+          ],
+          "findings": []
+        },
+        {
+          "id": "external_requirements",
+          "status": "pass",
+          "evidence": [
+            {
+              "path": "SKILL.md",
+              "start_line": 5,
+              "end_line": 5,
+              "excerpt": "prerequisites: '{\"skills\":"
+            },
+            {
+              "path": "SKILL.md",
+              "start_line": 18,
+              "end_line": 18,
+              "excerpt": "- `mattpocock/skills`: `/implement`, `/tdd`, `/code-review`, `/grill-duo-with-docs`, `/grilling`, `/domain-modeling`, `/to-spec`, `/to-tickets`, `/setup-matt-pocock-skills`"
+            },
+            {
+              "path": "SKILL.md",
+              "start_line": 26,
+              "end_line": 26,
+              "excerpt": "If a declared source is missing or unreadable, stop and direct the user to the corresponding entry in the [prerequisite guide](../../docs/prerequisites.md)."
+            }
+          ],
+          "findings": [
+            {
+              "summary": "Declared skill prerequisites and the prerequisite-guide reference remain unbundled and are preserved under the prerequisite-owned governance disposition; `/grill-duo-with-docs` matches its declared name.",
+              "impact": "No package-local edit is assigned to these references. Their source availability remains a preflight requirement and their ownership stays with prerequisite governance."
+            }
+          ]
+        }
+      ],
+      "required_capabilities": [
+        {
+          "name": "Declared prerequisite skill source access and invocation metadata",
+          "scope": "core",
+          "unavailable_behavior": "Stop preflight if a declared source is missing or unreadable; pause at any direct-user-invocation or authorization gate before invoking it.",
+          "evidence": [
+            {
+              "path": "SKILL.md",
+              "start_line": 24,
+              "end_line": 24,
+              "excerpt": "Before invoking a dependency, follow its invocation metadata and preserve all user-confirmation, authorization, and clarification gates in its instructions; if direct user invocation is required, pause at that gate."
+            },
+            {
+              "path": "SKILL.md",
+              "start_line": 26,
+              "end_line": 26,
+              "excerpt": "If a declared source is missing or unreadable, stop"
+            }
+          ]
+        },
+        {
+          "name": "Repository worktree, task branch, and Git remote operations",
+          "scope": "core",
+          "unavailable_behavior": "Stop preflight when clean-worktree, branch, or task-remote requirements are unmet; block uncertain commit or push outcomes for reconciliation, and report the local commit and error after bounded retries fail.",
+          "evidence": [
+            {
+              "path": "SKILL.md",
+              "start_line": 32,
+              "end_line": 32,
+              "excerpt": "- a clean worktree;"
+            },
+            {
+              "path": "SKILL.md",
+              "start_line": 34,
+              "end_line": 34,
+              "excerpt": "- a resolvable task remote and branch-to-remote mapping; a new remote ref may be created by the task's first push."
+            },
+            {
+              "path": "SKILL.md",
+              "start_line": 63,
+              "end_line": 63,
+              "excerpt": "exhausted retries or an unreconciled result enters blocked. Never amend or rewrite history."
+            },
+            {
+              "path": "SKILL.md",
+              "start_line": 100,
+              "end_line": 100,
+              "excerpt": "After retries fail, stop and report the local commit and error."
+            }
+          ]
+        },
+        {
+          "name": "GitHub issue tracker access for GitHub roots",
+          "scope": "core",
+          "unavailable_behavior": "Stop when required tracker setup or configuration is missing or invalid; pause issue/status writes until explicitly approved and reconcile uncertain outcomes before retrying.",
+          "evidence": [
+            {
+              "path": "SKILL.md",
+              "start_line": 28,
+              "end_line": 28,
+              "excerpt": "If setup or tracker configuration is missing or invalid, stop."
+            },
+            {
+              "path": "SKILL.md",
+              "start_line": 72,
+              "end_line": 72,
+              "excerpt": "pause at that operation and do not perform the write until approval is given."
+            },
+            {
+              "path": "SKILL.md",
+              "start_line": 76,
+              "end_line": 76,
+              "excerpt": "If its result cannot be established, enter blocked with needs-reconcile and stop for user input."
+            }
+          ]
+        },
+        {
+          "name": "Acceptance-check runner and verification environment",
+          "scope": "core",
+          "unavailable_behavior": "Mark an unavailable required check not run with the exact reason and block the affected ticket; never treat it as passing.",
+          "evidence": [
+            {
+              "path": "SKILL.md",
+              "start_line": 97,
+              "end_line": 97,
+              "excerpt": "If a required check cannot run because its runner or environment is unavailable, mark it not run, record the exact reason, and enter `blocked` for the affected ticket; never treat it as passing."
+            }
+          ]
+        },
+        {
+          "name": "Target repository root AGENTS.md access when drafting project text",
+          "scope": "core",
+          "unavailable_behavior": "Pause the affected text write and ask the user for the applicable policy if the target root file is missing or unreadable; pause if its language rule is indeterminate.",
+          "evidence": [
+            {
+              "path": "SKILL.md",
+              "start_line": 92,
+              "end_line": 92,
+              "excerpt": "If the target root `AGENTS.md` is missing or unreadable, pause that text write and ask the user to provide the applicable policy."
+            }
+          ]
+        },
+        {
+          "name": "Explicit user approval and decision input at checkpoints",
+          "scope": "core",
+          "unavailable_behavior": "Pause at the relevant checkpoint or operation and wait; do not perform the gated write or declare completion without the stated confirmation.",
+          "evidence": [
+            {
+              "path": "SKILL.md",
+              "start_line": 64,
+              "end_line": 64,
+              "excerpt": "pause for user review before declaring the ticket complete."
+            },
+            {
+              "path": "SKILL.md",
+              "start_line": 66,
+              "end_line": 66,
+              "excerpt": "pause for explicit user approval before declaring the root complete."
+            },
+            {
+              "path": "SKILL.md",
+              "start_line": 72,
+              "end_line": 72,
+              "excerpt": "A missing approval for an issue/status or pull request action is operator-decision"
+            }
+          ]
+        },
+        {
+          "name": "Optional visualization support through /show-me or /archify",
+          "scope": "optional",
+          "unavailable_behavior": "Use the concise plain-text explanation fallback; state that no visual artifact was produced in the final report.",
+          "evidence": [
+            {
+              "path": "SKILL.md",
+              "start_line": 98,
+              "end_line": 98,
+              "excerpt": "If neither is available, provide a concise plain-text explanation instead."
+            },
+            {
+              "path": "SKILL.md",
+              "start_line": 144,
+              "end_line": 144,
+              "excerpt": "state that no visual artifact was produced."
+            }
+          ]
+        }
+      ],
+      "file_coverage": [
+        {
+          "path": "SKILL.md",
+          "classification": "Workflow instructions, declared prerequisites, and external-reference disposition",
+          "disposition": "reviewed",
+          "evidence": [
+            {
+              "path": "SKILL.md",
+              "start_line": 10,
+              "end_line": 10,
+              "excerpt": "Run the user's root spec(s) to verified delivery in the current branch or worktree."
+            },
+            {
+              "path": "SKILL.md",
+              "start_line": 26,
+              "end_line": 26,
+              "excerpt": "If a declared source is missing or unreadable, stop"
+            },
+            {
+              "path": "SKILL.md",
+              "start_line": 97,
+              "end_line": 97,
+              "excerpt": "If a required check cannot run because its runner or environment is unavailable"
+            }
+          ]
+        },
+        {
+          "path": "agents/openai.yaml",
+          "classification": "Invocation metadata",
+          "disposition": "reviewed",
+          "evidence": [
+            {
+              "path": "agents/openai.yaml",
+              "start_line": 1,
+              "end_line": 1,
+              "excerpt": "interface:"
+            },
+            {
+              "path": "agents/openai.yaml",
+              "start_line": 5,
+              "end_line": 5,
+              "excerpt": "  allow_implicit_invocation: false"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
