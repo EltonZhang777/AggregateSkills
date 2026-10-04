@@ -2,7 +2,7 @@
 name: grill-duo-with-docs
 description: "Use when the user explicitly requests two-agent grilling that must maintain confirmed domain language or project decisions. Use `/grill-duo` alone when project-document maintenance is not needed."
 metadata:
-  prerequisites: '{"skills":[{"name":"grill-duo","source":"EltonZhang777/AggregateSkills"},{"name":"domain-modeling","source":"mattpocock/skills"}],"mcps":[],"tools":[]}'
+  prerequisites: '{"skills":[{"name":"grill-duo","source":"EltonZhang777/AggregateSkills"},{"name":"domain-modeling","source":"mattpocock/skills"}],"mcps":[],"tools":[{"name":"SkillRoute CLI","source":"https://github.com/erichare/skillroute","install":"uv tool install skillroute","setup":"Prepare a local catalog using the SkillRoute documentation","when":"When a prerequisite skill is absent from the available skill list or its exact source cannot be verified."}]}'
 ---
 
 # /grill-duo-with-docs
@@ -15,7 +15,7 @@ Use this entrypoint when the user explicitly wants a grilling session that recor
 
 ## Dependencies
 
-Read the original `SKILL.md` files for `/grill-duo` and `/domain-modeling` from the active skill roots regardless of their invocation metadata. This exception permits source reading only. Before invoking a dependency, follow its invocation metadata and preserve all user-confirmation, authorization, and clarification gates in its instructions; if direct user invocation is required, pause at that gate. If either source is missing or unreadable, stop before starting either phase and report the exact unavailable skill and source.
+Resolve `/grill-duo` and `/domain-modeling` by exact identity (declared name and source). If no exact name-and-source match appears in the available skill list because the skill is absent or a same-name candidate has a missing, ambiguous, or mismatched source, use the conditional SkillRoute CLI dependency in metadata to verify its identity and source, then read the full original `SKILL.md` from the active skill roots. Read each file regardless of invocation metadata; reading permits source access only. Before invoking a dependency, follow its invocation metadata and preserve all user-confirmation, authorization, and clarification gates; if direct invocation is required, pause at that gate. Record inaccessible sources. If SkillRoute CLI, its catalog, or a required lookup/read operation is unavailable, fails, or returns an unusable result, record the affected dependency as unresolved and report it; do not guess, substitute, or invoke it. Block only work that requires the affected source and continue only independent work. Do not retry in a loop; retry only when the resolver, catalog, or source becomes available or new evidence changes the result. If no independent work remains, pause and report the exact dependency, blocked step, and recovery condition; this pause does not classify the source as missing. Stop the workflow only when a required source is confirmed absent, invalid, or permission-denied, and report its exact identity and source; do not infer or install a replacement.
 
 Follow `/grill-duo` for activation, reviewer continuity and boundaries, round IDs, frontier handling, current-request correlation, solo fallback, and final shared-understanding confirmation. Follow `/domain-modeling` and its referenced materials for glossary and decision discipline. Do not copy either skill's body into this entrypoint.
 

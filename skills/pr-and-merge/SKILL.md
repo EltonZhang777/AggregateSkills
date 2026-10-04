@@ -2,12 +2,20 @@
 name: pr-and-merge
 description: Prepare GitHub pull requests from one or more supplied branches or worktrees, then merge only after explicit per-PR approval.
 metadata:
-  prerequisites: '{"skills":[{"name":"conventional-git-messages","source":"EltonZhang777/AggregateSkills"},{"name":"resolving-merge-conflicts","source":"mattpocock/skills"}],"mcps":[],"tools":[{"name":"GitHub CLI (gh)","source":"https://cli.github.com/","install":"Install from https://cli.github.com/","setup":"Authenticate with `gh auth login`; for GitHub Enterprise, use `gh auth login --hostname <host>`."}]}'
+  prerequisites: '{"skills":[{"name":"conventional-git-messages","source":"EltonZhang777/AggregateSkills"},{"name":"resolving-merge-conflicts","source":"mattpocock/skills"}],"mcps":[],"tools":[{"name":"GitHub CLI (gh)","source":"https://cli.github.com/","install":"Install from https://cli.github.com/","setup":"Authenticate with `gh auth login`; for GitHub Enterprise, use `gh auth login --hostname <host>`."},{"name":"SkillRoute CLI","source":"https://github.com/erichare/skillroute","install":"uv tool install skillroute","setup":"Prepare a local catalog using the SkillRoute documentation","when":"When a prerequisite skill is absent from the available skill list or its exact source cannot be verified."}]}'
 ---
 
 # /pr-and-merge
 
-This workflow is for GitHub. For another hosting platform, say in one sentence that the invoking agent handles that platform. Process one or more supplied branches or worktrees in one invocation, treating each source as a separate PR entry.
+## Activation Criteria & Objective
+
+Use this skill when the user asks to prepare GitHub pull requests for supplied branches or worktrees, or to merge prepared PRs after explicit per-PR approval. It handles GitHub only. For another hosting platform, say in one sentence that the invoking agent handles that platform.
+
+## Dependencies
+
+Resolve `/conventional-git-messages` from `EltonZhang777/AggregateSkills` and `/resolving-merge-conflicts` from `mattpocock/skills` by exact identity (declared name and source). If no exact name-and-source match appears in the available skill list because the skill is absent or a same-name candidate has a missing, ambiguous, or mismatched source, use the conditional SkillRoute CLI dependency in metadata to verify its identity and source, then read the full original `SKILL.md` from the active skill roots. Read each file regardless of invocation metadata; reading permits source access only. Before invoking a dependency, follow its invocation metadata and preserve all user-confirmation, authorization, and clarification gates. Record inaccessible sources. If SkillRoute CLI, its catalog, or a required lookup/read operation is unavailable, fails, or returns an unusable result, record the affected dependency as unresolved and report it; do not guess, substitute, or invoke it. Block only work that requires the affected source and continue only independent work. Do not retry in a loop; retry only when the resolver, catalog, or source becomes available or new evidence changes the result. If no independent work remains, pause and report the exact dependency, blocked step, and recovery condition; this pause does not classify the source as missing. Stop the workflow only when a required source is confirmed absent, invalid, or permission-denied, and report its exact identity and source; do not infer or install a replacement.
+
+GitHub CLI (`gh`) from `https://cli.github.com/` is required for every entry. If it is unavailable or unauthenticated, ask the user for explicit approval before installing it or authenticating with `gh auth login`. If approval is not given, do not install or authenticate; keep the CLI prerequisite unresolved, pause only work that needs it, and report the recovery condition. For GitHub Enterprise, authenticate with `gh auth login --hostname <host>` only after approval.
 
 ## Process a batch
 

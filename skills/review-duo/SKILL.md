@@ -2,16 +2,18 @@
 name: review-duo
 description: Run `/code-review` in opt-in strict mode with one fixed scope, independent review axes, and evidence-based findings.
 metadata:
-  prerequisites: '{"skills":[{"name":"code-review","source":"mattpocock/skills"}],"mcps":[],"tools":[]}'
+  prerequisites: '{"skills":[{"name":"code-review","source":"mattpocock/skills"}],"mcps":[],"tools":[{"name":"SkillRoute CLI","source":"https://github.com/erichare/skillroute","install":"uv tool install skillroute","setup":"Prepare a local catalog using the SkillRoute documentation","when":"When a prerequisite skill is absent from the available skill list or its exact source cannot be verified."}]}'
 ---
 
 # /review-duo
 
+## Activation Criteria & Objective
+
 Use this skill only when the user explicitly requests `/review-duo` or strict `/code-review`. It adds a strict contract to the existing `/code-review` workflow; it is not a second review implementation.
 
-## Resolve and run the upstream skill
+## Dependencies
 
-Resolve and read the original `/code-review` `SKILL.md` from the active skill roots regardless of its invocation metadata; reading is read-only and does not invoke it. Before invoking `/code-review`, follow its invocation metadata and preserve its user-confirmation, authorization, and clarification gates. If direct user invocation is required, pause at that gate. Preserve its other stated requirements when applying the skill. If the source is missing or unreadable, stop before either review axis begins. Never copy a fallback body or continue with a locally vendored version. Record the resolved source URI and SHA-256 of its LF-normalized UTF-8 text in the frozen manifest; do not copy or vendor its body.
+Resolve `/code-review` by exact identity (declared name and source). If no exact name-and-source match appears in the available skill list because the skill is absent or a same-name candidate has a missing, ambiguous, or mismatched source, use the conditional SkillRoute CLI dependency in metadata to verify its identity and source, then read the full original `SKILL.md` from the active skill roots regardless of invocation metadata; reading is read-only and does not invoke it. Before invoking `/code-review`, follow its invocation metadata and preserve its user-confirmation, authorization, and clarification gates. If direct user invocation is required, pause at that gate. Preserve its other stated requirements when applying the skill. Record inaccessible sources. If SkillRoute CLI, its catalog, or a required lookup/read operation is unavailable, fails, or returns an unusable result, record the affected dependency as unresolved and report it; do not guess, substitute, or invoke it. Block only work that requires the affected source and continue only independent work. Do not retry in a loop; retry only when the resolver, catalog, or source becomes available or new evidence changes the result. If no independent work remains, pause and report the exact dependency, blocked step, and recovery condition; this pause does not classify the source as missing. Stop the workflow only when the required source is confirmed absent, invalid, or permission-denied, and report the exact dependency identity and source. Never copy a fallback body or continue with a locally vendored version. Record the resolved source URI and SHA-256 of its LF-normalized UTF-8 text in the frozen manifest; do not copy or vendor its body.
 
 Keep the `/code-review` workflow and its two-agent topology. Pass the strict scope and axis instructions below to those two agents in that one run. Do not start another review pair or nest a second `/code-review` run.
 

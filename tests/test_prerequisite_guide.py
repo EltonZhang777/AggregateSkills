@@ -305,6 +305,195 @@ class PrerequisiteGuideTests(unittest.TestCase):
         ]
         self.assertEqual(references, [])
 
+    def test_skills_with_prerequisites_have_standard_sections(self):
+        for path in sorted((ROOT / "skills").glob("*/SKILL.md")):
+            name, prerequisites = read_prerequisites(path)
+            if not any(prerequisites.values()):
+                continue
+            text = path.read_text(encoding="utf-8")
+            headings = [line for line in text.splitlines() if line.startswith("## ")]
+            with self.subTest(skill=name):
+                activation = "## Activation Criteria & Objective"
+                dependencies = "## Dependencies"
+                self.assertIn(activation, headings)
+                self.assertIn(dependencies, headings)
+                self.assertLess(headings.index(activation), headings.index(dependencies))
+                activation_start = text.index(activation) + len(activation)
+                activation_end = text.find("\n## ", activation_start)
+                activation_text = text[activation_start:] if activation_end == -1 else text[activation_start:activation_end]
+                self.assertTrue(activation_text.strip())
+                start = text.index(dependencies) + len(dependencies)
+                end = text.find("\n## ", start)
+                dependency_text = text[start:] if end == -1 else text[start:end]
+                self.assertTrue(dependency_text.strip())
+                if prerequisites["skills"]:
+                    for phrase in (
+                        "exact identity",
+                        "source",
+                        "original",
+                        "invocation metadata",
+                        "skillroute",
+                        "available skill list",
+                        "same-name candidate",
+                        "missing, ambiguous, or mismatched source",
+                        "inaccessible",
+                        "unresolved",
+                        "block only work that requires the affected source",
+                        "continue only independent work",
+                        "do not retry in a loop",
+                        "retry only when the resolver, catalog, or source becomes available or new evidence changes the result",
+                        "report the exact dependency, blocked step, and recovery condition",
+                        "this pause does not classify the source as missing",
+                        "stop the workflow only when",
+                        "confirmed absent, invalid, or permission-denied",
+                        "do not guess",
+                        "stop",
+                        "report",
+                    ):
+                        self.assertIn(phrase, dependency_text.lower())
+                if any(item["name"] == "GitHub CLI (gh)" for item in prerequisites["tools"]):
+                    with self.subTest(skill=name, tool="GitHub CLI (gh) approval"):
+                        self.assertIn(
+                            "ask the user for explicit approval before installing it or authenticating with `gh auth login`",
+                            dependency_text.lower(),
+                        )
+                        self.assertIn("if approval is not given, do not install or authenticate", dependency_text.lower())
+                        self.assertIn("pause only work that needs it", dependency_text.lower())
+            if any("one_of" in entry for entry in prerequisites["skills"]):
+                with self.subTest(skill=name, prerequisite="one_of"):
+                    self.assertIn("`one_of` declaration", dependency_text.lower())
+                    self.assertIn("exactly one selected alternative", dependency_text.lower())
+                    self.assertIn("unselected alternatives are not required", dependency_text.lower())
+                    self.assertIn("only on this installation", dependency_text.lower())
+
+    def test_dependency_resolution_rules_keep_their_shared_meaning(self):
+        shared_clauses = (
+            "If SkillRoute CLI, its catalog, or a required lookup/read operation is unavailable, fails, or returns an unusable result, record the affected dependency as unresolved and report it; do not guess, substitute, or invoke it.",
+            "Block only work that requires the affected source and continue only independent work.",
+            "Do not retry in a loop; retry only when the resolver, catalog, or source becomes available or new evidence changes the result.",
+            "If no independent work remains, pause and report the exact dependency, blocked step, and recovery condition; this pause does not classify the source as missing.",
+        )
+        terminal_reports = (
+            "report its exact identity and source",
+            "report its exact dependency identity and source status",
+            "report the exact identity and source",
+            "report the exact dependency identity and source",
+        )
+        for path in sorted((ROOT / "skills").glob("*/SKILL.md")):
+            name, prerequisites = read_prerequisites(path)
+            if not prerequisites["skills"]:
+                continue
+            text = path.read_text(encoding="utf-8").lower()
+            dependency_start = text.index("## dependencies")
+            dependency_end = text.find("\n## ", dependency_start + len("## dependencies"))
+            dependency_text = text[dependency_start:] if dependency_end == -1 else text[dependency_start:dependency_end]
+            with self.subTest(skill=name):
+                for clause in shared_clauses:
+                    self.assertIn(clause.lower(), dependency_text)
+                stop_at = dependency_text.find("stop the workflow only when")
+                confirmed_at = dependency_text.find("confirmed absent, invalid, or permission-denied", stop_at)
+                self.assertGreaterEqual(stop_at, 0)
+                self.assertGreater(confirmed_at, stop_at)
+                self.assertTrue(
+                    any(dependency_text.find(clause, confirmed_at) > confirmed_at for clause in terminal_reports)
+                )
+
+    def test_skill_scout_distinguishes_unresolved_from_missing_prerequisites(self):
+        path = ROOT / "skills" / "skill-scout" / "SKILL.md"
+        text = path.read_text(encoding="utf-8").lower()
+        dependencies = text.split("## dependencies", 1)[1].split("\n## ", 1)[0]
+        resolver = text.split("### 1. check the resolver", 1)[1].split("\n### ", 1)[0]
+        report = text.split("### 4. report the result", 1)[1].split("\n## ", 1)[0]
+        self.assertIn(
+            "if a check fails without confirming one of those conditions, or its result is inconclusive, stop with an `unresolved prerequisite` result",
+            dependencies,
+        )
+        self.assertIn("stop with an `unresolved prerequisite` result", dependencies)
+        self.assertIn(
+            "if the cli or catalog is confirmed absent, invalid, or permission-denied, report `missing prerequisite`",
+            dependencies,
+        )
+        self.assertIn("do not install the cli or index roots automatically", dependencies)
+        self.assertIn("for temporary resolver or backend errors", resolver)
+        self.assertIn("other inconclusive results", resolver)
+        self.assertIn("`unresolved prerequisite`", resolver)
+        self.assertIn("exact failed check and recovery condition", resolver)
+        self.assertIn("`unresolved prerequisite`", report)
+
+    def test_prune_marks_unavailable_checks_unknown_and_never_safe_to_clean(self):
+        path = ROOT / "skills" / "prune-worktrees-and-branches" / "SKILL.md"
+        text = path.read_text(encoding="utf-8").lower()
+        dependencies = text.split("## dependencies", 1)[1].split("\n## ", 1)[0]
+        self.assertIn(
+            "if the cli or any required check is unavailable, mark the affected state unknown",
+            dependencies,
+        )
+        self.assertIn("do not classify the branch as safe to clean", dependencies)
+
+    def test_source_null_skill_options_report_local_and_portable_status(self):
+        path = ROOT / "skills" / "spec-implement-loop" / "SKILL.md"
+        _, prerequisites = read_prerequisites(path)
+        alternatives = next(entry["one_of"] for entry in prerequisites["skills"] if "one_of" in entry)
+        self.assertTrue(all(item["source"] is None for item in alternatives))
+        text = path.read_text(encoding="utf-8").lower()
+        self.assertIn("skillroute to confirm the exact declared name, local skill path, and content hash", text)
+        self.assertIn("record its publisher source as undeclared", text)
+        self.assertIn("not a portable publisher identity", text)
+        self.assertIn("remains unresolved until its publisher source is verified", text)
+        self.assertIn("do not infer a publisher or install path", text)
+
+    def test_preflight_distinguishes_transient_dependencies_from_terminal_gates(self):
+        path = ROOT / "skills" / "spec-implement-loop" / "SKILL.md"
+        text = path.read_text(encoding="utf-8").lower()
+        preflight = text.split("## preflight", 1)[1].split("\n## ", 1)[0]
+        self.assertIn("temporary prerequisite lookup/read failure", preflight)
+        self.assertIn("blocks only work requiring it", preflight)
+        self.assertIn("after all other preflight checks pass, continue independent work", preflight)
+        self.assertIn("pause and report the exact dependency and recovery condition", preflight)
+        self.assertIn(
+            "retry only when the resolver, catalog, or source becomes available or new evidence changes the result",
+            preflight,
+        )
+        self.assertIn(
+            "stop the workflow only when the required source is confirmed absent, invalid, or permission-denied",
+            preflight,
+        )
+        self.assertIn("stop for a failed repository, tracker, branch, or authorization gate", preflight)
+
+    def test_skills_with_prerequisites_declare_conditional_skillroute(self):
+        for path in sorted((ROOT / "skills").glob("*/SKILL.md")):
+            name, prerequisites = read_prerequisites(path)
+            if not prerequisites["skills"]:
+                continue
+            resolver = [
+                item
+                for item in prerequisites["tools"]
+                if item["name"] == "SkillRoute CLI"
+                and item.get("when") == "When a prerequisite skill is absent from the available skill list or its exact source cannot be verified."
+            ]
+            with self.subTest(skill=name):
+                self.assertEqual(len(resolver), 1)
+
+    def test_requirements_workflow_declares_only_direct_skills(self):
+        path = ROOT / "skills" / "requirements-to-spec-tickets" / "SKILL.md"
+        _, prerequisites = read_prerequisites(path)
+        self.assertEqual(
+            {item["name"] for item in prerequisites["skills"]},
+            {"grill-with-docs", "to-spec", "to-tickets", "setup-matt-pocock-skills"},
+        )
+
+    def test_requirements_workflow_resolves_each_dependency_at_its_phase(self):
+        path = ROOT / "skills" / "requirements-to-spec-tickets" / "SKILL.md"
+        text = path.read_text(encoding="utf-8").lower()
+        preflight = text.split("## 1. preflight", 1)[1].split("\n## 2.", 1)[0]
+        child_protocol = text.split("## 4. child-session protocol", 1)[1].split("\n## 5.", 1)[0]
+        self.assertIn("read each direct skill's current `skill.md` immediately before the phase that uses it", preflight)
+        self.assertIn("sources needed for the first active phase", preflight)
+        self.assertIn("temporary lookup/read failure blocks only the phase that needs that source", preflight)
+        self.assertNotIn("every declared skill source is readable", preflight)
+        self.assertIn("pause only the phase that needs it", child_protocol)
+        self.assertIn("report it as missing only after confirming it is absent, invalid, or permission-denied", child_protocol)
+
     def test_readme_has_generic_install_command_and_guide_link(self):
         readme = (ROOT / "README.md").read_text(encoding="utf-8")
         self.assertIn("npx skills@latest add EltonZhang777/AggregateSkills", readme)

@@ -7,7 +7,13 @@ metadata:
 
 # /prune-worktrees-and-branches
 
-Run this skill only for a cleanup request. The preview is the required first phase of cleanup. Do not use it as a general inventory or status-reporting mode.
+## Activation Criteria & Objective
+
+Use this skill only for a worktree or branch cleanup request. The preview is the required first phase; do not use it as a general inventory or status-reporting mode.
+
+## Dependencies
+
+No skill prerequisites are declared. GitHub CLI (`gh`) from `https://cli.github.com/` is required only when checking a GitHub remote for pull requests, protection, or default-branch state. If it is unavailable or unauthenticated for those checks, ask the user for explicit approval before installing it or authenticating with `gh auth login`. If approval is not given, do not install or authenticate; keep the CLI prerequisite unresolved, pause only work that needs it, and report the recovery condition. For GitHub Enterprise, authenticate with `gh auth login --hostname <host>` only after approval. If the CLI or any required check is unavailable, mark the affected state unknown and do not classify the branch as safe to clean.
 
 ## Preview contract
 

@@ -3,16 +3,18 @@ name: requirements-to-spec-tickets
 description: Turn one or more codebase ideas into approved, independently scoped specs and tracer-bullet tickets through interactive child sessions.
 disable-model-invocation: true
 metadata:
-  prerequisites: '{"skills":[{"name":"grill-with-docs","source":"mattpocock/skills"},{"name":"to-spec","source":"mattpocock/skills"},{"name":"to-tickets","source":"mattpocock/skills"},{"name":"grilling","source":"mattpocock/skills"},{"name":"domain-modeling","source":"mattpocock/skills"},{"name":"setup-matt-pocock-skills","source":"mattpocock/skills"}],"mcps":[],"tools":[{"name":"GitHub CLI (gh)","source":"https://cli.github.com/","install":"Install from https://cli.github.com/","setup":"Authenticate with `gh auth login`; for GitHub Enterprise, use `gh auth login --hostname <host>`." ,"when":"When using GitHub issue tracking."}]}'
+  prerequisites: '{"skills":[{"name":"grill-with-docs","source":"mattpocock/skills"},{"name":"to-spec","source":"mattpocock/skills"},{"name":"to-tickets","source":"mattpocock/skills"},{"name":"setup-matt-pocock-skills","source":"mattpocock/skills"}],"mcps":[],"tools":[{"name":"GitHub CLI (gh)","source":"https://cli.github.com/","install":"Install from https://cli.github.com/","setup":"Authenticate with `gh auth login`; for GitHub Enterprise, use `gh auth login --hostname <host>`.","when":"When using GitHub issue tracking."},{"name":"SkillRoute CLI","source":"https://github.com/erichare/skillroute","install":"uv tool install skillroute","setup":"Prepare a local catalog using the SkillRoute documentation","when":"When a prerequisite skill is absent from the available skill list or its exact source cannot be verified."}]}'
 ---
 
 # /requirements-to-spec-tickets
 
-Use this skill only when the user wants to turn one or more codebase ideas into clarified specs and tickets. It can publish approved local repository artifacts on a task branch; it does not implement application code.
+## Activation Criteria & Objective
 
-## 1. Preflight
+Use this skill when the user wants to turn one or more codebase ideas into clarified specs and tickets. It can publish approved local repository artifacts on a task branch; it does not implement application code.
 
-Resolve and read the original `SKILL.md` for every skill declared in this file's `metadata.prerequisites.skills` array, and verify every source is readable before continuing. Do this regardless of each dependency's invocation metadata, including for transitive prerequisites beyond the three workflow skills below. This exception permits source reading only. Before invoking a dependency, follow its invocation metadata and preserve all user-confirmation, authorization, and clarification gates in its instructions; if direct user invocation is required, pause at that gate.
+## Dependencies
+
+Resolve and read the original `SKILL.md` for each direct skill declared in this file's `metadata.prerequisites.skills` array by exact identity (declared name and source). If no exact name-and-source match appears in the available skill list because the skill is absent or a same-name candidate has a missing, ambiguous, or mismatched source, use the conditional SkillRoute CLI dependency in metadata to verify its identity and source, then read the full original file from the active skill roots. Read it regardless of invocation metadata; reading permits source access only. Before invoking a dependency, follow its invocation metadata and preserve all user-confirmation, authorization, and clarification gates. Record inaccessible sources. If SkillRoute CLI, its catalog, or a required lookup/read operation is unavailable, fails, or returns an unusable result, record the affected dependency as unresolved and report it; do not guess, substitute, or invoke it. Block only work that requires the affected source and continue only independent work. Do not retry in a loop; retry only when the resolver, catalog, or source becomes available or new evidence changes the result. If no independent work remains, pause and report the exact dependency, blocked step, and recovery condition; this pause does not classify the source as missing. Stop the workflow only when a required source is confirmed absent, invalid, or permission-denied, and report its exact identity and source; do not infer or install a replacement.
 
 The three workflow dependencies are:
 
@@ -20,13 +22,15 @@ The three workflow dependencies are:
 - `/to-spec`
 - `/to-tickets`
 
-Treat the live files as the source of truth, not as text to copy into this skill. If any declared source is missing or unreadable, stop before creating child sessions, report the exact unavailable skill and source, and do not install it automatically.
+Treat the live files as the source of truth, not as text to copy into this skill. When a dependency points to another skill, resolve and read that skill's current `SKILL.md` at the point of use; that skill resolves its own declared dependencies. Do not expand this skill's metadata with transitive dependencies or replace a referenced skill with a copied summary.
 
-When a dependency points to another skill, resolve and read that skill's current `SKILL.md` at the point of use; apply the same missing-file stop rule. Do not replace a referenced skill with a copied summary.
+GitHub CLI (`gh`) from `https://cli.github.com/` is required only when using GitHub issue tracking. If it is unavailable or unauthenticated, ask the user for explicit approval before installing it or authenticating with `gh auth login`. If approval is not given, do not install or authenticate; keep the CLI prerequisite unresolved, pause only work that needs it, and report the recovery condition. For GitHub Enterprise, authenticate with `gh auth login --hostname <host>` only after approval.
 
-After checking every declared source, verify that `/setup-matt-pocock-skills` has supplied the issue tracker and triage-label configuration required by `/to-spec` and `/to-tickets`. If the setup or tracker configuration is absent, stop and tell the user to run `/setup-matt-pocock-skills`; do not run setup automatically or create child sessions.
+## 1. Preflight
 
-Preflight is complete only when every declared skill source is readable and the tracker configuration is available.
+Confirm the declared skill identities and sources according to Dependencies above. Read each direct skill's current `SKILL.md` immediately before the phase that uses it; later-phase sources do not block independent earlier work. Verify that `/setup-matt-pocock-skills` has supplied the issue tracker and triage-label configuration required by `/to-spec` and `/to-tickets`. If the setup or tracker configuration is absent, stop and tell the user to run `/setup-matt-pocock-skills`; do not run setup automatically or create child sessions.
+
+Preflight is complete when the tracker configuration is available and the sources needed for the first active phase are verified. A temporary lookup/read failure blocks only the phase that needs that source; continue independent preflight or work. If no independent work remains, pause and report the exact dependency and recovery condition. Do not retry in a loop; retry only when the resolver, catalog, or source becomes available or new evidence changes the result. Do not report a source as missing until it is confirmed absent, invalid, or permission-denied.
 
 ## 2. Turn the request into groups
 
@@ -83,7 +87,7 @@ After `/to-tickets` publishes every planned ticket, the child session for that s
 - After any failed or ambiguous relationship write, re-read both relationships before retrying. If the link now exists under the same spec, treat it as complete. Otherwise preserve successful links and retry only the missing link, only for a clearly transient failure, with at most three total write attempts per link. Record the cumulative write-attempt count for each link in the child task progress summary before each write, and update it before every retry. Carry the count forward on resume. If the prior summary is missing or incomplete, do not retry automatically. Re-read before every retry; stop on other errors or when the limit is reached, and report which links succeeded or remain pending.
 - Preserve ticket and spec issue titles, bodies, labels, states, and blocking edges. Read these fields before linking, then verify them and every native parent relationship afterward. Re-read the spec `/sub_issues` list with `--paginate` and confirm it contains every planned ticket; leave the spec issue state unchanged.
 
-Reading the live files is the dependency mechanism for this workflow. It keeps the child aligned with dependency updates without modifying or duplicating those skills. If a required file becomes unavailable, stop that child and report the missing dependency.
+Reading the live files is the dependency mechanism for this workflow. It keeps the child aligned with dependency updates without modifying or duplicating those skills. If a required file is temporarily unavailable, mark that phase as blocked and pause only the phase that needs it; report the exact dependency and recovery condition, and continue independent child work. Report it as missing only after confirming it is absent, invalid, or permission-denied. Retry only when the resolver, catalog, or source becomes available or new evidence changes the result.
 
 The child must preserve the dependencies' own confirmation gates. In particular, it must let the user clarify the requirement, confirm proposed seams, approve ticket granularity and blocking edges, and approve publication wherever the dependency requires it. The child must not answer user-facing clarification questions on the user's behalf.
 
