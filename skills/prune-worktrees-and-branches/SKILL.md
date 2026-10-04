@@ -2,7 +2,7 @@
 name: prune-worktrees-and-branches
 description: Preview cleanup candidates and safely clean approved worktrees and local or eligible GitHub remote branches.
 metadata:
-  prerequisites: '{"skills":[],"mcps":[],"tools":[]}'
+  prerequisites: '{"skills":[],"mcps":[],"tools":[{"name":"GitHub CLI (gh)","source":"https://cli.github.com/","install":"Install from https://cli.github.com/","setup":"Authenticate with `gh auth login`; for GitHub Enterprise, use `gh auth login --hostname <host>`." ,"when":"When checking GitHub remotes for pull requests, protection, or default-branch state."}]}'
 ---
 
 # /prune-worktrees-and-branches

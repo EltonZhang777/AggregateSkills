@@ -2,7 +2,7 @@
 name: review-duo
 description: Run `/code-review` in opt-in strict mode with one fixed scope, independent review axes, and evidence-based findings.
 metadata:
-  prerequisites: '{"skills":[["code-review","mattpocock/skills"]],"mcps":[],"tools":[]}'
+  prerequisites: '{"skills":[{"name":"code-review","source":"mattpocock/skills"}],"mcps":[],"tools":[]}'
 ---
 
 # /review-duo
@@ -11,7 +11,7 @@ Use this skill only when the user explicitly requests `/review-duo` or strict `/
 
 ## Resolve and run the upstream skill
 
-Resolve and read the original `/code-review` `SKILL.md` from the active skill roots regardless of its invocation metadata; reading is read-only and does not invoke it. Before invoking `/code-review`, follow its invocation metadata and preserve its user-confirmation, authorization, and clarification gates. If direct user invocation is required, pause at that gate. Preserve its other stated requirements when applying the skill. If the source is missing or unreadable, stop and direct the user to `/code-review` in the [prerequisite guide](../../docs/prerequisites.md). Never copy a fallback body or continue with a locally vendored version. Record the resolved source URI and SHA-256 of its LF-normalized UTF-8 text in the frozen manifest; do not copy or vendor its body.
+Resolve and read the original `/code-review` `SKILL.md` from the active skill roots regardless of its invocation metadata; reading is read-only and does not invoke it. Before invoking `/code-review`, follow its invocation metadata and preserve its user-confirmation, authorization, and clarification gates. If direct user invocation is required, pause at that gate. Preserve its other stated requirements when applying the skill. If the source is missing or unreadable, stop before either review axis begins. Never copy a fallback body or continue with a locally vendored version. Record the resolved source URI and SHA-256 of its LF-normalized UTF-8 text in the frozen manifest; do not copy or vendor its body.
 
 Keep the `/code-review` workflow and its two-agent topology. Pass the strict scope and axis instructions below to those two agents in that one run. Do not start another review pair or nest a second `/code-review` run.
 

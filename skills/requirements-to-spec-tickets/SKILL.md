@@ -3,7 +3,7 @@ name: requirements-to-spec-tickets
 description: Turn one or more codebase ideas into approved, independently scoped specs and tracer-bullet tickets through interactive child sessions.
 disable-model-invocation: true
 metadata:
-  prerequisites: '{"skills":[["grill-with-docs","mattpocock/skills"],["to-spec","mattpocock/skills"],["to-tickets","mattpocock/skills"],["grilling","mattpocock/skills"],["domain-modeling","mattpocock/skills"],["setup-matt-pocock-skills","mattpocock/skills"]],"mcps":[],"tools":[]}'
+  prerequisites: '{"skills":[{"name":"grill-with-docs","source":"mattpocock/skills"},{"name":"to-spec","source":"mattpocock/skills"},{"name":"to-tickets","source":"mattpocock/skills"},{"name":"grilling","source":"mattpocock/skills"},{"name":"domain-modeling","source":"mattpocock/skills"},{"name":"setup-matt-pocock-skills","source":"mattpocock/skills"}],"mcps":[],"tools":[{"name":"GitHub CLI (gh)","source":"https://cli.github.com/","install":"Install from https://cli.github.com/","setup":"Authenticate with `gh auth login`; for GitHub Enterprise, use `gh auth login --hostname <host>`." ,"when":"When using GitHub issue tracking."}]}'
 ---
 
 # /requirements-to-spec-tickets
@@ -20,7 +20,7 @@ The three workflow dependencies are:
 - `/to-spec`
 - `/to-tickets`
 
-Treat the live files as the source of truth, not as text to copy into this skill. If any declared source is missing or unreadable, stop and direct the user to the matching entry in the [prerequisite guide](../../docs/prerequisites.md). Do not install it automatically.
+Treat the live files as the source of truth, not as text to copy into this skill. If any declared source is missing or unreadable, stop before creating child sessions, report the exact unavailable skill and source, and do not install it automatically.
 
 When a dependency points to another skill, resolve and read that skill's current `SKILL.md` at the point of use; apply the same missing-file stop rule. Do not replace a referenced skill with a copied summary.
 

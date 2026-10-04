@@ -2,7 +2,7 @@
 name: grill-duo
 description: "Use only when the user explicitly asks for a fixed independent subagent to review a multi-round grilling session. Use `/grill-duo-with-docs` when maintaining project documents; do not use for solo grilling or unrelated requests."
 metadata:
-  prerequisites: '{"skills":[["grilling","mattpocock/skills"]],"mcps":[],"tools":[]}'
+  prerequisites: '{"skills":[{"name":"grilling","source":"mattpocock/skills"}],"mcps":[],"tools":[]}'
 ---
 
 # /grill-duo
@@ -15,7 +15,7 @@ Use this entrypoint only when the user explicitly requests independent two-agent
 
 ## Dependencies
 
-Read the original `/grilling` `SKILL.md` from the active skill roots regardless of its invocation metadata. This exception permits source reading only. Before invoking the dependency, follow its invocation metadata and preserve all user-confirmation, authorization, and clarification gates in its instructions; if direct user invocation is required, pause at that gate. If the source is missing or unreadable, stop and direct the user to `/grilling` in the [prerequisite guide](../../docs/prerequisites.md).
+Read the original `/grilling` `SKILL.md` from the active skill roots regardless of its invocation metadata. This exception permits source reading only. Before invoking the dependency, follow its invocation metadata and preserve all user-confirmation, authorization, and clarification gates in its instructions; if direct user invocation is required, pause at that gate. If the source is missing or unreadable, stop and report the exact unavailable skill and source; do not substitute another skill.
 
 An unavailable reviewer is different from a missing dependency: only reviewer unavailability uses solo mode.
 

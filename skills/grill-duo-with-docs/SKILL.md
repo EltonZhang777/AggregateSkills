@@ -2,7 +2,7 @@
 name: grill-duo-with-docs
 description: "Use when the user explicitly requests two-agent grilling that must maintain confirmed domain language or project decisions. Use `/grill-duo` alone when project-document maintenance is not needed."
 metadata:
-  prerequisites: '{"skills":[["grill-duo","EltonZhang777/AggregateSkills"],["domain-modeling","mattpocock/skills"]],"mcps":[],"tools":[]}'
+  prerequisites: '{"skills":[{"name":"grill-duo","source":"EltonZhang777/AggregateSkills"},{"name":"domain-modeling","source":"mattpocock/skills"}],"mcps":[],"tools":[]}'
 ---
 
 # /grill-duo-with-docs
@@ -15,7 +15,7 @@ Use this entrypoint when the user explicitly wants a grilling session that recor
 
 ## Dependencies
 
-Read the original `SKILL.md` files for `/grill-duo` and `/domain-modeling` from the active skill roots regardless of their invocation metadata. This exception permits source reading only. Before invoking a dependency, follow its invocation metadata and preserve all user-confirmation, authorization, and clarification gates in its instructions; if direct user invocation is required, pause at that gate. If either source is missing or unreadable, stop and direct the user to the matching entry in the [prerequisite guide](../../docs/prerequisites.md).
+Read the original `SKILL.md` files for `/grill-duo` and `/domain-modeling` from the active skill roots regardless of their invocation metadata. This exception permits source reading only. Before invoking a dependency, follow its invocation metadata and preserve all user-confirmation, authorization, and clarification gates in its instructions; if direct user invocation is required, pause at that gate. If either source is missing or unreadable, stop before starting either phase and report the exact unavailable skill and source.
 
 Follow `/grill-duo` for activation, reviewer continuity and boundaries, round IDs, frontier handling, current-request correlation, solo fallback, and final shared-understanding confirmation. Follow `/domain-modeling` and its referenced materials for glossary and decision discipline. Do not copy either skill's body into this entrypoint.
 

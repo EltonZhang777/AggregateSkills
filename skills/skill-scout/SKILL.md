@@ -2,7 +2,7 @@
 name: skill-scout
 description: Find installed Agent Skills and prerequisites with the local SkillRoute CLI when a workflow needs skill discovery, comparison, or step-by-step skill routing.
 metadata:
-  prerequisites: '{"skills":[],"mcps":[],"tools":[["SkillRoute CLI","https://github.com/erichare/skillroute","uv tool install skillroute","Prepare a local catalog using the SkillRoute documentation"]]}'
+  prerequisites: '{"skills":[],"mcps":[],"tools":[{"name":"SkillRoute CLI","source":"https://github.com/erichare/skillroute","install":"uv tool install skillroute","setup":"Prepare a local catalog using the SkillRoute documentation"}]}'
 ---
 
 # /skill-scout

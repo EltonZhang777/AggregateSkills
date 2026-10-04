@@ -3,7 +3,7 @@ name: spec-implement-loop
 description: Run an explicitly approved root spec or ticket tree through implementation, verification, commit, push, status sync, and bounded review remediation.
 disable-model-invocation: true
 metadata:
-  prerequisites: '{"skills":[["implement","mattpocock/skills"],["tdd","mattpocock/skills"],["code-review","mattpocock/skills"],["grill-duo-with-docs","mattpocock/skills"],["grilling","mattpocock/skills"],["domain-modeling","mattpocock/skills"],["to-spec","mattpocock/skills"],["to-tickets","mattpocock/skills"],["setup-matt-pocock-skills","mattpocock/skills"],["ponytail-review","DietrichGebert/ponytail"],["conventional-git-messages","EltonZhang777/AggregateSkills"]],"mcps":[],"tools":[]}'
+  prerequisites: '{"skills":[{"name":"implement","source":"mattpocock/skills"},{"name":"tdd","source":"mattpocock/skills"},{"name":"code-review","source":"mattpocock/skills"},{"name":"grill-duo-with-docs","source":"mattpocock/skills"},{"name":"grilling","source":"mattpocock/skills"},{"name":"domain-modeling","source":"mattpocock/skills"},{"name":"to-spec","source":"mattpocock/skills"},{"name":"to-tickets","source":"mattpocock/skills"},{"name":"setup-matt-pocock-skills","source":"mattpocock/skills"},{"name":"ponytail-review","source":"DietrichGebert/ponytail"},{"name":"conventional-git-messages","source":"EltonZhang777/AggregateSkills"},{"one_of":[{"name":"show-me","source":null,"install":"The local skill file is readable, but it declares no publisher or portable install source."},{"name":"archify","source":null,"install":"The local skill file names author tt-a1i but declares no publisher URL or portable install source."}],"when":"For every commit explanation and the final summary."}],"mcps":[],"tools":[{"name":"GitHub CLI (gh)","source":"https://cli.github.com/","install":"Install from https://cli.github.com/","setup":"Authenticate with `gh auth login`; for GitHub Enterprise, use `gh auth login --hostname <host>`." ,"when":"When using GitHub issue tracking."}]}'
 ---
 
 # /spec-implement-loop
@@ -24,7 +24,7 @@ Required skills:
 
 For every required skill, resolve and read its original `SKILL.md` from the active skill roots regardless of whether a skill catalog exposes it or its invocation metadata permits automatic invocation. This exception permits source reading only. Before invoking a dependency, follow its invocation metadata and preserve all user-confirmation, authorization, and clarification gates in its instructions; if direct user invocation is required, pause at that gate. Load the original file again at its workflow step when needed. Never edit, copy, or paraphrase a dependency skill as a substitute.
 
-If a declared source is missing or unreadable, stop and direct the user to the corresponding entry in the [prerequisite guide](../../docs/prerequisites.md). Do not install dependencies automatically.
+If a declared source is missing or unreadable, stop before implementing or publishing tickets, report its exact identity and declared source status, and do not install a replacement automatically.
 
 Read the original `SKILL.md` for `/setup-matt-pocock-skills`, then verify the configured issue-tracker files and vocabulary it requires. Do not run setup automatically. If setup or tracker configuration is missing or invalid, stop.
 
