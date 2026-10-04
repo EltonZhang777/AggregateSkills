@@ -1,0 +1,222 @@
+{
+  "file_count": 22,
+  "inventory_sha256": "1eb0536ee8f2950fead382b6c63c86dc66fd0c1e3dc68cf4ba41a253ad7d82c0",
+  "package_count": 10,
+  "packages": [
+    {
+      "entrypoint_present": true,
+      "files": [
+        {
+          "kind": "file",
+          "line_count": 92,
+          "path": "SKILL.md",
+          "sha256": "7d357ffa1babe9cf2483fbb321b950672701434e754ee32cbfb382acea516964",
+          "size_bytes": 11941
+        },
+        {
+          "kind": "file",
+          "line_count": 130,
+          "path": "scripts/apply_candidate.py",
+          "sha256": "fdcffcf43c18c2ba98d46fbd85e10efbbeb403932dd5bfbd18e2f39826dd17bc",
+          "size_bytes": 5058
+        }
+      ],
+      "name": "compress-docs"
+    },
+    {
+      "entrypoint_present": true,
+      "files": [
+        {
+          "kind": "file",
+          "line_count": 82,
+          "path": "SKILL.md",
+          "sha256": "ffc79f0a07a6bad5620228a74a83f86eb1750c6912b75b91e69f36a1267a1aaa",
+          "size_bytes": 6950
+        }
+      ],
+      "name": "conventional-git-messages"
+    },
+    {
+      "entrypoint_present": true,
+      "files": [
+        {
+          "kind": "file",
+          "line_count": 29,
+          "path": "NOTICE",
+          "sha256": "2ac99bd02c2a57420f5b897b8d56174ac6ae05a4db41ced554913237eb3d5b63",
+          "size_bytes": 1613
+        },
+        {
+          "kind": "file",
+          "line_count": 69,
+          "path": "SKILL.md",
+          "sha256": "8cb23752086637ccc335b0f4ccb5785d2f55be69f371b3d66f988e50bbcc8021",
+          "size_bytes": 7671
+        }
+      ],
+      "name": "grill-duo"
+    },
+    {
+      "entrypoint_present": true,
+      "files": [
+        {
+          "kind": "file",
+          "line_count": 28,
+          "path": "NOTICE",
+          "sha256": "7520f5491a610d0b3a9d3669afb8e0eba8b8c4da1180e0035c60c287298ef9dd",
+          "size_bytes": 1720
+        },
+        {
+          "kind": "file",
+          "line_count": 43,
+          "path": "SKILL.md",
+          "sha256": "17323a4a0522b3890816431fc8f97e5c2e74e06353ea12815b5cda0c63a05af4",
+          "size_bytes": 4982
+        }
+      ],
+      "name": "grill-duo-with-docs"
+    },
+    {
+      "entrypoint_present": true,
+      "files": [
+        {
+          "kind": "file",
+          "line_count": 113,
+          "path": "SKILL.md",
+          "sha256": "22a427af88713ce8f6c7982240041d0382b1006cdbdd9311049d0e75f02dc784",
+          "size_bytes": 14785
+        }
+      ],
+      "name": "pr-and-merge"
+    },
+    {
+      "entrypoint_present": true,
+      "files": [
+        {
+          "kind": "file",
+          "line_count": 113,
+          "path": "SKILL.md",
+          "sha256": "fe5fe6306e98285485e90282868dd77a49e9367ba07a6ae85ff3af8d3abdebc9",
+          "size_bytes": 17506
+        }
+      ],
+      "name": "prune-worktrees-and-branches"
+    },
+    {
+      "entrypoint_present": true,
+      "files": [
+        {
+          "kind": "file",
+          "line_count": 141,
+          "path": "SKILL.md",
+          "sha256": "e48c80942304ca4e20a506bf398c929eb35a9aa990390ed21db5b8481376b458",
+          "size_bytes": 18995
+        },
+        {
+          "kind": "file",
+          "line_count": 2,
+          "path": "agents/openai.yaml",
+          "sha256": "3bf863a8856d04a6a1c4f23b3aae6cbf5388544129662c55cc733c2d9c23bbbf",
+          "size_bytes": 45
+        }
+      ],
+      "name": "requirements-to-spec-tickets"
+    },
+    {
+      "entrypoint_present": true,
+      "files": [
+        {
+          "kind": "file",
+          "line_count": 67,
+          "path": "SKILL.md",
+          "sha256": "75d9b7a91e3a0498767cae6127a959a53ec8b075ccd52e8cb3593beeb8abe839",
+          "size_bytes": 8459
+        },
+        {
+          "kind": "file",
+          "line_count": 5,
+          "path": "agents/openai.yaml",
+          "sha256": "cea841fcc0302a8987cbb47a87c318444fc1efcc1a07cadae9890c695c4f9330",
+          "size_bytes": 160
+        },
+        {
+          "kind": "file",
+          "line_count": 14,
+          "path": "references/acceptance-fixture.patch",
+          "sha256": "6f667e2413dc6081ec83ec81756fcfa3e15397922c4231cce942697a53b78c3f",
+          "size_bytes": 398
+        },
+        {
+          "kind": "file",
+          "line_count": 101,
+          "path": "references/acceptance-manifest.json",
+          "sha256": "edae7b3a7caefd88b3a02073b5186b453d293afcbe984973d9de5f98bf7db424",
+          "size_bytes": 3675
+        },
+        {
+          "kind": "file",
+          "line_count": 12,
+          "path": "references/acceptance-requirements.md",
+          "sha256": "597efc347e44657bcc290f4fdea91bd98e85831c4c422c735a6c54833e29dc6a",
+          "size_bytes": 1036
+        },
+        {
+          "kind": "file",
+          "line_count": 31,
+          "path": "references/acceptance-scenario.md",
+          "sha256": "241cce1d7ba86164638f54d8764e7d9467ac8a26aeb76d48144bb389ca8ea5ab",
+          "size_bytes": 3685
+        },
+        {
+          "kind": "file",
+          "line_count": 6,
+          "path": "references/acceptance-standard.md",
+          "sha256": "2a4f6502dcfecc1901d4eb5df250a9fcbcfae76ca1047cbb0e6a6e21441b30dd",
+          "size_bytes": 332
+        }
+      ],
+      "name": "review-duo"
+    },
+    {
+      "entrypoint_present": true,
+      "files": [
+        {
+          "kind": "file",
+          "line_count": 83,
+          "path": "SKILL.md",
+          "sha256": "4bf7cef12995636f14e456044446073d25a0bed3ce53473854c6630dae25d076",
+          "size_bytes": 6196
+        },
+        {
+          "kind": "file",
+          "line_count": 6,
+          "path": "agents/openai.yaml",
+          "sha256": "9af0d7a8b8fe83cb4825595cd5f84a7e4e8b3aa0bf68040d29af894cb470bc12",
+          "size_bytes": 244
+        }
+      ],
+      "name": "skill-scout"
+    },
+    {
+      "entrypoint_present": true,
+      "files": [
+        {
+          "kind": "file",
+          "line_count": 145,
+          "path": "SKILL.md",
+          "sha256": "1773f1b2ae552101411c00bf12cdb31717d8997d702ea29e7ea8dab820863619",
+          "size_bytes": 18307
+        },
+        {
+          "kind": "file",
+          "line_count": 5,
+          "path": "agents/openai.yaml",
+          "sha256": "da04fd1f721de9b788486db724d854c6a3d8ee3979351898183607068626dc05",
+          "size_bytes": 162
+        }
+      ],
+      "name": "spec-implement-loop"
+    }
+  ],
+  "schema_version": 1
+}

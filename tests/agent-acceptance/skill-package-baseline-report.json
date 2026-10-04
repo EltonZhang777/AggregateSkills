@@ -1,0 +1,3325 @@
+{
+  "errors": [
+    {
+      "code": "reviewer_disagreement",
+      "message": "The reviewers disagree on overall status.",
+      "path": null,
+      "reviewer_id": null,
+      "skill_name": "grill-duo"
+    },
+    {
+      "code": "reviewer_disagreement",
+      "message": "The reviewers disagree on overall status.",
+      "path": null,
+      "reviewer_id": null,
+      "skill_name": "pr-and-merge"
+    },
+    {
+      "code": "reviewer_disagreement",
+      "message": "The reviewers disagree on overall status.",
+      "path": null,
+      "reviewer_id": null,
+      "skill_name": "review-duo"
+    }
+  ],
+  "fixture_id": "generic-agent-skills-host-v1",
+  "inventory_sha256": "1eb0536ee8f2950fead382b6c63c86dc66fd0c1e3dc68cf4ba41a253ad7d82c0",
+  "overall_status": "blocked",
+  "packages": [
+    {
+      "reviews": [
+        {
+          "criteria": [
+            {
+              "evidence": [
+                {
+                  "end_line": 1,
+                  "excerpt": "---",
+                  "path": "SKILL.md",
+                  "start_line": 1
+                },
+                {
+                  "end_line": 2,
+                  "excerpt": "name: compress-docs",
+                  "path": "SKILL.md",
+                  "start_line": 2
+                },
+                {
+                  "end_line": 3,
+                  "excerpt": "description: Compress explicitly named documents or user-approved files selected by directory, glob, or all-under-root discovery, preserving protected content and applying each validated shorter candidate.",
+                  "path": "SKILL.md",
+                  "start_line": 3
+                }
+              ],
+              "findings": [],
+              "id": "entrypoint_and_format",
+              "status": "pass"
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 57,
+                  "excerpt": "run `scripts/apply_candidate.py`",
+                  "path": "SKILL.md",
+                  "start_line": 57
+                },
+                {
+                  "end_line": 1,
+                  "excerpt": "import argparse",
+                  "path": "scripts/apply_candidate.py",
+                  "start_line": 1
+                },
+                {
+                  "end_line": 8,
+                  "excerpt": "from pathlib import Path",
+                  "path": "scripts/apply_candidate.py",
+                  "start_line": 8
+                }
+              ],
+              "findings": [],
+              "id": "resource_closure",
+              "status": "pass"
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 57,
+                  "excerpt": "`scripts/apply_candidate.py`",
+                  "path": "SKILL.md",
+                  "start_line": 57
+                },
+                {
+                  "end_line": 112,
+                  "excerpt": "def main():",
+                  "path": "scripts/apply_candidate.py",
+                  "start_line": 112
+                }
+              ],
+              "findings": [
+                {
+                  "impact": "A host without Python cannot apply candidates; subagent absence has an inline-approval fallback. Declare these host requirements for discovery.",
+                  "summary": "[handoff: prerequisite-governance] Prerequisites metadata is empty although the apply workflow requires Python 3 and the default candidate workflow uses a native subagent."
+                }
+              ],
+              "id": "references_and_cycles",
+              "status": "pass"
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 8,
+                  "excerpt": "# Compress Docs",
+                  "path": "SKILL.md",
+                  "start_line": 8
+                },
+                {
+                  "end_line": 36,
+                  "excerpt": "def apply_candidate(source_path, expected_sha256, candidate, approved_root=None):",
+                  "path": "scripts/apply_candidate.py",
+                  "start_line": 36
+                }
+              ],
+              "findings": [],
+              "id": "all_files_classified",
+              "status": "pass"
+            }
+          ],
+          "file_coverage": [
+            {
+              "classification": "Agent Skills entrypoint and document compression workflow.",
+              "disposition": "reviewed",
+              "evidence": [
+                {
+                  "end_line": 8,
+                  "excerpt": "# Compress Docs",
+                  "path": "SKILL.md",
+                  "start_line": 8
+                }
+              ],
+              "path": "SKILL.md"
+            },
+            {
+              "classification": "Local Python helper that validates and applies a candidate.",
+              "disposition": "reviewed",
+              "evidence": [
+                {
+                  "end_line": 36,
+                  "excerpt": "def apply_candidate(source_path, expected_sha256, candidate, approved_root=None):",
+                  "path": "scripts/apply_candidate.py",
+                  "start_line": 36
+                }
+              ],
+              "path": "scripts/apply_candidate.py"
+            }
+          ],
+          "fixture_id": "generic-agent-skills-host-v1",
+          "inventory_sha256": "1eb0536ee8f2950fead382b6c63c86dc66fd0c1e3dc68cf4ba41a253ad7d82c0",
+          "overall_status": "pass",
+          "required_capabilities": [
+            {
+              "evidence": [
+                {
+                  "end_line": 57,
+                  "excerpt": "Use the host's Python 3 standard-library runtime",
+                  "path": "SKILL.md",
+                  "start_line": 57
+                },
+                {
+                  "end_line": 57,
+                  "excerpt": "If the runtime is unavailable, report that file as not applied and continue other files.",
+                  "path": "SKILL.md",
+                  "start_line": 57
+                }
+              ],
+              "name": "Python 3 standard-library runtime",
+              "scope": "core",
+              "unavailable_behavior": "Report the file as not applied and continue with other files."
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 43,
+                  "excerpt": "Use the host's native subagent capability",
+                  "path": "SKILL.md",
+                  "start_line": 43
+                },
+                {
+                  "end_line": 45,
+                  "excerpt": "ask the user once whether to approve inline compression",
+                  "path": "SKILL.md",
+                  "start_line": 45
+                }
+              ],
+              "name": "Native subagent for isolated document compression",
+              "scope": "optional",
+              "unavailable_behavior": "Ask once for approval to compress inline; stop without changes unless explicitly approved."
+            }
+          ],
+          "reviewer_id": "baseline-v1-completeness-compress-docs",
+          "reviewer_role": "completeness",
+          "schema_version": 1,
+          "skill_name": "compress-docs"
+        },
+        {
+          "criteria": [
+            {
+              "evidence": [
+                {
+                  "end_line": 10,
+                  "excerpt": "Handle one explicitly named file or a user-approved file list.",
+                  "path": "SKILL.md",
+                  "start_line": 10
+                }
+              ],
+              "findings": [],
+              "id": "generic_workflow_primary",
+              "status": "pass"
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 43,
+                  "excerpt": "Use the host's native subagent capability",
+                  "path": "SKILL.md",
+                  "start_line": 43
+                },
+                {
+                  "end_line": 45,
+                  "excerpt": "If no native subagent is available, ask the user once whether to approve inline compression",
+                  "path": "SKILL.md",
+                  "start_line": 45
+                }
+              ],
+              "findings": [],
+              "id": "harness_independence",
+              "status": "pass"
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 45,
+                  "excerpt": "If no native subagent is available, ask the user once whether to approve inline compression",
+                  "path": "SKILL.md",
+                  "start_line": 45
+                },
+                {
+                  "end_line": 57,
+                  "excerpt": "If the runtime is unavailable, report that file as not applied and continue other files.",
+                  "path": "SKILL.md",
+                  "start_line": 57
+                }
+              ],
+              "findings": [],
+              "id": "capabilities_and_unavailable_behavior",
+              "status": "pass"
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 57,
+                  "excerpt": "Use the host's Python 3 standard-library runtime",
+                  "path": "SKILL.md",
+                  "start_line": 57
+                }
+              ],
+              "findings": [],
+              "id": "external_requirements",
+              "status": "pass"
+            }
+          ],
+          "file_coverage": [
+            {
+              "classification": "Primary skill instructions",
+              "disposition": "reviewed",
+              "evidence": [],
+              "path": "SKILL.md"
+            },
+            {
+              "classification": "Python standard-library candidate application helper",
+              "disposition": "reviewed",
+              "evidence": [],
+              "path": "scripts/apply_candidate.py"
+            }
+          ],
+          "fixture_id": "generic-agent-skills-host-v1",
+          "inventory_sha256": "1eb0536ee8f2950fead382b6c63c86dc66fd0c1e3dc68cf4ba41a253ad7d82c0",
+          "overall_status": "pass",
+          "required_capabilities": [
+            {
+              "evidence": [
+                {
+                  "end_line": 57,
+                  "excerpt": "If the runtime is unavailable, report that file as not applied and continue other files.",
+                  "path": "SKILL.md",
+                  "start_line": 57
+                }
+              ],
+              "name": "Python 3 standard-library runtime",
+              "scope": "core",
+              "unavailable_behavior": "If unavailable, report that file as not applied and continue with other files."
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 43,
+                  "excerpt": "Use the host's native subagent capability to run one isolated, non-interactive agent per document.",
+                  "path": "SKILL.md",
+                  "start_line": 43
+                },
+                {
+                  "end_line": 45,
+                  "excerpt": "If no native subagent is available, ask the user once whether to approve inline compression for the approved list.",
+                  "path": "SKILL.md",
+                  "start_line": 45
+                }
+              ],
+              "name": "Host-native subagent capability",
+              "scope": "optional",
+              "unavailable_behavior": "If unavailable, ask once for approval to compress inline; without approval, stop without changing files."
+            }
+          ],
+          "reviewer_id": "baseline-v1-workflow_portability-compress-docs",
+          "reviewer_role": "workflow_portability",
+          "schema_version": 1,
+          "skill_name": "compress-docs"
+        }
+      ],
+      "skill_name": "compress-docs",
+      "status": "pass"
+    },
+    {
+      "reviews": [
+        {
+          "criteria": [
+            {
+              "evidence": [
+                {
+                  "end_line": 1,
+                  "excerpt": "---",
+                  "path": "SKILL.md",
+                  "start_line": 1
+                },
+                {
+                  "end_line": 2,
+                  "excerpt": "name: conventional-git-messages",
+                  "path": "SKILL.md",
+                  "start_line": 2
+                },
+                {
+                  "end_line": 3,
+                  "excerpt": "description: Draft concise commit, pull request, and issue text without Git or GitHub operations.",
+                  "path": "SKILL.md",
+                  "start_line": 3
+                }
+              ],
+              "findings": [],
+              "id": "entrypoint_and_format",
+              "status": "pass"
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 12,
+                  "excerpt": "root `AGENTS.md` of the target repository",
+                  "path": "SKILL.md",
+                  "start_line": 12
+                }
+              ],
+              "findings": [
+                {
+                  "impact": "A generic host without access to target repository policy cannot complete those drafting workflows under the package's rules.",
+                  "summary": "[handoff: prerequisite-governance] Issue and pull request drafting requires the target repository's root AGENTS.md, outside this package; no recovery behavior is stated for its absence."
+                }
+              ],
+              "id": "resource_closure",
+              "status": "fail"
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 77,
+                  "excerpt": "If a needed diagram requires `/skill-scout`, read its current `SKILL.md`",
+                  "path": "SKILL.md",
+                  "start_line": 77
+                }
+              ],
+              "findings": [
+                {
+                  "impact": "Core text drafting remains usable; the optional diagram flow should be discoverable or omitted when the skill is unavailable.",
+                  "summary": "[handoff: prerequisite-governance] The optional `/skill-scout` reference is not declared in metadata.prerequisites."
+                }
+              ],
+              "id": "references_and_cycles",
+              "status": "pass"
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 10,
+                  "excerpt": "Draft only the commit, pull request, or issue text the user asks for.",
+                  "path": "SKILL.md",
+                  "start_line": 10
+                }
+              ],
+              "findings": [],
+              "id": "all_files_classified",
+              "status": "pass"
+            }
+          ],
+          "file_coverage": [
+            {
+              "classification": "Agent Skills entrypoint and commit, pull request, and issue text drafting rules.",
+              "disposition": "reviewed",
+              "evidence": [
+                {
+                  "end_line": 10,
+                  "excerpt": "Draft only the commit, pull request, or issue text the user asks for.",
+                  "path": "SKILL.md",
+                  "start_line": 10
+                }
+              ],
+              "path": "SKILL.md"
+            }
+          ],
+          "fixture_id": "generic-agent-skills-host-v1",
+          "inventory_sha256": "1eb0536ee8f2950fead382b6c63c86dc66fd0c1e3dc68cf4ba41a253ad7d82c0",
+          "overall_status": "fail",
+          "required_capabilities": [
+            {
+              "evidence": [
+                {
+                  "end_line": 12,
+                  "excerpt": "root `AGENTS.md` of the target repository",
+                  "path": "SKILL.md",
+                  "start_line": 12
+                }
+              ],
+              "name": "Target repository root AGENTS.md for issue and PR text",
+              "scope": "core",
+              "unavailable_behavior": "The file is required but no unavailable behavior is stated; drafting cannot be shown to conform until the user supplies it or the target repository is accessible."
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 76,
+                  "excerpt": "Consider a diagram only when it materially improves",
+                  "path": "SKILL.md",
+                  "start_line": 76
+                },
+                {
+                  "end_line": 78,
+                  "excerpt": "Omit inaccessible artifacts",
+                  "path": "SKILL.md",
+                  "start_line": 78
+                }
+              ],
+              "name": "Optional /skill-scout skill source",
+              "scope": "optional",
+              "unavailable_behavior": "Diagram support is optional; omit inaccessible artifacts."
+            }
+          ],
+          "reviewer_id": "baseline-v1-completeness-conventional-git-messages",
+          "reviewer_role": "completeness",
+          "schema_version": 1,
+          "skill_name": "conventional-git-messages"
+        },
+        {
+          "criteria": [
+            {
+              "evidence": [
+                {
+                  "end_line": 10,
+                  "excerpt": "Draft only the commit, pull request, or issue text the user asks for.",
+                  "path": "SKILL.md",
+                  "start_line": 10
+                }
+              ],
+              "findings": [],
+              "id": "generic_workflow_primary",
+              "status": "pass"
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 10,
+                  "excerpt": "Never perform a Git operation, create or modify an issue, open or edit a pull request, or post a comment.",
+                  "path": "SKILL.md",
+                  "start_line": 10
+                }
+              ],
+              "findings": [],
+              "id": "harness_independence",
+              "status": "pass"
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 12,
+                  "excerpt": "use only the normative prose in the root `AGENTS.md` of the target repository",
+                  "path": "SKILL.md",
+                  "start_line": 12
+                }
+              ],
+              "findings": [
+                {
+                  "impact": "The generic fixture supplies no repository-only documents, so these drafting modes have no defined safe continuation.",
+                  "summary": "PR and issue drafting requires the target repository root AGENTS.md, but the skill does not say what to do when that file is missing or unreadable."
+                }
+              ],
+              "id": "capabilities_and_unavailable_behavior",
+              "status": "fail"
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 12,
+                  "excerpt": "of the target repository that will own the issue or pull request",
+                  "path": "SKILL.md",
+                  "start_line": 12
+                }
+              ],
+              "findings": [
+                {
+                  "impact": "Without the target AGENTS.md, the host cannot apply the required language and repository rules or know whether to request the missing source.",
+                  "summary": "The GitHub text workflow depends on a target-repository policy file outside this package and has no explicit missing-file fallback."
+                }
+              ],
+              "id": "external_requirements",
+              "status": "fail"
+            }
+          ],
+          "file_coverage": [
+            {
+              "classification": "Standalone commit, pull request, and issue drafting instructions",
+              "disposition": "reviewed",
+              "evidence": [],
+              "path": "SKILL.md"
+            }
+          ],
+          "fixture_id": "generic-agent-skills-host-v1",
+          "inventory_sha256": "1eb0536ee8f2950fead382b6c63c86dc66fd0c1e3dc68cf4ba41a253ad7d82c0",
+          "overall_status": "fail",
+          "required_capabilities": [
+            {
+              "evidence": [
+                {
+                  "end_line": 12,
+                  "excerpt": "use only the normative prose in the root `AGENTS.md` of the target repository",
+                  "path": "SKILL.md",
+                  "start_line": 12
+                }
+              ],
+              "name": "Target repository root AGENTS.md for PR and issue text",
+              "scope": "optional",
+              "unavailable_behavior": "No behavior is specified for a missing or unreadable file; the skill only pauses when the available target rule has no discernible dominant language."
+            }
+          ],
+          "reviewer_id": "baseline-v1-workflow_portability-conventional-git-messages",
+          "reviewer_role": "workflow_portability",
+          "schema_version": 1,
+          "skill_name": "conventional-git-messages"
+        }
+      ],
+      "skill_name": "conventional-git-messages",
+      "status": "fail"
+    },
+    {
+      "reviews": [
+        {
+          "criteria": [
+            {
+              "evidence": [
+                {
+                  "end_line": 1,
+                  "excerpt": "---",
+                  "path": "SKILL.md",
+                  "start_line": 1
+                },
+                {
+                  "end_line": 2,
+                  "excerpt": "name: grill-duo",
+                  "path": "SKILL.md",
+                  "start_line": 2
+                },
+                {
+                  "end_line": 3,
+                  "excerpt": "description: \"Use only when the user explicitly asks for a fixed independent subagent to review a multi-round grilling session. Use `/grill-duo-with-docs` when maintaining project documents; do not use for solo grilling or unrelated requests.\"",
+                  "path": "SKILL.md",
+                  "start_line": 3
+                }
+              ],
+              "findings": [],
+              "id": "entrypoint_and_format",
+              "status": "pass"
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 18,
+                  "excerpt": "[prerequisite guide](../../docs/prerequisites.md)",
+                  "path": "SKILL.md",
+                  "start_line": 18
+                }
+              ],
+              "findings": [
+                {
+                  "impact": "A standalone installation cannot follow the recovery route when `/grilling` is missing.",
+                  "summary": "Missing-prerequisite recovery points to `../../docs/prerequisites.md`, outside this package and not a stable external reference."
+                }
+              ],
+              "id": "resource_closure",
+              "status": "fail"
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 14,
+                  "excerpt": "Use `/grill-duo-with-docs` when the session needs to maintain confirmed project documents.",
+                  "path": "SKILL.md",
+                  "start_line": 14
+                }
+              ],
+              "findings": [
+                {
+                  "impact": "A resolver traversing the references can cycle between entrypoints; no cycle handling is specified.",
+                  "summary": "Skill-reference cycle: this entrypoint routes documentation sessions to `/grill-duo-with-docs`, whose instructions route back to `/grill-duo`."
+                },
+                {
+                  "impact": "Installers cannot discover the normal host requirement from prerequisites metadata; the solo fallback is explicitly degraded.",
+                  "summary": "[handoff: prerequisite-governance] Metadata declares `/grilling` but not the independent subagent capability required by the normal dual-agent workflow."
+                }
+              ],
+              "id": "references_and_cycles",
+              "status": "fail"
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 6,
+                  "excerpt": "The Matt Pocock and Rovai AI material adapted here is licensed under MIT.",
+                  "path": "NOTICE",
+                  "start_line": 6
+                },
+                {
+                  "end_line": 10,
+                  "excerpt": "Run a portable two-agent grilling session.",
+                  "path": "SKILL.md",
+                  "start_line": 10
+                }
+              ],
+              "findings": [],
+              "id": "all_files_classified",
+              "status": "pass"
+            }
+          ],
+          "file_coverage": [
+            {
+              "classification": "Source attribution and MIT license notice.",
+              "disposition": "reviewed",
+              "evidence": [
+                {
+                  "end_line": 6,
+                  "excerpt": "The Matt Pocock and Rovai AI material adapted here is licensed under MIT.",
+                  "path": "NOTICE",
+                  "start_line": 6
+                }
+              ],
+              "path": "NOTICE"
+            },
+            {
+              "classification": "Agent Skills entrypoint and two-agent grilling workflow.",
+              "disposition": "reviewed",
+              "evidence": [
+                {
+                  "end_line": 10,
+                  "excerpt": "Run a portable two-agent grilling session.",
+                  "path": "SKILL.md",
+                  "start_line": 10
+                }
+              ],
+              "path": "SKILL.md"
+            }
+          ],
+          "fixture_id": "generic-agent-skills-host-v1",
+          "inventory_sha256": "1eb0536ee8f2950fead382b6c63c86dc66fd0c1e3dc68cf4ba41a253ad7d82c0",
+          "overall_status": "fail",
+          "required_capabilities": [
+            {
+              "evidence": [
+                {
+                  "end_line": 18,
+                  "excerpt": "If the source is missing or unreadable, stop and direct the user to `/grilling`",
+                  "path": "SKILL.md",
+                  "start_line": 18
+                }
+              ],
+              "name": "The /grilling prerequisite skill source",
+              "scope": "core",
+              "unavailable_behavior": "Stop and direct the user to the prerequisite guide; that guide is not bundled."
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 25,
+                  "excerpt": "Use the host runtime's independent subagent mechanism",
+                  "path": "SKILL.md",
+                  "start_line": 25
+                },
+                {
+                  "end_line": 27,
+                  "excerpt": "continue the same grilling protocol in solo mode",
+                  "path": "SKILL.md",
+                  "start_line": 27
+                }
+              ],
+              "name": "Independent reviewer subagent",
+              "scope": "core",
+              "unavailable_behavior": "Disclose reviewer unavailability and continue in solo mode; do not imply an independent second opinion."
+            }
+          ],
+          "reviewer_id": "baseline-v1-completeness-grill-duo",
+          "reviewer_role": "completeness",
+          "schema_version": 1,
+          "skill_name": "grill-duo"
+        },
+        {
+          "criteria": [
+            {
+              "evidence": [
+                {
+                  "end_line": 10,
+                  "excerpt": "Run a portable two-agent grilling session.",
+                  "path": "SKILL.md",
+                  "start_line": 10
+                }
+              ],
+              "findings": [],
+              "id": "generic_workflow_primary",
+              "status": "pass"
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 25,
+                  "excerpt": "Use the host runtime's independent subagent mechanism",
+                  "path": "SKILL.md",
+                  "start_line": 25
+                }
+              ],
+              "findings": [],
+              "id": "harness_independence",
+              "status": "pass"
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 18,
+                  "excerpt": "If the source is missing or unreadable, stop and direct the user to `/grilling`",
+                  "path": "SKILL.md",
+                  "start_line": 18
+                },
+                {
+                  "end_line": 27,
+                  "excerpt": "continue the same grilling protocol in solo mode",
+                  "path": "SKILL.md",
+                  "start_line": 27
+                }
+              ],
+              "findings": [],
+              "id": "capabilities_and_unavailable_behavior",
+              "status": "pass"
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 5,
+                  "excerpt": "prerequisites: '{\"skills\":[[\"grilling\",\"mattpocock/skills\"]],\"mcps\":[],\"tools\":[]}'",
+                  "path": "SKILL.md",
+                  "start_line": 5
+                },
+                {
+                  "end_line": 18,
+                  "excerpt": "If the source is missing or unreadable, stop and direct the user to `/grilling`",
+                  "path": "SKILL.md",
+                  "start_line": 18
+                }
+              ],
+              "findings": [],
+              "id": "external_requirements",
+              "status": "pass"
+            }
+          ],
+          "file_coverage": [
+            {
+              "classification": "MIT license and source attribution notice",
+              "disposition": "reviewed",
+              "evidence": [],
+              "path": "NOTICE"
+            },
+            {
+              "classification": "Two-agent grilling workflow instructions",
+              "disposition": "reviewed",
+              "evidence": [],
+              "path": "SKILL.md"
+            }
+          ],
+          "fixture_id": "generic-agent-skills-host-v1",
+          "inventory_sha256": "1eb0536ee8f2950fead382b6c63c86dc66fd0c1e3dc68cf4ba41a253ad7d82c0",
+          "overall_status": "pass",
+          "required_capabilities": [
+            {
+              "evidence": [
+                {
+                  "end_line": 18,
+                  "excerpt": "If the source is missing or unreadable, stop and direct the user to `/grilling` in the [prerequisite guide](../../docs/prerequisites.md).",
+                  "path": "SKILL.md",
+                  "start_line": 18
+                }
+              ],
+              "name": "Original /grilling skill source",
+              "scope": "core",
+              "unavailable_behavior": "If unavailable or unreadable, stop and direct the user to its prerequisite-guide entry; do not substitute a copied summary."
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 27,
+                  "excerpt": "disclose that independent review is unavailable and continue the same grilling protocol in solo mode.",
+                  "path": "SKILL.md",
+                  "start_line": 27
+                }
+              ],
+              "name": "Host runtime independent subagent mechanism",
+              "scope": "core",
+              "unavailable_behavior": "If a reviewer cannot be started, disclose that independent review is unavailable and continue in solo mode without implying a second opinion."
+            }
+          ],
+          "reviewer_id": "baseline-v1-workflow_portability-grill-duo",
+          "reviewer_role": "workflow_portability",
+          "schema_version": 1,
+          "skill_name": "grill-duo"
+        }
+      ],
+      "skill_name": "grill-duo",
+      "status": "blocked"
+    },
+    {
+      "reviews": [
+        {
+          "criteria": [
+            {
+              "evidence": [
+                {
+                  "end_line": 1,
+                  "excerpt": "---",
+                  "path": "SKILL.md",
+                  "start_line": 1
+                },
+                {
+                  "end_line": 2,
+                  "excerpt": "name: grill-duo-with-docs",
+                  "path": "SKILL.md",
+                  "start_line": 2
+                },
+                {
+                  "end_line": 3,
+                  "excerpt": "description: \"Use when the user explicitly requests two-agent grilling that must maintain confirmed domain language or project decisions. Use `/grill-duo` alone when project-document maintenance is not needed.\"",
+                  "path": "SKILL.md",
+                  "start_line": 3
+                }
+              ],
+              "findings": [],
+              "id": "entrypoint_and_format",
+              "status": "pass"
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 18,
+                  "excerpt": "[prerequisite guide](../../docs/prerequisites.md)",
+                  "path": "SKILL.md",
+                  "start_line": 18
+                }
+              ],
+              "findings": [
+                {
+                  "impact": "A standalone installation cannot follow the recovery route when `/grill-duo` or `/domain-modeling` is missing.",
+                  "summary": "Missing-prerequisite recovery points to `../../docs/prerequisites.md`, outside this package and not a stable external reference."
+                }
+              ],
+              "id": "resource_closure",
+              "status": "fail"
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 20,
+                  "excerpt": "Follow `/grill-duo` for activation, reviewer continuity and boundaries, round IDs, frontier handling, current-request correlation, solo fallback, and final shared-understanding confirmation.",
+                  "path": "SKILL.md",
+                  "start_line": 20
+                }
+              ],
+              "findings": [
+                {
+                  "impact": "Reference traversal can cycle between entrypoints; no cycle handling is specified.",
+                  "summary": "Skill-reference cycle: this entrypoint delegates to `/grill-duo`, which routes documentation sessions back to `/grill-duo-with-docs`."
+                },
+                {
+                  "impact": "Hosts cannot discover these runtime requirements from prerequisite metadata alone.",
+                  "summary": "[handoff: prerequisite-governance] Metadata does not describe the target-repository documentation and independent reviewer capabilities used by this workflow."
+                }
+              ],
+              "id": "references_and_cycles",
+              "status": "fail"
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 5,
+                  "excerpt": "The Matt Pocock and Rovai AI material adapted here is licensed under MIT.",
+                  "path": "NOTICE",
+                  "start_line": 5
+                },
+                {
+                  "end_line": 22,
+                  "excerpt": "## Read the repository's documentation map",
+                  "path": "SKILL.md",
+                  "start_line": 22
+                }
+              ],
+              "findings": [],
+              "id": "all_files_classified",
+              "status": "pass"
+            }
+          ],
+          "file_coverage": [
+            {
+              "classification": "Source attribution and MIT license notice.",
+              "disposition": "reviewed",
+              "evidence": [
+                {
+                  "end_line": 5,
+                  "excerpt": "The Matt Pocock and Rovai AI material adapted here is licensed under MIT.",
+                  "path": "NOTICE",
+                  "start_line": 5
+                }
+              ],
+              "path": "NOTICE"
+            },
+            {
+              "classification": "Agent Skills entrypoint and repository-aware grilling/documentation workflow.",
+              "disposition": "reviewed",
+              "evidence": [
+                {
+                  "end_line": 22,
+                  "excerpt": "## Read the repository's documentation map",
+                  "path": "SKILL.md",
+                  "start_line": 22
+                }
+              ],
+              "path": "SKILL.md"
+            }
+          ],
+          "fixture_id": "generic-agent-skills-host-v1",
+          "inventory_sha256": "1eb0536ee8f2950fead382b6c63c86dc66fd0c1e3dc68cf4ba41a253ad7d82c0",
+          "overall_status": "fail",
+          "required_capabilities": [
+            {
+              "evidence": [
+                {
+                  "end_line": 18,
+                  "excerpt": "If either source is missing or unreadable",
+                  "path": "SKILL.md",
+                  "start_line": 18
+                }
+              ],
+              "name": "The /grill-duo and /domain-modeling prerequisite skill sources",
+              "scope": "core",
+              "unavailable_behavior": "Stop and direct the user to the prerequisite guide; that guide is not bundled."
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 10,
+                  "excerpt": "Use the portable `/grill-duo` protocol",
+                  "path": "SKILL.md",
+                  "start_line": 10
+                }
+              ],
+              "name": "Independent reviewer subagent",
+              "scope": "core",
+              "unavailable_behavior": "The delegated grill-duo workflow discloses reviewer unavailability and continues in solo mode."
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 26,
+                  "excerpt": "Before a documentation write, the host reads the target repository's root `AGENTS.md`",
+                  "path": "SKILL.md",
+                  "start_line": 26
+                },
+                {
+                  "end_line": 26,
+                  "excerpt": "If the route is unclear, stop that write and ask the user",
+                  "path": "SKILL.md",
+                  "start_line": 26
+                }
+              ],
+              "name": "Target repository instructions and domain documents",
+              "scope": "core",
+              "unavailable_behavior": "Stop and ask the user when the documentation route is unclear; the workflow needs target AGENTS.md, CONTEXT.md, and ADRs."
+            }
+          ],
+          "reviewer_id": "baseline-v1-completeness-grill-duo-with-docs",
+          "reviewer_role": "completeness",
+          "schema_version": 1,
+          "skill_name": "grill-duo-with-docs"
+        },
+        {
+          "criteria": [
+            {
+              "evidence": [
+                {
+                  "end_line": 10,
+                  "excerpt": "Use the portable `/grill-duo` protocol with repository-aware documentation maintenance.",
+                  "path": "SKILL.md",
+                  "start_line": 10
+                }
+              ],
+              "findings": [],
+              "id": "generic_workflow_primary",
+              "status": "pass"
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 20,
+                  "excerpt": "Follow `/grill-duo` for activation, reviewer continuity and boundaries",
+                  "path": "SKILL.md",
+                  "start_line": 20
+                }
+              ],
+              "findings": [],
+              "id": "harness_independence",
+              "status": "pass"
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 26,
+                  "excerpt": "Before a documentation write, the host reads the target repository's root `AGENTS.md`",
+                  "path": "SKILL.md",
+                  "start_line": 26
+                },
+                {
+                  "end_line": 28,
+                  "excerpt": "Pause if the target rule has no discernible dominant language",
+                  "path": "SKILL.md",
+                  "start_line": 28
+                }
+              ],
+              "findings": [
+                {
+                  "impact": "The generic fixture supplies no repository-only docs, leaving the host without a stated way to establish required policy and context before a documentation write.",
+                  "summary": "The docs workflow requires target AGENTS.md, routing, context, and decision files but defines no behavior for missing or unreadable files."
+                }
+              ],
+              "id": "capabilities_and_unavailable_behavior",
+              "status": "fail"
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 26,
+                  "excerpt": "the target repository's root `AGENTS.md`, its domain-document routing rules",
+                  "path": "SKILL.md",
+                  "start_line": 26
+                },
+                {
+                  "end_line": 18,
+                  "excerpt": "If either source is missing or unreadable, stop",
+                  "path": "SKILL.md",
+                  "start_line": 18
+                }
+              ],
+              "findings": [
+                {
+                  "impact": "On the generic host these repository-only sources are not available by assumption, so the docs workflow cannot establish its required target rules.",
+                  "summary": "The core docs path depends on repository files outside the package, and the package does not define a missing or unreadable target-document fallback."
+                }
+              ],
+              "id": "external_requirements",
+              "status": "fail"
+            }
+          ],
+          "file_coverage": [
+            {
+              "classification": "MIT license and source attribution notice",
+              "disposition": "reviewed",
+              "evidence": [],
+              "path": "NOTICE"
+            },
+            {
+              "classification": "Grilling and project-document workflow instructions",
+              "disposition": "reviewed",
+              "evidence": [],
+              "path": "SKILL.md"
+            }
+          ],
+          "fixture_id": "generic-agent-skills-host-v1",
+          "inventory_sha256": "1eb0536ee8f2950fead382b6c63c86dc66fd0c1e3dc68cf4ba41a253ad7d82c0",
+          "overall_status": "fail",
+          "required_capabilities": [
+            {
+              "evidence": [
+                {
+                  "end_line": 18,
+                  "excerpt": "If either source is missing or unreadable, stop and direct the user to the matching entry in the [prerequisite guide](../../docs/prerequisites.md).",
+                  "path": "SKILL.md",
+                  "start_line": 18
+                }
+              ],
+              "name": "Original /grill-duo and /domain-modeling skill sources",
+              "scope": "core",
+              "unavailable_behavior": "If either source is missing or unreadable, stop and direct the user to its prerequisite-guide entry."
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 26,
+                  "excerpt": "Before a documentation write, the host reads the target repository's root `AGENTS.md`, its domain-document routing rules, and the applicable glossary/context and relevant decisions.",
+                  "path": "SKILL.md",
+                  "start_line": 26
+                },
+                {
+                  "end_line": 26,
+                  "excerpt": "If the route is unclear, stop that write and ask the user rather than inventing a file location.",
+                  "path": "SKILL.md",
+                  "start_line": 26
+                }
+              ],
+              "name": "Target repository AGENTS.md, routing, context, and ADR files",
+              "scope": "core",
+              "unavailable_behavior": "Stop and ask if the route is unclear; behavior for absent or unreadable source files is not separately defined."
+            }
+          ],
+          "reviewer_id": "baseline-v1-workflow_portability-grill-duo-with-docs",
+          "reviewer_role": "workflow_portability",
+          "schema_version": 1,
+          "skill_name": "grill-duo-with-docs"
+        }
+      ],
+      "skill_name": "grill-duo-with-docs",
+      "status": "fail"
+    },
+    {
+      "reviews": [
+        {
+          "criteria": [
+            {
+              "evidence": [
+                {
+                  "end_line": 1,
+                  "excerpt": "---",
+                  "path": "SKILL.md",
+                  "start_line": 1
+                },
+                {
+                  "end_line": 2,
+                  "excerpt": "name: pr-and-merge",
+                  "path": "SKILL.md",
+                  "start_line": 2
+                },
+                {
+                  "end_line": 3,
+                  "excerpt": "description: Prepare GitHub pull requests from one or more supplied branches or worktrees, then merge only after explicit per-PR approval.",
+                  "path": "SKILL.md",
+                  "start_line": 3
+                }
+              ],
+              "findings": [],
+              "id": "entrypoint_and_format",
+              "status": "pass"
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 4,
+                  "excerpt": "metadata:",
+                  "path": "SKILL.md",
+                  "start_line": 4
+                },
+                {
+                  "end_line": 42,
+                  "excerpt": "Read the target repository's root `AGENTS.md`, contribution guidance, pull request template, and relevant GitHub workflow files.",
+                  "path": "SKILL.md",
+                  "start_line": 42
+                },
+                {
+                  "end_line": 56,
+                  "excerpt": "Treat permission, network, or incomplete-response errors as unknown",
+                  "path": "SKILL.md",
+                  "start_line": 56
+                }
+              ],
+              "findings": [],
+              "id": "resource_closure",
+              "status": "pass"
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 5,
+                  "excerpt": "prerequisites:",
+                  "path": "SKILL.md",
+                  "start_line": 5
+                },
+                {
+                  "end_line": 76,
+                  "excerpt": "Consider `/show-me` or `/archify` only when a diagram materially improves clarity and an accessible skill is available; otherwise omit it.",
+                  "path": "SKILL.md",
+                  "start_line": 76
+                }
+              ],
+              "findings": [
+                {
+                  "impact": "Git is required for the core PR workflow. Missing visualization skills do not block it, but prerequisite metadata is incomplete.",
+                  "summary": "[handoff: prerequisite-governance] Git CLI and optional `/show-me` or `/archify` skills are not listed in metadata.prerequisites; visual aids are explicitly skippable when unavailable."
+                }
+              ],
+              "id": "references_and_cycles",
+              "status": "pass"
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 92,
+                  "excerpt": "## Merge after approval",
+                  "path": "SKILL.md",
+                  "start_line": 92
+                }
+              ],
+              "findings": [],
+              "id": "all_files_classified",
+              "status": "pass"
+            }
+          ],
+          "file_coverage": [
+            {
+              "classification": "Agent Skills entrypoint and GitHub PR preparation, approval, and merge workflow.",
+              "disposition": "reviewed",
+              "evidence": [
+                {
+                  "end_line": 92,
+                  "excerpt": "## Merge after approval",
+                  "path": "SKILL.md",
+                  "start_line": 92
+                }
+              ],
+              "path": "SKILL.md"
+            }
+          ],
+          "fixture_id": "generic-agent-skills-host-v1",
+          "inventory_sha256": "1eb0536ee8f2950fead382b6c63c86dc66fd0c1e3dc68cf4ba41a253ad7d82c0",
+          "overall_status": "pass",
+          "required_capabilities": [
+            {
+              "evidence": [
+                {
+                  "end_line": 24,
+                  "excerpt": "Require an exact source repository and branch or worktree.",
+                  "path": "SKILL.md",
+                  "start_line": 24
+                },
+                {
+                  "end_line": 24,
+                  "excerpt": "A dirty worktree blocks this entry",
+                  "path": "SKILL.md",
+                  "start_line": 24
+                }
+              ],
+              "name": "Git CLI and access to the supplied repository/worktree",
+              "scope": "core",
+              "unavailable_behavior": "Ambiguous repository/branch inputs pause; a dirty worktree blocks the affected entry."
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 5,
+                  "excerpt": "GitHub CLI (gh)",
+                  "path": "SKILL.md",
+                  "start_line": 5
+                },
+                {
+                  "end_line": 56,
+                  "excerpt": "Treat permission, network, or incomplete-response errors as unknown",
+                  "path": "SKILL.md",
+                  "start_line": 56
+                }
+              ],
+              "name": "GitHub CLI, host authentication, and network access",
+              "scope": "core",
+              "unavailable_behavior": "Permission, network, or incomplete-response errors make state unknown and block publishing or merging."
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 42,
+                  "excerpt": "Read the target repository's root `AGENTS.md`, contribution guidance, pull request template, and relevant GitHub workflow files.",
+                  "path": "SKILL.md",
+                  "start_line": 42
+                },
+                {
+                  "end_line": 56,
+                  "excerpt": "Unknown or unavailable check requirements block this entry",
+                  "path": "SKILL.md",
+                  "start_line": 56
+                }
+              ],
+              "name": "Target repository policy, PR template, and workflow access",
+              "scope": "core",
+              "unavailable_behavior": "Unavailable or incomplete check requirements are unknown and block publishing actions."
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 111,
+                  "excerpt": "Use `/resolving-merge-conflicts` for a conflict",
+                  "path": "SKILL.md",
+                  "start_line": 111
+                }
+              ],
+              "name": "/resolving-merge-conflicts skill for conflict cases",
+              "scope": "optional",
+              "unavailable_behavior": "The package requires that skill and says to stop before its commit step; behavior if the skill itself is absent is unspecified."
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 76,
+                  "excerpt": "otherwise omit it",
+                  "path": "SKILL.md",
+                  "start_line": 76
+                }
+              ],
+              "name": "Optional /show-me or /archify skill for diagrams",
+              "scope": "optional",
+              "unavailable_behavior": "Omit the diagram when neither skill is accessible."
+            }
+          ],
+          "reviewer_id": "baseline-v1-completeness-pr-and-merge",
+          "reviewer_role": "completeness",
+          "schema_version": 1,
+          "skill_name": "pr-and-merge"
+        },
+        {
+          "criteria": [
+            {
+              "evidence": [
+                {
+                  "end_line": 10,
+                  "excerpt": "This workflow is for GitHub.",
+                  "path": "SKILL.md",
+                  "start_line": 10
+                }
+              ],
+              "findings": [],
+              "id": "generic_workflow_primary",
+              "status": "pass"
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 24,
+                  "excerpt": "Require an exact source repository and branch or worktree.",
+                  "path": "SKILL.md",
+                  "start_line": 24
+                }
+              ],
+              "findings": [],
+              "id": "harness_independence",
+              "status": "pass"
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 76,
+                  "excerpt": "Delegate title and body drafting to `/conventional-git-messages`",
+                  "path": "SKILL.md",
+                  "start_line": 76
+                },
+                {
+                  "end_line": 111,
+                  "excerpt": "Use `/resolving-merge-conflicts` for a conflict",
+                  "path": "SKILL.md",
+                  "start_line": 111
+                }
+              ],
+              "findings": [
+                {
+                  "impact": "The generic fixture does not provide sibling skills, so PR preparation or conflict recovery lacks an explicit safe continuation.",
+                  "summary": "The package requires external `/conventional-git-messages` for PR drafting and `/resolving-merge-conflicts` for conflict recovery, but does not define what to do if either source is unavailable."
+                }
+              ],
+              "id": "capabilities_and_unavailable_behavior",
+              "status": "fail"
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 5,
+                  "excerpt": "prerequisites: '{\"skills\":[[\"conventional-git-messages\",\"EltonZhang777/AggregateSkills\"],[\"resolving-merge-conflicts\",\"mattpocock/skills\"]",
+                  "path": "SKILL.md",
+                  "start_line": 5
+                },
+                {
+                  "end_line": 56,
+                  "excerpt": "Treat permission, network, or incomplete-response errors as unknown",
+                  "path": "SKILL.md",
+                  "start_line": 56
+                }
+              ],
+              "findings": [
+                {
+                  "impact": "With no sibling packages on the fixture, core PR drafting and optional conflict recovery have no defined portable continuation.",
+                  "summary": "GitHub CLI setup and authentication have explicit handling, but the separately required skill dependencies have no equivalent missing-source behavior."
+                }
+              ],
+              "id": "external_requirements",
+              "status": "fail"
+            }
+          ],
+          "file_coverage": [
+            {
+              "classification": "GitHub pull request preparation and merge workflow instructions",
+              "disposition": "reviewed",
+              "evidence": [],
+              "path": "SKILL.md"
+            }
+          ],
+          "fixture_id": "generic-agent-skills-host-v1",
+          "inventory_sha256": "1eb0536ee8f2950fead382b6c63c86dc66fd0c1e3dc68cf4ba41a253ad7d82c0",
+          "overall_status": "fail",
+          "required_capabilities": [
+            {
+              "evidence": [
+                {
+                  "end_line": 24,
+                  "excerpt": "Require an exact source repository and branch or worktree.",
+                  "path": "SKILL.md",
+                  "start_line": 24
+                }
+              ],
+              "name": "Git CLI and the supplied repository/worktree",
+              "scope": "core",
+              "unavailable_behavior": "Command or state failures make the affected state unknown and block the affected PR entry."
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 26,
+                  "excerpt": "For GitHub, verify `gh auth status --hostname github.com`",
+                  "path": "SKILL.md",
+                  "start_line": 26
+                },
+                {
+                  "end_line": 56,
+                  "excerpt": "Treat permission, network, or incomplete-response errors as unknown",
+                  "path": "SKILL.md",
+                  "start_line": 56
+                }
+              ],
+              "name": "GitHub CLI, host-specific authentication, and network access",
+              "scope": "core",
+              "unavailable_behavior": "Permission, network, or incomplete-response errors are unknown and block affected actions."
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 76,
+                  "excerpt": "Delegate title and body drafting to `/conventional-git-messages`",
+                  "path": "SKILL.md",
+                  "start_line": 76
+                }
+              ],
+              "name": "External /conventional-git-messages skill source",
+              "scope": "core",
+              "unavailable_behavior": "No behavior is specified if the skill is missing or unreadable."
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 111,
+                  "excerpt": "Use `/resolving-merge-conflicts` for a conflict, but stop before its commit step.",
+                  "path": "SKILL.md",
+                  "start_line": 111
+                }
+              ],
+              "name": "External /resolving-merge-conflicts skill source",
+              "scope": "optional",
+              "unavailable_behavior": "No behavior is specified if the skill is missing when a conflict occurs."
+            }
+          ],
+          "reviewer_id": "baseline-v1-workflow_portability-pr-and-merge",
+          "reviewer_role": "workflow_portability",
+          "schema_version": 1,
+          "skill_name": "pr-and-merge"
+        }
+      ],
+      "skill_name": "pr-and-merge",
+      "status": "blocked"
+    },
+    {
+      "reviews": [
+        {
+          "criteria": [
+            {
+              "evidence": [
+                {
+                  "end_line": 1,
+                  "excerpt": "---",
+                  "path": "SKILL.md",
+                  "start_line": 1
+                },
+                {
+                  "end_line": 2,
+                  "excerpt": "name: prune-worktrees-and-branches",
+                  "path": "SKILL.md",
+                  "start_line": 2
+                },
+                {
+                  "end_line": 3,
+                  "excerpt": "description: Preview cleanup candidates and safely clean approved worktrees and local or eligible GitHub remote branches.",
+                  "path": "SKILL.md",
+                  "start_line": 3
+                }
+              ],
+              "findings": [],
+              "id": "entrypoint_and_format",
+              "status": "pass"
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 23,
+                  "excerpt": "Confirm the current directory is inside the intended Git repository",
+                  "path": "SKILL.md",
+                  "start_line": 23
+                },
+                {
+                  "end_line": 36,
+                  "excerpt": "Run Git commands from this repository.",
+                  "path": "SKILL.md",
+                  "start_line": 36
+                }
+              ],
+              "findings": [],
+              "id": "resource_closure",
+              "status": "pass"
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 105,
+                  "excerpt": "send the exact proposed `remote/branch` set, live tip OIDs, base, and supporting evidence to a separate agent",
+                  "path": "SKILL.md",
+                  "start_line": 105
+                }
+              ],
+              "findings": [
+                {
+                  "impact": "Installers cannot discover these requirements from metadata; remote deletion is withheld when independent review is unavailable.",
+                  "summary": "[handoff: prerequisite-governance] Metadata is empty although the workflow requires Git and an independent agent for remote deletion, plus GitHub CLI/authentication for GitHub remotes."
+                }
+              ],
+              "id": "references_and_cycles",
+              "status": "pass"
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 10,
+                  "excerpt": "Run this skill only for a cleanup request.",
+                  "path": "SKILL.md",
+                  "start_line": 10
+                }
+              ],
+              "findings": [],
+              "id": "all_files_classified",
+              "status": "pass"
+            }
+          ],
+          "file_coverage": [
+            {
+              "classification": "Agent Skills entrypoint and conservative worktree/local/remote branch cleanup workflow.",
+              "disposition": "reviewed",
+              "evidence": [
+                {
+                  "end_line": 10,
+                  "excerpt": "Run this skill only for a cleanup request.",
+                  "path": "SKILL.md",
+                  "start_line": 10
+                }
+              ],
+              "path": "SKILL.md"
+            }
+          ],
+          "fixture_id": "generic-agent-skills-host-v1",
+          "inventory_sha256": "1eb0536ee8f2950fead382b6c63c86dc66fd0c1e3dc68cf4ba41a253ad7d82c0",
+          "overall_status": "pass",
+          "required_capabilities": [
+            {
+              "evidence": [
+                {
+                  "end_line": 23,
+                  "excerpt": "Confirm the current directory is inside the intended Git repository",
+                  "path": "SKILL.md",
+                  "start_line": 23
+                },
+                {
+                  "end_line": 36,
+                  "excerpt": "a failed command makes the affected state unknown",
+                  "path": "SKILL.md",
+                  "start_line": 36
+                }
+              ],
+              "name": "Git CLI and access to the intended repository",
+              "scope": "core",
+              "unavailable_behavior": "A failed Git command makes affected state unknown; unknown evidence cannot be called safe and requires manual confirmation."
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 56,
+                  "excerpt": "Use GitHub CLI checks only for a remote whose URL identifies a GitHub repository.",
+                  "path": "SKILL.md",
+                  "start_line": 56
+                },
+                {
+                  "end_line": 103,
+                  "excerpt": "Remote deletion is available only for a configured GitHub remote",
+                  "path": "SKILL.md",
+                  "start_line": 103
+                }
+              ],
+              "name": "GitHub CLI, host authentication, and network for GitHub remotes",
+              "scope": "optional",
+              "unavailable_behavior": "Affected PR/protection/default-branch state becomes unknown; remote deletion is unavailable when checks cannot be established."
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 105,
+                  "excerpt": "If no separate agent is available, the review is incomplete",
+                  "path": "SKILL.md",
+                  "start_line": 105
+                }
+              ],
+              "name": "Independent second agent for remote-branch deletion review",
+              "scope": "optional",
+              "unavailable_behavior": "If unavailable or incomplete, do not delete any branch in the proposed set."
+            }
+          ],
+          "reviewer_id": "baseline-v1-completeness-prune-worktrees-and-branches",
+          "reviewer_role": "completeness",
+          "schema_version": 1,
+          "skill_name": "prune-worktrees-and-branches"
+        },
+        {
+          "criteria": [
+            {
+              "evidence": [
+                {
+                  "end_line": 10,
+                  "excerpt": "Run this skill only for a cleanup request.",
+                  "path": "SKILL.md",
+                  "start_line": 10
+                }
+              ],
+              "findings": [],
+              "id": "generic_workflow_primary",
+              "status": "pass"
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 113,
+                  "excerpt": "Git options are the same in PowerShell and POSIX shells.",
+                  "path": "SKILL.md",
+                  "start_line": 113
+                }
+              ],
+              "findings": [],
+              "id": "harness_independence",
+              "status": "pass"
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 36,
+                  "excerpt": "a failed command makes the affected state unknown.",
+                  "path": "SKILL.md",
+                  "start_line": 36
+                },
+                {
+                  "end_line": 105,
+                  "excerpt": "If no separate agent is available, the review is incomplete",
+                  "path": "SKILL.md",
+                  "start_line": 105
+                }
+              ],
+              "findings": [],
+              "id": "capabilities_and_unavailable_behavior",
+              "status": "pass"
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 56,
+                  "excerpt": "verify authentication with `gh auth status --hostname <host>`",
+                  "path": "SKILL.md",
+                  "start_line": 56
+                },
+                {
+                  "end_line": 103,
+                  "excerpt": "Remote deletion is available only for a configured GitHub remote",
+                  "path": "SKILL.md",
+                  "start_line": 103
+                }
+              ],
+              "findings": [],
+              "id": "external_requirements",
+              "status": "pass"
+            }
+          ],
+          "file_coverage": [
+            {
+              "classification": "Read-only preview and approved Git cleanup instructions",
+              "disposition": "reviewed",
+              "evidence": [],
+              "path": "SKILL.md"
+            }
+          ],
+          "fixture_id": "generic-agent-skills-host-v1",
+          "inventory_sha256": "1eb0536ee8f2950fead382b6c63c86dc66fd0c1e3dc68cf4ba41a253ad7d82c0",
+          "overall_status": "pass",
+          "required_capabilities": [
+            {
+              "evidence": [
+                {
+                  "end_line": 23,
+                  "excerpt": "Confirm the current directory is inside the intended Git repository",
+                  "path": "SKILL.md",
+                  "start_line": 23
+                },
+                {
+                  "end_line": 36,
+                  "excerpt": "a failed command makes the affected state unknown.",
+                  "path": "SKILL.md",
+                  "start_line": 36
+                }
+              ],
+              "name": "Git CLI and access to the target Git repository",
+              "scope": "core",
+              "unavailable_behavior": "Failed commands make affected state unknown; unknown evidence cannot mark a target safe to clean."
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 56,
+                  "excerpt": "If any value, host-specific authentication, network, or response is uncertain, mark the affected PR, protection, or default-branch state **unknown**.",
+                  "path": "SKILL.md",
+                  "start_line": 56
+                }
+              ],
+              "name": "GitHub CLI, authentication, and network access",
+              "scope": "optional",
+              "unavailable_behavior": "Unavailable or incomplete state becomes unknown/manual confirmation; remote deletion is unavailable."
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 105,
+                  "excerpt": "If no separate agent is available, the review is incomplete, or any item is rejected or uncertain, do not delete any branch in that proposed set; report the review result.",
+                  "path": "SKILL.md",
+                  "start_line": 105
+                }
+              ],
+              "name": "Independent agent review for remote branch deletion",
+              "scope": "optional",
+              "unavailable_behavior": "If no separate agent is available or review is incomplete, do not delete any branch in the proposed set."
+            }
+          ],
+          "reviewer_id": "baseline-v1-workflow_portability-prune-worktrees-and-branches",
+          "reviewer_role": "workflow_portability",
+          "schema_version": 1,
+          "skill_name": "prune-worktrees-and-branches"
+        }
+      ],
+      "skill_name": "prune-worktrees-and-branches",
+      "status": "pass"
+    },
+    {
+      "reviews": [
+        {
+          "criteria": [
+            {
+              "evidence": [
+                {
+                  "end_line": 1,
+                  "excerpt": "---",
+                  "path": "SKILL.md",
+                  "start_line": 1
+                },
+                {
+                  "end_line": 2,
+                  "excerpt": "name: requirements-to-spec-tickets",
+                  "path": "SKILL.md",
+                  "start_line": 2
+                },
+                {
+                  "end_line": 3,
+                  "excerpt": "description: Turn one or more codebase ideas into approved, independently scoped specs and tracer-bullet tickets through interactive child sessions.",
+                  "path": "SKILL.md",
+                  "start_line": 3
+                }
+              ],
+              "findings": [],
+              "id": "entrypoint_and_format",
+              "status": "pass"
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 23,
+                  "excerpt": "[prerequisite guide](../../docs/prerequisites.md)",
+                  "path": "SKILL.md",
+                  "start_line": 23
+                }
+              ],
+              "findings": [
+                {
+                  "impact": "A standalone installation cannot follow its declared recovery route when an upstream skill is absent.",
+                  "summary": "Missing-prerequisite recovery points to `../../docs/prerequisites.md`, outside this package and not a stable external reference."
+                }
+              ],
+              "id": "resource_closure",
+              "status": "fail"
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 6,
+                  "excerpt": "prerequisites:",
+                  "path": "SKILL.md",
+                  "start_line": 6
+                },
+                {
+                  "end_line": 19,
+                  "excerpt": "- `/grill-with-docs`",
+                  "path": "SKILL.md",
+                  "start_line": 19
+                },
+                {
+                  "end_line": 20,
+                  "excerpt": "- `/to-spec`",
+                  "path": "SKILL.md",
+                  "start_line": 20
+                },
+                {
+                  "end_line": 21,
+                  "excerpt": "- `/to-tickets`",
+                  "path": "SKILL.md",
+                  "start_line": 21
+                }
+              ],
+              "findings": [
+                {
+                  "impact": "When unsupported, the manual handoff is explicitly blocked and cannot count as ready.",
+                  "summary": "[handoff: prerequisite-governance] Required skills are declared, but the interactive child-session capability is not listed in prerequisites metadata."
+                }
+              ],
+              "id": "references_and_cycles",
+              "status": "pass"
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 9,
+                  "excerpt": "# /requirements-to-spec-tickets",
+                  "path": "SKILL.md",
+                  "start_line": 9
+                },
+                {
+                  "end_line": 1,
+                  "excerpt": "policy:",
+                  "path": "agents/openai.yaml",
+                  "start_line": 1
+                }
+              ],
+              "findings": [],
+              "id": "all_files_classified",
+              "status": "pass"
+            }
+          ],
+          "file_coverage": [
+            {
+              "classification": "Agent Skills entrypoint and interactive requirements-to-spec/ticket orchestration.",
+              "disposition": "reviewed",
+              "evidence": [
+                {
+                  "end_line": 9,
+                  "excerpt": "# /requirements-to-spec-tickets",
+                  "path": "SKILL.md",
+                  "start_line": 9
+                }
+              ],
+              "path": "SKILL.md"
+            },
+            {
+              "classification": "OpenAI host-specific invocation policy metadata.",
+              "disposition": "reviewed",
+              "evidence": [
+                {
+                  "end_line": 1,
+                  "excerpt": "policy:",
+                  "path": "agents/openai.yaml",
+                  "start_line": 1
+                }
+              ],
+              "path": "agents/openai.yaml"
+            }
+          ],
+          "fixture_id": "generic-agent-skills-host-v1",
+          "inventory_sha256": "1eb0536ee8f2950fead382b6c63c86dc66fd0c1e3dc68cf4ba41a253ad7d82c0",
+          "overall_status": "fail",
+          "required_capabilities": [
+            {
+              "evidence": [
+                {
+                  "end_line": 6,
+                  "excerpt": "prerequisites:",
+                  "path": "SKILL.md",
+                  "start_line": 6
+                },
+                {
+                  "end_line": 23,
+                  "excerpt": "If any declared source is missing or unreadable, stop",
+                  "path": "SKILL.md",
+                  "start_line": 23
+                }
+              ],
+              "name": "Declared workflow prerequisite skills",
+              "scope": "core",
+              "unavailable_behavior": "Preflight stops if a required skill is missing or unreadable and points to the unbundled prerequisite guide; dependencies are not installed automatically."
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 50,
+                  "excerpt": "Create one child session per approved group.",
+                  "path": "SKILL.md",
+                  "start_line": 50
+                },
+                {
+                  "end_line": 62,
+                  "excerpt": "If the platform cannot create one, provide a complete handoff prompt",
+                  "path": "SKILL.md",
+                  "start_line": 62
+                },
+                {
+                  "end_line": 68,
+                  "excerpt": "a manual handoff is not a ready child",
+                  "path": "SKILL.md",
+                  "start_line": 68
+                }
+              ],
+              "name": "Interactive child-session creation",
+              "scope": "core",
+              "unavailable_behavior": "If unavailable, provide the manual handoff and report the group blocked; a manual handoff is not ready."
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 27,
+                  "excerpt": "If the setup or tracker configuration is absent, stop",
+                  "path": "SKILL.md",
+                  "start_line": 27
+                },
+                {
+                  "end_line": 29,
+                  "excerpt": "the tracker configuration is available.",
+                  "path": "SKILL.md",
+                  "start_line": 29
+                }
+              ],
+              "name": "Configured issue tracker and tracker access",
+              "scope": "core",
+              "unavailable_behavior": "Stop before creating child sessions if setup or tracker configuration is absent; do not run setup automatically."
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 96,
+                  "excerpt": "For an issue-only group, do not create or switch branches",
+                  "path": "SKILL.md",
+                  "start_line": 96
+                },
+                {
+                  "end_line": 103,
+                  "excerpt": "A local-artifact group is not complete until its approved artifacts are committed and pushed",
+                  "path": "SKILL.md",
+                  "start_line": 103
+                }
+              ],
+              "name": "Git and task remote for local-artifact groups",
+              "scope": "optional",
+              "unavailable_behavior": "Issue-only groups use no Git; a local-artifact group cannot complete its required commit and push without the repository and task remote."
+            }
+          ],
+          "reviewer_id": "baseline-v1-completeness-requirements-to-spec-tickets",
+          "reviewer_role": "completeness",
+          "schema_version": 1,
+          "skill_name": "requirements-to-spec-tickets"
+        },
+        {
+          "criteria": [
+            {
+              "evidence": [
+                {
+                  "end_line": 11,
+                  "excerpt": "Use this skill only when the user wants to turn one or more codebase ideas into clarified specs and tickets.",
+                  "path": "SKILL.md",
+                  "start_line": 11
+                }
+              ],
+              "findings": [],
+              "id": "generic_workflow_primary",
+              "status": "pass"
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 62,
+                  "excerpt": "Use the platform's equivalent visible child conversation or a new terminal session in the same working directory.",
+                  "path": "SKILL.md",
+                  "start_line": 62
+                }
+              ],
+              "findings": [],
+              "id": "harness_independence",
+              "status": "pass"
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 66,
+                  "excerpt": "use only the normative prose in the root `AGENTS.md` of the repository receiving that text",
+                  "path": "SKILL.md",
+                  "start_line": 66
+                },
+                {
+                  "end_line": 66,
+                  "excerpt": "Pause if the target rule has no discernible dominant language",
+                  "path": "SKILL.md",
+                  "start_line": 66
+                }
+              ],
+              "findings": [
+                {
+                  "impact": "The generic fixture supplies no repository-only documents, so the host cannot establish the mandatory target language rule before preparing specs or tickets.",
+                  "summary": "Project-text workflows require the target repository root AGENTS.md, but do not define behavior when that file is missing or unreadable."
+                }
+              ],
+              "id": "capabilities_and_unavailable_behavior",
+              "status": "fail"
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 66,
+                  "excerpt": "use only the normative prose in the root `AGENTS.md` of the repository receiving that text",
+                  "path": "SKILL.md",
+                  "start_line": 66
+                },
+                {
+                  "end_line": 27,
+                  "excerpt": "If the setup or tracker configuration is absent, stop",
+                  "path": "SKILL.md",
+                  "start_line": 27
+                }
+              ],
+              "findings": [
+                {
+                  "impact": "On the generic host the required repository-only policy source is not available by assumption, so project text cannot be prepared with the prescribed target policy.",
+                  "summary": "The workflow depends on target-repository policy files outside the package and has no missing/unreadable-file fallback for the mandatory root language rule."
+                }
+              ],
+              "id": "external_requirements",
+              "status": "fail"
+            }
+          ],
+          "file_coverage": [
+            {
+              "classification": "Interactive spec and ticket planning workflow instructions",
+              "disposition": "reviewed",
+              "evidence": [],
+              "path": "SKILL.md"
+            },
+            {
+              "classification": "OpenAI invocation policy metadata",
+              "disposition": "reviewed",
+              "evidence": [],
+              "path": "agents/openai.yaml"
+            }
+          ],
+          "fixture_id": "generic-agent-skills-host-v1",
+          "inventory_sha256": "1eb0536ee8f2950fead382b6c63c86dc66fd0c1e3dc68cf4ba41a253ad7d82c0",
+          "overall_status": "fail",
+          "required_capabilities": [
+            {
+              "evidence": [
+                {
+                  "end_line": 6,
+                  "excerpt": "prerequisites: '{\"skills\":[[\"grill-with-docs\",\"mattpocock/skills\"],[\"to-spec\",\"mattpocock/skills\"],[\"to-tickets\",\"mattpocock/skills\"],[\"grilling\",\"mattpocock/skills\"],[\"domain-modeling\",\"mattpocock/skills\"],[\"setup-matt-pocock-skills\",\"mattpocock/skills\"]",
+                  "path": "SKILL.md",
+                  "start_line": 6
+                },
+                {
+                  "end_line": 23,
+                  "excerpt": "If any declared source is missing or unreadable, stop",
+                  "path": "SKILL.md",
+                  "start_line": 23
+                }
+              ],
+              "name": "Declared workflow prerequisite skills (/grill-with-docs, /to-spec, /to-tickets, /grilling, /domain-modeling, /setup-matt-pocock-skills)",
+              "scope": "core",
+              "unavailable_behavior": "If a declared source is missing or unreadable, stop and direct the user to its prerequisite-guide entry; do not install automatically."
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 27,
+                  "excerpt": "If the setup or tracker configuration is absent, stop and tell the user to run `/setup-matt-pocock-skills`",
+                  "path": "SKILL.md",
+                  "start_line": 27
+                }
+              ],
+              "name": "Configured issue-tracker and triage-label setup",
+              "scope": "core",
+              "unavailable_behavior": "If setup or tracker configuration is absent, stop and tell the user to run the setup skill."
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 62,
+                  "excerpt": "If the platform cannot create one, provide a complete handoff prompt",
+                  "path": "SKILL.md",
+                  "start_line": 62
+                },
+                {
+                  "end_line": 68,
+                  "excerpt": "report the group as blocked; a manual handoff is not a ready child",
+                  "path": "SKILL.md",
+                  "start_line": 68
+                }
+              ],
+              "name": "Interactive visible child-session creation",
+              "scope": "core",
+              "unavailable_behavior": "If unavailable, provide a manual handoff but report the group as blocked; a manual handoff is not a ready child session."
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 66,
+                  "excerpt": "use only the normative prose in the root `AGENTS.md` of the repository receiving that text",
+                  "path": "SKILL.md",
+                  "start_line": 66
+                }
+              ],
+              "name": "Target repository root AGENTS.md and project-document rules",
+              "scope": "core",
+              "unavailable_behavior": "No behavior is specified for a missing or unreadable root file; the skill only pauses for an unclear dominant language."
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 80,
+                  "excerpt": "confirm the configured tracker is GitHub; otherwise stop",
+                  "path": "SKILL.md",
+                  "start_line": 80
+                },
+                {
+                  "end_line": 82,
+                  "excerpt": "If native sub-issues or required permissions are unavailable, report the blocker",
+                  "path": "SKILL.md",
+                  "start_line": 82
+                }
+              ],
+              "name": "GitHub issue tracker access and permissions",
+              "scope": "optional",
+              "unavailable_behavior": "If the tracker is not GitHub, stop; if native sub-issues or permissions are unavailable, stop linking and retain created issues."
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 96,
+                  "excerpt": "For an issue-only group, do not create or switch branches",
+                  "path": "SKILL.md",
+                  "start_line": 96
+                },
+                {
+                  "end_line": 103,
+                  "excerpt": "A local-artifact group is not complete until its approved artifacts are committed and pushed",
+                  "path": "SKILL.md",
+                  "start_line": 103
+                }
+              ],
+              "name": "Git CLI and task-remote push for local-artifact groups",
+              "scope": "optional",
+              "unavailable_behavior": "Issue-only groups do not use Git; local-artifact groups are incomplete until approved artifacts are committed and pushed."
+            }
+          ],
+          "reviewer_id": "baseline-v1-workflow_portability-requirements-to-spec-tickets",
+          "reviewer_role": "workflow_portability",
+          "schema_version": 1,
+          "skill_name": "requirements-to-spec-tickets"
+        }
+      ],
+      "skill_name": "requirements-to-spec-tickets",
+      "status": "fail"
+    },
+    {
+      "reviews": [
+        {
+          "criteria": [
+            {
+              "evidence": [
+                {
+                  "end_line": 1,
+                  "excerpt": "---",
+                  "path": "SKILL.md",
+                  "start_line": 1
+                },
+                {
+                  "end_line": 2,
+                  "excerpt": "name: review-duo",
+                  "path": "SKILL.md",
+                  "start_line": 2
+                },
+                {
+                  "end_line": 3,
+                  "excerpt": "description: Run `/code-review` in opt-in strict mode with one fixed scope, independent review axes, and evidence-based findings.",
+                  "path": "SKILL.md",
+                  "start_line": 3
+                }
+              ],
+              "findings": [],
+              "id": "entrypoint_and_format",
+              "status": "pass"
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 14,
+                  "excerpt": "[prerequisite guide](../../docs/prerequisites.md)",
+                  "path": "SKILL.md",
+                  "start_line": 14
+                }
+              ],
+              "findings": [
+                {
+                  "impact": "A standalone installation cannot follow the recovery route when `/code-review` is absent.",
+                  "summary": "Missing-upstream recovery points to `../../docs/prerequisites.md`, outside this package and not a stable external reference."
+                }
+              ],
+              "id": "resource_closure",
+              "status": "fail"
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 5,
+                  "excerpt": "prerequisites:",
+                  "path": "SKILL.md",
+                  "start_line": 5
+                },
+                {
+                  "end_line": 14,
+                  "excerpt": "Resolve and read the original `/code-review` `SKILL.md`",
+                  "path": "SKILL.md",
+                  "start_line": 14
+                }
+              ],
+              "findings": [
+                {
+                  "impact": "The package blocks strict review when the host lacks independent agents; installers should discover this requirement.",
+                  "summary": "[handoff: prerequisite-governance] `/code-review` is declared but the two-independent-agent capability required by strict mode is not represented in prerequisites metadata."
+                }
+              ],
+              "id": "references_and_cycles",
+              "status": "pass"
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 12,
+                  "excerpt": "## Resolve and run the upstream skill",
+                  "path": "SKILL.md",
+                  "start_line": 12
+                },
+                {
+                  "end_line": 2,
+                  "excerpt": "display_name: \"Review Duo\"",
+                  "path": "agents/openai.yaml",
+                  "start_line": 2
+                },
+                {
+                  "end_line": 8,
+                  "excerpt": "def apply_coupon(total: Decimal, code: str) -> Decimal:",
+                  "path": "references/acceptance-fixture.patch",
+                  "start_line": 8
+                },
+                {
+                  "end_line": 10,
+                  "excerpt": "\"code_scope\": {",
+                  "path": "references/acceptance-manifest.json",
+                  "start_line": 10
+                },
+                {
+                  "end_line": 10,
+                  "excerpt": "Acceptance criteria:",
+                  "path": "references/acceptance-requirements.md",
+                  "start_line": 10
+                },
+                {
+                  "end_line": 3,
+                  "excerpt": "Operator instructions only. Do not send this file to reviewers because it contains expected findings.",
+                  "path": "references/acceptance-scenario.md",
+                  "start_line": 3
+                },
+                {
+                  "end_line": 1,
+                  "excerpt": "# Pinned Decimal money standard",
+                  "path": "references/acceptance-standard.md",
+                  "start_line": 1
+                }
+              ],
+              "findings": [],
+              "id": "all_files_classified",
+              "status": "pass"
+            }
+          ],
+          "file_coverage": [
+            {
+              "classification": "Agent Skills entrypoint and strict dual-agent review contract.",
+              "disposition": "reviewed",
+              "evidence": [
+                {
+                  "end_line": 12,
+                  "excerpt": "## Resolve and run the upstream skill",
+                  "path": "SKILL.md",
+                  "start_line": 12
+                }
+              ],
+              "path": "SKILL.md"
+            },
+            {
+              "classification": "OpenAI host-specific display and invocation policy metadata.",
+              "disposition": "reviewed",
+              "evidence": [
+                {
+                  "end_line": 2,
+                  "excerpt": "display_name: \"Review Duo\"",
+                  "path": "agents/openai.yaml",
+                  "start_line": 2
+                }
+              ],
+              "path": "agents/openai.yaml"
+            },
+            {
+              "classification": "Synthetic pricing-code patch fixture.",
+              "disposition": "reviewed",
+              "evidence": [
+                {
+                  "end_line": 8,
+                  "excerpt": "def apply_coupon(total: Decimal, code: str) -> Decimal:",
+                  "path": "references/acceptance-fixture.patch",
+                  "start_line": 8
+                }
+              ],
+              "path": "references/acceptance-fixture.patch"
+            },
+            {
+              "classification": "Frozen fixture manifest with source/check hashes and inclusion records.",
+              "disposition": "reviewed",
+              "evidence": [
+                {
+                  "end_line": 10,
+                  "excerpt": "\"code_scope\": {",
+                  "path": "references/acceptance-manifest.json",
+                  "start_line": 10
+                }
+              ],
+              "path": "references/acceptance-manifest.json"
+            },
+            {
+              "classification": "Pinned synthetic acceptance requirements.",
+              "disposition": "reviewed",
+              "evidence": [
+                {
+                  "end_line": 10,
+                  "excerpt": "Acceptance criteria:",
+                  "path": "references/acceptance-requirements.md",
+                  "start_line": 10
+                }
+              ],
+              "path": "references/acceptance-requirements.md"
+            },
+            {
+              "classification": "Operator-only manual acceptance procedure and expected findings, explicitly excluded from reviewer inputs.",
+              "disposition": "reviewed",
+              "evidence": [
+                {
+                  "end_line": 3,
+                  "excerpt": "Operator instructions only. Do not send this file to reviewers because it contains expected findings.",
+                  "path": "references/acceptance-scenario.md",
+                  "start_line": 3
+                }
+              ],
+              "path": "references/acceptance-scenario.md"
+            },
+            {
+              "classification": "Pinned Decimal money-handling standard.",
+              "disposition": "reviewed",
+              "evidence": [
+                {
+                  "end_line": 1,
+                  "excerpt": "# Pinned Decimal money standard",
+                  "path": "references/acceptance-standard.md",
+                  "start_line": 1
+                }
+              ],
+              "path": "references/acceptance-standard.md"
+            }
+          ],
+          "fixture_id": "generic-agent-skills-host-v1",
+          "inventory_sha256": "1eb0536ee8f2950fead382b6c63c86dc66fd0c1e3dc68cf4ba41a253ad7d82c0",
+          "overall_status": "fail",
+          "required_capabilities": [
+            {
+              "evidence": [
+                {
+                  "end_line": 5,
+                  "excerpt": "[\"code-review\",\"mattpocock/skills\"]",
+                  "path": "SKILL.md",
+                  "start_line": 5
+                },
+                {
+                  "end_line": 14,
+                  "excerpt": "If the source is missing or unreadable, stop",
+                  "path": "SKILL.md",
+                  "start_line": 14
+                }
+              ],
+              "name": "The /code-review upstream skill source",
+              "scope": "core",
+              "unavailable_behavior": "If missing or unreadable, stop and direct the user to the unbundled prerequisite guide; do not use a vendored fallback."
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 35,
+                  "excerpt": "set the overall status to blocked and pause before reviewing",
+                  "path": "SKILL.md",
+                  "start_line": 35
+                },
+                {
+                  "end_line": 40,
+                  "excerpt": "Start the `/code-review` workflow's two agents in parallel",
+                  "path": "SKILL.md",
+                  "start_line": 40
+                }
+              ],
+              "name": "Two independent parallel agents with identical fixed inputs",
+              "scope": "core",
+              "unavailable_behavior": "Mark the run blocked and pause; ask the user to retry on a capable host or explicitly approve single-agent degradation."
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 23,
+                  "excerpt": "Pass its exact bytes or immutable shared path and hash instead of manufacturing a Git diff command or commit list.",
+                  "path": "SKILL.md",
+                  "start_line": 23
+                },
+                {
+                  "end_line": 31,
+                  "excerpt": "A missing or unreadable declared source makes the affected axis partial",
+                  "path": "SKILL.md",
+                  "start_line": 31
+                }
+              ],
+              "name": "Read access to fixed code scope and pinned review sources",
+              "scope": "core",
+              "unavailable_behavior": "Block if the scope cannot be verified; a missing declared source makes the affected axis partial and the gap must be named."
+            }
+          ],
+          "reviewer_id": "baseline-v1-completeness-review-duo",
+          "reviewer_role": "completeness",
+          "schema_version": 1,
+          "skill_name": "review-duo"
+        },
+        {
+          "criteria": [
+            {
+              "evidence": [
+                {
+                  "end_line": 10,
+                  "excerpt": "It adds a strict contract to the existing `/code-review` workflow; it is not a second review implementation.",
+                  "path": "SKILL.md",
+                  "start_line": 10
+                }
+              ],
+              "findings": [],
+              "id": "generic_workflow_primary",
+              "status": "pass"
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 35,
+                  "excerpt": "if the host cannot start two independent agents or pass identical fixed inputs",
+                  "path": "SKILL.md",
+                  "start_line": 35
+                }
+              ],
+              "findings": [],
+              "id": "harness_independence",
+              "status": "pass"
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 14,
+                  "excerpt": "If the source is missing or unreadable, stop and direct the user to `/code-review`",
+                  "path": "SKILL.md",
+                  "start_line": 14
+                },
+                {
+                  "end_line": 35,
+                  "excerpt": "Ask the user to retry on a host that supports parallel agents or explicitly approve single-agent degradation.",
+                  "path": "SKILL.md",
+                  "start_line": 35
+                }
+              ],
+              "findings": [],
+              "id": "capabilities_and_unavailable_behavior",
+              "status": "pass"
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 5,
+                  "excerpt": "prerequisites: '{\"skills\":[[\"code-review\",\"mattpocock/skills\"]],\"mcps\":[],\"tools\":[]}'",
+                  "path": "SKILL.md",
+                  "start_line": 5
+                },
+                {
+                  "end_line": 14,
+                  "excerpt": "If the source is missing or unreadable, stop",
+                  "path": "SKILL.md",
+                  "start_line": 14
+                }
+              ],
+              "findings": [],
+              "id": "external_requirements",
+              "status": "pass"
+            }
+          ],
+          "file_coverage": [
+            {
+              "classification": "Strict dual-agent code review overlay instructions",
+              "disposition": "reviewed",
+              "evidence": [],
+              "path": "SKILL.md"
+            },
+            {
+              "classification": "OpenAI interface and invocation policy metadata",
+              "disposition": "reviewed",
+              "evidence": [],
+              "path": "agents/openai.yaml"
+            },
+            {
+              "classification": "Synthetic review patch fixture",
+              "disposition": "reviewed",
+              "evidence": [],
+              "path": "references/acceptance-fixture.patch"
+            },
+            {
+              "classification": "Acceptance fixture source and hash manifest",
+              "disposition": "reviewed",
+              "evidence": [],
+              "path": "references/acceptance-manifest.json"
+            },
+            {
+              "classification": "Pinned synthetic acceptance requirements",
+              "disposition": "reviewed",
+              "evidence": [],
+              "path": "references/acceptance-requirements.md"
+            },
+            {
+              "classification": "Manual acceptance procedure and expected findings",
+              "disposition": "reviewed",
+              "evidence": [],
+              "path": "references/acceptance-scenario.md"
+            },
+            {
+              "classification": "Pinned synthetic technical standard",
+              "disposition": "reviewed",
+              "evidence": [],
+              "path": "references/acceptance-standard.md"
+            }
+          ],
+          "fixture_id": "generic-agent-skills-host-v1",
+          "inventory_sha256": "1eb0536ee8f2950fead382b6c63c86dc66fd0c1e3dc68cf4ba41a253ad7d82c0",
+          "overall_status": "pass",
+          "required_capabilities": [
+            {
+              "evidence": [
+                {
+                  "end_line": 14,
+                  "excerpt": "If the source is missing or unreadable, stop and direct the user to `/code-review` in the [prerequisite guide](../../docs/prerequisites.md).",
+                  "path": "SKILL.md",
+                  "start_line": 14
+                }
+              ],
+              "name": "Original /code-review skill source",
+              "scope": "core",
+              "unavailable_behavior": "If unavailable or unreadable, stop and direct the user to its prerequisite-guide entry; never substitute a copied body."
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 35,
+                  "excerpt": "set the overall status to blocked and pause before reviewing",
+                  "path": "SKILL.md",
+                  "start_line": 35
+                }
+              ],
+              "name": "Host capability to start two independent agents and share fixed inputs",
+              "scope": "core",
+              "unavailable_behavior": "If unavailable, block and pause; ask the user to retry on a parallel-agent host or explicitly approve single-agent degradation."
+            }
+          ],
+          "reviewer_id": "baseline-v1-workflow_portability-review-duo",
+          "reviewer_role": "workflow_portability",
+          "schema_version": 1,
+          "skill_name": "review-duo"
+        }
+      ],
+      "skill_name": "review-duo",
+      "status": "blocked"
+    },
+    {
+      "reviews": [
+        {
+          "criteria": [
+            {
+              "evidence": [
+                {
+                  "end_line": 1,
+                  "excerpt": "---",
+                  "path": "SKILL.md",
+                  "start_line": 1
+                },
+                {
+                  "end_line": 2,
+                  "excerpt": "name: skill-scout",
+                  "path": "SKILL.md",
+                  "start_line": 2
+                },
+                {
+                  "end_line": 3,
+                  "excerpt": "description: Find installed Agent Skills and prerequisites with the local SkillRoute CLI when a workflow needs skill discovery, comparison, or step-by-step skill routing.",
+                  "path": "SKILL.md",
+                  "start_line": 3
+                }
+              ],
+              "findings": [],
+              "id": "entrypoint_and_format",
+              "status": "pass"
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 4,
+                  "excerpt": "metadata:",
+                  "path": "SKILL.md",
+                  "start_line": 4
+                },
+                {
+                  "end_line": 36,
+                  "excerpt": "Continue only when the CLI is runnable, the local backend is ready, and the catalog contains skills for the request.",
+                  "path": "SKILL.md",
+                  "start_line": 36
+                },
+                {
+                  "end_line": 38,
+                  "excerpt": "Tell the user to install/configure SkillRoute or prepare the local catalog.",
+                  "path": "SKILL.md",
+                  "start_line": 38
+                }
+              ],
+              "findings": [],
+              "id": "resource_closure",
+              "status": "pass"
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 16,
+                  "excerpt": "When a workflow needs a prerequisite's source, read the original file regardless of its model-invocation metadata.",
+                  "path": "SKILL.md",
+                  "start_line": 16
+                }
+              ],
+              "findings": [
+                {
+                  "impact": "The skill stops and tells the user to prepare the catalog when absent; metadata should expose that requirement.",
+                  "summary": "[handoff: prerequisite-governance] Metadata declares the SkillRoute CLI but not the ready local catalog as a separate runtime prerequisite."
+                }
+              ],
+              "id": "references_and_cycles",
+              "status": "pass"
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 12,
+                  "excerpt": "## Source of truth",
+                  "path": "SKILL.md",
+                  "start_line": 12
+                },
+                {
+                  "end_line": 2,
+                  "excerpt": "display_name: \"Skill Scout\"",
+                  "path": "agents/openai.yaml",
+                  "start_line": 2
+                }
+              ],
+              "findings": [],
+              "id": "all_files_classified",
+              "status": "pass"
+            }
+          ],
+          "file_coverage": [
+            {
+              "classification": "Agent Skills entrypoint and local SkillRoute-based discovery workflow.",
+              "disposition": "reviewed",
+              "evidence": [
+                {
+                  "end_line": 12,
+                  "excerpt": "## Source of truth",
+                  "path": "SKILL.md",
+                  "start_line": 12
+                }
+              ],
+              "path": "SKILL.md"
+            },
+            {
+              "classification": "OpenAI host-specific display and invocation policy metadata.",
+              "disposition": "reviewed",
+              "evidence": [
+                {
+                  "end_line": 2,
+                  "excerpt": "display_name: \"Skill Scout\"",
+                  "path": "agents/openai.yaml",
+                  "start_line": 2
+                }
+              ],
+              "path": "agents/openai.yaml"
+            }
+          ],
+          "fixture_id": "generic-agent-skills-host-v1",
+          "inventory_sha256": "1eb0536ee8f2950fead382b6c63c86dc66fd0c1e3dc68cf4ba41a253ad7d82c0",
+          "overall_status": "pass",
+          "required_capabilities": [
+            {
+              "evidence": [
+                {
+                  "end_line": 5,
+                  "excerpt": "SkillRoute CLI",
+                  "path": "SKILL.md",
+                  "start_line": 5
+                },
+                {
+                  "end_line": 36,
+                  "excerpt": "Continue only when the CLI is runnable",
+                  "path": "SKILL.md",
+                  "start_line": 36
+                },
+                {
+                  "end_line": 40,
+                  "excerpt": "Do not fall back to filesystem scanning, web search, or a copied skill body.",
+                  "path": "SKILL.md",
+                  "start_line": 40
+                }
+              ],
+              "name": "SkillRoute CLI with ready local-token backend and prepared local catalog",
+              "scope": "core",
+              "unavailable_behavior": "Stop with a Missing prerequisite result and tell the user to install/configure SkillRoute or prepare the local catalog; no filesystem or web-search fallback."
+            }
+          ],
+          "reviewer_id": "baseline-v1-completeness-skill-scout",
+          "reviewer_role": "completeness",
+          "schema_version": 1,
+          "skill_name": "skill-scout"
+        },
+        {
+          "criteria": [
+            {
+              "evidence": [
+                {
+                  "end_line": 10,
+                  "excerpt": "Use `/skill-scout` when a workflow needs to find an installed skill, resolve a skill's prerequisites, compare similar skills, or choose skills for a task.",
+                  "path": "SKILL.md",
+                  "start_line": 10
+                }
+              ],
+              "findings": [],
+              "id": "generic_workflow_primary",
+              "status": "pass"
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 18,
+                  "excerpt": "Use the local CLI and JSON output:",
+                  "path": "SKILL.md",
+                  "start_line": 18
+                }
+              ],
+              "findings": [],
+              "id": "harness_independence",
+              "status": "pass"
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 38,
+                  "excerpt": "If the CLI, backend, or catalog is unavailable, stop with a `Missing prerequisite` result",
+                  "path": "SKILL.md",
+                  "start_line": 38
+                }
+              ],
+              "findings": [],
+              "id": "capabilities_and_unavailable_behavior",
+              "status": "pass"
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 5,
+                  "excerpt": "prerequisites: '{\"skills\":[],\"mcps\":[],\"tools\":[[\"SkillRoute CLI\"",
+                  "path": "SKILL.md",
+                  "start_line": 5
+                },
+                {
+                  "end_line": 38,
+                  "excerpt": "Tell the user to install/configure SkillRoute or prepare the local catalog.",
+                  "path": "SKILL.md",
+                  "start_line": 38
+                }
+              ],
+              "findings": [],
+              "id": "external_requirements",
+              "status": "pass"
+            }
+          ],
+          "file_coverage": [
+            {
+              "classification": "Skill discovery and routing instructions using SkillRoute",
+              "disposition": "reviewed",
+              "evidence": [],
+              "path": "SKILL.md"
+            },
+            {
+              "classification": "OpenAI interface and invocation policy metadata",
+              "disposition": "reviewed",
+              "evidence": [],
+              "path": "agents/openai.yaml"
+            }
+          ],
+          "fixture_id": "generic-agent-skills-host-v1",
+          "inventory_sha256": "1eb0536ee8f2950fead382b6c63c86dc66fd0c1e3dc68cf4ba41a253ad7d82c0",
+          "overall_status": "pass",
+          "required_capabilities": [
+            {
+              "evidence": [
+                {
+                  "end_line": 18,
+                  "excerpt": "Use the local CLI and JSON output:",
+                  "path": "SKILL.md",
+                  "start_line": 18
+                },
+                {
+                  "end_line": 38,
+                  "excerpt": "If the CLI, backend, or catalog is unavailable, stop with a `Missing prerequisite` result",
+                  "path": "SKILL.md",
+                  "start_line": 38
+                }
+              ],
+              "name": "SkillRoute CLI with a ready local backend and prepared catalog",
+              "scope": "core",
+              "unavailable_behavior": "If unavailable or malformed, stop with Missing prerequisite and tell the user to install/configure SkillRoute or prepare the catalog; do not use filesystem or web fallback."
+            }
+          ],
+          "reviewer_id": "baseline-v1-workflow_portability-skill-scout",
+          "reviewer_role": "workflow_portability",
+          "schema_version": 1,
+          "skill_name": "skill-scout"
+        }
+      ],
+      "skill_name": "skill-scout",
+      "status": "pass"
+    },
+    {
+      "reviews": [
+        {
+          "criteria": [
+            {
+              "evidence": [
+                {
+                  "end_line": 1,
+                  "excerpt": "---",
+                  "path": "SKILL.md",
+                  "start_line": 1
+                },
+                {
+                  "end_line": 2,
+                  "excerpt": "name: spec-implement-loop",
+                  "path": "SKILL.md",
+                  "start_line": 2
+                },
+                {
+                  "end_line": 3,
+                  "excerpt": "description: Run an explicitly approved root spec or ticket tree through implementation, verification, commit, push, status sync, and bounded review remediation.",
+                  "path": "SKILL.md",
+                  "start_line": 3
+                }
+              ],
+              "findings": [],
+              "id": "entrypoint_and_format",
+              "status": "pass"
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 27,
+                  "excerpt": "[prerequisite guide](../../docs/prerequisites.md)",
+                  "path": "SKILL.md",
+                  "start_line": 27
+                },
+                {
+                  "end_line": 99,
+                  "excerpt": "Resolve `/show-me` or `/archify` dynamically at this step and use its smallest useful view",
+                  "path": "SKILL.md",
+                  "start_line": 99
+                }
+              ],
+              "findings": [
+                {
+                  "impact": "A standalone host cannot follow the recovery route or complete commit/final-summary explanation when neither visualization skill is available.",
+                  "summary": "Missing-prerequisite recovery points to unbundled `../../docs/prerequisites.md`; mandatory `/show-me` or `/archify` skills are also absent from this package and have no stable declared source."
+                }
+              ],
+              "id": "resource_closure",
+              "status": "fail"
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 99,
+                  "excerpt": "Resolve `/show-me` or `/archify` dynamically at this step and use its smallest useful view",
+                  "path": "SKILL.md",
+                  "start_line": 99
+                },
+                {
+                  "end_line": 145,
+                  "excerpt": "For each commit, use `/show-me` or `/archify` to explain its effect",
+                  "path": "SKILL.md",
+                  "start_line": 145
+                }
+              ],
+              "findings": [
+                {
+                  "impact": "A generic host cannot resolve these references from the package; work can stop at the first commit or final report.",
+                  "summary": "[handoff: prerequisite-governance] `/show-me` and `/archify` are mandatory references but absent from metadata.prerequisites, with no stable source or unavailable behavior."
+                },
+                {
+                  "impact": "Installers cannot discover several core host dependencies before invocation.",
+                  "summary": "[handoff: prerequisite-governance] Metadata declares skills but no Git/GitHub tools although the workflow requires a clean checkout, task remote, and issue-tracker operations."
+                }
+              ],
+              "id": "references_and_cycles",
+              "status": "fail"
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 51,
+                  "excerpt": "## Root-run lifecycle",
+                  "path": "SKILL.md",
+                  "start_line": 51
+                },
+                {
+                  "end_line": 2,
+                  "excerpt": "display_name: \"Spec Implement Loop\"",
+                  "path": "agents/openai.yaml",
+                  "start_line": 2
+                }
+              ],
+              "findings": [],
+              "id": "all_files_classified",
+              "status": "pass"
+            }
+          ],
+          "file_coverage": [
+            {
+              "classification": "Agent Skills entrypoint and approved spec/ticket implementation lifecycle.",
+              "disposition": "reviewed",
+              "evidence": [
+                {
+                  "end_line": 51,
+                  "excerpt": "## Root-run lifecycle",
+                  "path": "SKILL.md",
+                  "start_line": 51
+                }
+              ],
+              "path": "SKILL.md"
+            },
+            {
+              "classification": "OpenAI host-specific display and invocation policy metadata.",
+              "disposition": "reviewed",
+              "evidence": [
+                {
+                  "end_line": 2,
+                  "excerpt": "display_name: \"Spec Implement Loop\"",
+                  "path": "agents/openai.yaml",
+                  "start_line": 2
+                }
+              ],
+              "path": "agents/openai.yaml"
+            }
+          ],
+          "fixture_id": "generic-agent-skills-host-v1",
+          "inventory_sha256": "1eb0536ee8f2950fead382b6c63c86dc66fd0c1e3dc68cf4ba41a253ad7d82c0",
+          "overall_status": "fail",
+          "required_capabilities": [
+            {
+              "evidence": [
+                {
+                  "end_line": 6,
+                  "excerpt": "prerequisites:",
+                  "path": "SKILL.md",
+                  "start_line": 6
+                },
+                {
+                  "end_line": 27,
+                  "excerpt": "If a declared source is missing or unreadable, stop",
+                  "path": "SKILL.md",
+                  "start_line": 27
+                }
+              ],
+              "name": "Declared implementation, review, planning, and ticket prerequisite skills",
+              "scope": "core",
+              "unavailable_behavior": "Preflight stops if a required skill is missing or unreadable and points to the unbundled guide; automatic installation is prohibited."
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 31,
+                  "excerpt": "Also require:",
+                  "path": "SKILL.md",
+                  "start_line": 31
+                },
+                {
+                  "end_line": 33,
+                  "excerpt": "a clean worktree;",
+                  "path": "SKILL.md",
+                  "start_line": 33
+                },
+                {
+                  "end_line": 35,
+                  "excerpt": "a resolvable task remote and branch-to-remote mapping",
+                  "path": "SKILL.md",
+                  "start_line": 35
+                }
+              ],
+              "name": "Git repository, clean non-detached branch, and task remote",
+              "scope": "core",
+              "unavailable_behavior": "Preflight reports failure and stops if the worktree, branch, or task remote requirements are unmet."
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 29,
+                  "excerpt": "If setup or tracker configuration is missing or invalid, stop.",
+                  "path": "SKILL.md",
+                  "start_line": 29
+                },
+                {
+                  "end_line": 75,
+                  "excerpt": "Issue/status writes still require explicit approval.",
+                  "path": "SKILL.md",
+                  "start_line": 75
+                }
+              ],
+              "name": "Configured issue tracker and tracker access",
+              "scope": "optional",
+              "unavailable_behavior": "Stop if setup or tracker configuration is missing or invalid; issue/status writes still need explicit approval."
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 99,
+                  "excerpt": "Resolve `/show-me` or `/archify` dynamically at this step",
+                  "path": "SKILL.md",
+                  "start_line": 99
+                },
+                {
+                  "end_line": 145,
+                  "excerpt": "Use `/show-me` or `/archify` for the final summary",
+                  "path": "SKILL.md",
+                  "start_line": 145
+                }
+              ],
+              "name": "At least one of /show-me or /archify",
+              "scope": "core",
+              "unavailable_behavior": "No unavailable behavior is specified; instructions still require a view for every commit and the final summary."
+            }
+          ],
+          "reviewer_id": "baseline-v1-completeness-spec-implement-loop",
+          "reviewer_role": "completeness",
+          "schema_version": 1,
+          "skill_name": "spec-implement-loop"
+        },
+        {
+          "criteria": [
+            {
+              "evidence": [
+                {
+                  "end_line": 11,
+                  "excerpt": "Run the user's root spec(s) to verified delivery in the current branch or worktree.",
+                  "path": "SKILL.md",
+                  "start_line": 11
+                }
+              ],
+              "findings": [],
+              "id": "generic_workflow_primary",
+              "status": "pass"
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 25,
+                  "excerpt": "resolve and read its original `SKILL.md` from the active skill roots",
+                  "path": "SKILL.md",
+                  "start_line": 25
+                }
+              ],
+              "findings": [],
+              "id": "harness_independence",
+              "status": "pass"
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 99,
+                  "excerpt": "Resolve `/show-me` or `/archify` dynamically at this step",
+                  "path": "SKILL.md",
+                  "start_line": 99
+                },
+                {
+                  "end_line": 145,
+                  "excerpt": "Use `/show-me` or `/archify` for the final summary",
+                  "path": "SKILL.md",
+                  "start_line": 145
+                }
+              ],
+              "findings": [
+                {
+                  "impact": "The generic fixture does not provide sibling skills, leaving required completion and reporting steps without a defined fallback.",
+                  "summary": "The workflow requires `/show-me` or `/archify` for every commit and the final summary, but gives no behavior if neither skill is available."
+                }
+              ],
+              "id": "capabilities_and_unavailable_behavior",
+              "status": "fail"
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 6,
+                  "excerpt": "prerequisites: '{\"skills\":[[\"implement\",\"mattpocock/skills\"],[\"tdd\",\"mattpocock/skills\"],[\"code-review\",\"mattpocock/skills\"",
+                  "path": "SKILL.md",
+                  "start_line": 6
+                },
+                {
+                  "end_line": 99,
+                  "excerpt": "Resolve `/show-me` or `/archify` dynamically at this step",
+                  "path": "SKILL.md",
+                  "start_line": 99
+                }
+              ],
+              "findings": [
+                {
+                  "impact": "A generic host cannot know that either sibling skill must be available until execution reaches the step and cannot complete the mandated commit/final reports if both are absent.",
+                  "summary": "The two required visualization skills are named in workflow steps but absent from the declared prerequisite list, and no missing-skill behavior is given."
+                }
+              ],
+              "id": "external_requirements",
+              "status": "fail"
+            }
+          ],
+          "file_coverage": [
+            {
+              "classification": "Root-spec implementation, verification, publication, and review-remediation workflow instructions",
+              "disposition": "reviewed",
+              "evidence": [],
+              "path": "SKILL.md"
+            },
+            {
+              "classification": "OpenAI interface and explicit-invocation policy metadata",
+              "disposition": "reviewed",
+              "evidence": [],
+              "path": "agents/openai.yaml"
+            }
+          ],
+          "fixture_id": "generic-agent-skills-host-v1",
+          "inventory_sha256": "1eb0536ee8f2950fead382b6c63c86dc66fd0c1e3dc68cf4ba41a253ad7d82c0",
+          "overall_status": "fail",
+          "required_capabilities": [
+            {
+              "evidence": [
+                {
+                  "end_line": 21,
+                  "excerpt": "- `mattpocock/skills`: `/implement`, `/tdd`, `/code-review`, `/grill-duo-with-docs`, `/grilling`, `/domain-modeling`, `/to-spec`, `/to-tickets`, `/setup-matt-pocock-skills`\n- `DietrichGebert/ponytail`: `/ponytail-review`\n- `EltonZhang777/AggregateSkills`: `/conventional-git-messages`",
+                  "path": "SKILL.md",
+                  "start_line": 19
+                },
+                {
+                  "end_line": 27,
+                  "excerpt": "If a declared source is missing or unreadable, stop",
+                  "path": "SKILL.md",
+                  "start_line": 27
+                }
+              ],
+              "name": "Declared implementation, testing, review, planning, setup, and commit-message skill sources",
+              "scope": "core",
+              "unavailable_behavior": "If any declared source is missing or unreadable, stop and direct the user to the prerequisite guide; do not install dependencies automatically."
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 99,
+                  "excerpt": "Resolve `/show-me` or `/archify` dynamically at this step",
+                  "path": "SKILL.md",
+                  "start_line": 99
+                },
+                {
+                  "end_line": 145,
+                  "excerpt": "For each commit, use `/show-me` or `/archify` to explain its effect",
+                  "path": "SKILL.md",
+                  "start_line": 145
+                }
+              ],
+              "name": "At least one of /show-me or /archify",
+              "scope": "core",
+              "unavailable_behavior": "No behavior is specified if neither skill is available."
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 29,
+                  "excerpt": "If setup or tracker configuration is missing or invalid, stop.",
+                  "path": "SKILL.md",
+                  "start_line": 29
+                },
+                {
+                  "end_line": 75,
+                  "excerpt": "For GitHub inputs, the Issue task contract and native dependency edges are authoritative",
+                  "path": "SKILL.md",
+                  "start_line": 75
+                }
+              ],
+              "name": "Configured issue tracker and GitHub permissions for GitHub inputs",
+              "scope": "optional",
+              "unavailable_behavior": "If tracker configuration is missing or invalid, stop; GitHub-specific inputs require the configured GitHub tracker."
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 35,
+                  "excerpt": "Also require:\n\n- a clean worktree;\n- a non-detached current branch;\n- a resolvable task remote and branch-to-remote mapping; a new remote ref may be created by the task's first push.",
+                  "path": "SKILL.md",
+                  "start_line": 31
+                }
+              ],
+              "name": "Git CLI, clean task worktree, configured remote, and push access",
+              "scope": "core",
+              "unavailable_behavior": "Preflight requires a clean worktree, attached branch, and resolvable remote; an unconfirmed remote state blocks continuation."
+            }
+          ],
+          "reviewer_id": "baseline-v1-workflow_portability-spec-implement-loop",
+          "reviewer_role": "workflow_portability",
+          "schema_version": 1,
+          "skill_name": "spec-implement-loop"
+        }
+      ],
+      "skill_name": "spec-implement-loop",
+      "status": "fail"
+    }
+  ],
+  "schema_version": 1
+}
