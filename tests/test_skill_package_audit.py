@@ -43,7 +43,8 @@ class SkillPackageAuditCliTests(unittest.TestCase):
             if isinstance(contents, bytes):
                 destination.write_bytes(contents)
             else:
-                destination.write_text(contents, encoding="utf-8", newline="")
+                with destination.open("w", encoding="utf-8", newline="") as stream:
+                    stream.write(contents)
         return package
 
     def run_cli(self, *arguments):
