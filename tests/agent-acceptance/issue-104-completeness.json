@@ -1,0 +1,383 @@
+{
+  "schema_version": 1,
+  "fixture_id": "generic-agent-skills-host-v1",
+  "inventory_sha256": "f357073a8553d8ab8b1c16c73d82046ea6e9d8ffcbf2aa775945d1a7a95081aa",
+  "reviews": [
+    {
+      "schema_version": 1,
+      "skill_name": "pr-and-merge",
+      "reviewer_id": "issue-104-completeness-pr-and-merge",
+      "reviewer_role": "completeness",
+      "fixture_id": "generic-agent-skills-host-v1",
+      "inventory_sha256": "f357073a8553d8ab8b1c16c73d82046ea6e9d8ffcbf2aa775945d1a7a95081aa",
+      "overall_status": "fail",
+      "criteria": [
+        {
+          "id": "entrypoint_and_format",
+          "status": "pass",
+          "evidence": [
+            {
+              "path": "SKILL.md",
+              "start_line": 1,
+              "end_line": 6,
+              "excerpt": "name: pr-and-merge"
+            },
+            {
+              "path": "SKILL.md",
+              "start_line": 8,
+              "end_line": 8,
+              "excerpt": "# /pr-and-merge"
+            }
+          ],
+          "findings": []
+        },
+        {
+          "id": "resource_closure",
+          "status": "fail",
+          "evidence": [
+            {
+              "path": "SKILL.md",
+              "start_line": 42,
+              "end_line": 42,
+              "excerpt": "Read the target repository's root `AGENTS.md`, contribution guidance, pull request template, and relevant GitHub workflow files."
+            },
+            {
+              "path": "SKILL.md",
+              "start_line": 56,
+              "end_line": 56,
+              "excerpt": "Unknown or unavailable check requirements block this entry and its dependents from any source-branch push or PR creation/update"
+            }
+          ],
+          "findings": [
+            {
+              "summary": "The PR workflow depends on policy and workflow documents supplied by each target repository, which are outside this isolated package and are not guaranteed by the generic host fixture.",
+              "impact": "When those documents are unavailable, required checks become unknown and the entry is blocked. This is a precise limitation against the no-unbundled-repository-documents acceptance condition; the package does define the blocking effect."
+            }
+          ]
+        },
+        {
+          "id": "references_and_cycles",
+          "status": "pass",
+          "evidence": [
+            {
+              "path": "SKILL.md",
+              "start_line": 5,
+              "end_line": 5,
+              "excerpt": "conventional-git-messages\",\"EltonZhang777/AggregateSkills"
+            },
+            {
+              "path": "SKILL.md",
+              "start_line": 5,
+              "end_line": 5,
+              "excerpt": "resolving-merge-conflicts\",\"mattpocock/skills"
+            },
+            {
+              "path": "SKILL.md",
+              "start_line": 60,
+              "end_line": 60,
+              "excerpt": "to `/conventional-git-messages`"
+            },
+            {
+              "path": "SKILL.md",
+              "start_line": 111,
+              "end_line": 111,
+              "excerpt": "Use `/resolving-merge-conflicts` for a conflict"
+            }
+          ],
+          "findings": []
+        },
+        {
+          "id": "all_files_classified",
+          "status": "pass",
+          "evidence": [
+            {
+              "path": "SKILL.md",
+              "start_line": 1,
+              "end_line": 6,
+              "excerpt": "name: pr-and-merge"
+            }
+          ],
+          "findings": []
+        }
+      ],
+      "required_capabilities": [
+        {
+          "name": "Git CLI and access to the supplied source repository or worktree",
+          "scope": "core",
+          "unavailable_behavior": "An unclear repository, branch, target, or stacked relationship blocks the affected entry; a dirty worktree also blocks it. The workflow asks for clarification and can continue unrelated entries.",
+          "evidence": [
+            {
+              "path": "SKILL.md",
+              "start_line": 24,
+              "end_line": 24,
+              "excerpt": "A dirty worktree blocks this entry; do not stash, stage, or clean it."
+            }
+          ]
+        },
+        {
+          "name": "GitHub CLI (gh), GitHub repository access, host-specific authentication, and network access",
+          "scope": "optional",
+          "unavailable_behavior": "This capability is conditional on a GitHub remote. Permission, authentication, network, or incomplete-response uncertainty makes affected state unknown and blocks source-branch publishing or PR creation/update; non-GitHub hosts use the generic guidance and their own platform operations.",
+          "evidence": [
+            {
+              "path": "SKILL.md",
+              "start_line": 10,
+              "end_line": 10,
+              "excerpt": "GitHub CLI commands and publishing steps are GitHub-specific"
+            },
+            {
+              "path": "SKILL.md",
+              "start_line": 26,
+              "end_line": 26,
+              "excerpt": "For GitHub, verify `gh auth status --hostname github.com`"
+            },
+            {
+              "path": "SKILL.md",
+              "start_line": 56,
+              "end_line": 56,
+              "excerpt": "Treat permission, network, or incomplete-response errors as unknown"
+            }
+          ]
+        },
+        {
+          "name": "Target repository policy documents: root AGENTS.md, contribution guidance, PR template, relevant workflow files, and merge policy",
+          "scope": "core",
+          "unavailable_behavior": "Unknown or unavailable check requirements block source-branch push or PR creation/update for the affected entry and its dependents. If repository merge policy does not choose an enabled method, ask which method to use; block if none is enabled.",
+          "evidence": [
+            {
+              "path": "SKILL.md",
+              "start_line": 42,
+              "end_line": 42,
+              "excerpt": "Read the target repository's root `AGENTS.md`, contribution guidance, pull request template, and relevant GitHub workflow files."
+            },
+            {
+              "path": "SKILL.md",
+              "start_line": 56,
+              "end_line": 56,
+              "excerpt": "Unknown or unavailable check requirements block this entry and its dependents from any source-branch push or PR creation/update"
+            }
+          ]
+        },
+        {
+          "name": "Declared prerequisite skill /conventional-git-messages from EltonZhang777/AggregateSkills",
+          "scope": "core",
+          "unavailable_behavior": "The package does not specify a fallback if this declared prerequisite is unavailable. Its source and prerequisite-owned guidance are outside the frozen inventory and are a governance-owned limitation.",
+          "evidence": [
+            {
+              "path": "SKILL.md",
+              "start_line": 5,
+              "end_line": 5,
+              "excerpt": "conventional-git-messages\",\"EltonZhang777/AggregateSkills"
+            },
+            {
+              "path": "SKILL.md",
+              "start_line": 60,
+              "end_line": 60,
+              "excerpt": "to `/conventional-git-messages`"
+            },
+            {
+              "path": "SKILL.md",
+              "start_line": 76,
+              "end_line": 76,
+              "excerpt": "Delegate title and body drafting to `/conventional-git-messages`"
+            }
+          ]
+        },
+        {
+          "name": "Declared prerequisite skill /resolving-merge-conflicts from mattpocock/skills",
+          "scope": "optional",
+          "unavailable_behavior": "The package does not specify a fallback if this conflict-only prerequisite is unavailable. Its source and prerequisite-owned guidance are outside the frozen inventory and are a governance-owned limitation.",
+          "evidence": [
+            {
+              "path": "SKILL.md",
+              "start_line": 5,
+              "end_line": 5,
+              "excerpt": "resolving-merge-conflicts\",\"mattpocock/skills"
+            },
+            {
+              "path": "SKILL.md",
+              "start_line": 111,
+              "end_line": 111,
+              "excerpt": "Use `/resolving-merge-conflicts` for a conflict"
+            }
+          ]
+        },
+        {
+          "name": "Platform-specific publishing and merge operations on non-GitHub hosts",
+          "scope": "optional",
+          "unavailable_behavior": "The package provides generic batch, dependency, safety, and approval guidance and assigns platform operations to the host; it gives no further fallback if that host cannot perform them.",
+          "evidence": [
+            {
+              "path": "SKILL.md",
+              "start_line": 10,
+              "end_line": 10,
+              "excerpt": "for another host, tell the user the host handles those platform operations and follow only the generic guidance."
+            }
+          ]
+        }
+      ],
+      "file_coverage": [
+        {
+          "path": "SKILL.md",
+          "classification": "PR batch preparation, verification, approval, and merge workflow instructions",
+          "disposition": "reviewed",
+          "evidence": []
+        }
+      ]
+    },
+    {
+      "schema_version": 1,
+      "skill_name": "prune-worktrees-and-branches",
+      "reviewer_id": "issue-104-completeness-prune-worktrees-and-branches",
+      "reviewer_role": "completeness",
+      "fixture_id": "generic-agent-skills-host-v1",
+      "inventory_sha256": "f357073a8553d8ab8b1c16c73d82046ea6e9d8ffcbf2aa775945d1a7a95081aa",
+      "overall_status": "pass",
+      "criteria": [
+        {
+          "id": "entrypoint_and_format",
+          "status": "pass",
+          "evidence": [
+            {
+              "path": "SKILL.md",
+              "start_line": 1,
+              "end_line": 6,
+              "excerpt": "name: prune-worktrees-and-branches"
+            },
+            {
+              "path": "SKILL.md",
+              "start_line": 8,
+              "end_line": 8,
+              "excerpt": "# /prune-worktrees-and-branches"
+            }
+          ],
+          "findings": []
+        },
+        {
+          "id": "resource_closure",
+          "status": "pass",
+          "evidence": [
+            {
+              "path": "SKILL.md",
+              "start_line": 5,
+              "end_line": 5,
+              "excerpt": "prerequisites: '{\"skills\":[],\"mcps\":[],\"tools\":[]}'"
+            },
+            {
+              "path": "SKILL.md",
+              "start_line": 17,
+              "end_line": 17,
+              "excerpt": "Unknown, failed, incomplete, or out-of-date evidence must never produce **safe to clean**."
+            },
+            {
+              "path": "SKILL.md",
+              "start_line": 105,
+              "end_line": 105,
+              "excerpt": "If no separate agent is available, the review is incomplete"
+            }
+          ],
+          "findings": []
+        },
+        {
+          "id": "references_and_cycles",
+          "status": "pass",
+          "evidence": [
+            {
+              "path": "SKILL.md",
+              "start_line": 5,
+              "end_line": 5,
+              "excerpt": "prerequisites: '{\"skills\":[],\"mcps\":[],\"tools\":[]}'"
+            },
+            {
+              "path": "SKILL.md",
+              "start_line": 8,
+              "end_line": 10,
+              "excerpt": "# /prune-worktrees-and-branches"
+            }
+          ],
+          "findings": []
+        },
+        {
+          "id": "all_files_classified",
+          "status": "pass",
+          "evidence": [
+            {
+              "path": "SKILL.md",
+              "start_line": 8,
+              "end_line": 10,
+              "excerpt": "# /prune-worktrees-and-branches"
+            }
+          ],
+          "findings": []
+        }
+      ],
+      "required_capabilities": [
+        {
+          "name": "Git CLI and access to the intended Git repository",
+          "scope": "core",
+          "unavailable_behavior": "A failed Git command makes the affected state unknown. Unknown evidence cannot make a target safe to clean; the affected item requires manual confirmation or the operation stops.",
+          "evidence": [
+            {
+              "path": "SKILL.md",
+              "start_line": 23,
+              "end_line": 24,
+              "excerpt": "Confirm the current directory is inside the intended Git repository with `git rev-parse --show-toplevel`."
+            },
+            {
+              "path": "SKILL.md",
+              "start_line": 36,
+              "end_line": 36,
+              "excerpt": "a failed command makes the affected state unknown."
+            }
+          ]
+        },
+        {
+          "name": "GitHub CLI (gh), configured GitHub remote, host-specific authentication, and network access",
+          "scope": "optional",
+          "unavailable_behavior": "GitHub checks apply only to GitHub remotes. Uncertain authentication, network, or responses leave PR, protection, or default-branch state unknown; required unavailable checks cannot make a branch safe, and remote deletion is unavailable unless all required read-only checks are complete.",
+          "evidence": [
+            {
+              "path": "SKILL.md",
+              "start_line": 56,
+              "end_line": 56,
+              "excerpt": "Use GitHub CLI checks only for a remote whose URL identifies a GitHub repository."
+            },
+            {
+              "path": "SKILL.md",
+              "start_line": 61,
+              "end_line": 61,
+              "excerpt": "If a required GitHub check is unavailable, do not mark the affected branch **safe to clean**."
+            },
+            {
+              "path": "SKILL.md",
+              "start_line": 103,
+              "end_line": 103,
+              "excerpt": "Remote deletion is available only for a configured GitHub remote"
+            }
+          ]
+        },
+        {
+          "name": "Independent agent to review the exact proposed remote-branch deletion set",
+          "scope": "optional",
+          "unavailable_behavior": "If no separate agent is available, the review is incomplete and no branch in the proposed set may be deleted. Any rejected or uncertain item also prevents deletion of the proposed set.",
+          "evidence": [
+            {
+              "path": "SKILL.md",
+              "start_line": 105,
+              "end_line": 105,
+              "excerpt": "If no separate agent is available, the review is incomplete, or any item is rejected or uncertain, do not delete any branch in that proposed set; report the review result."
+            }
+          ]
+        }
+      ],
+      "file_coverage": [
+        {
+          "path": "SKILL.md",
+          "classification": "Read-only preview and explicitly approved Git worktree and branch cleanup instructions",
+          "disposition": "reviewed",
+          "evidence": []
+        }
+      ]
+    }
+  ]
+}

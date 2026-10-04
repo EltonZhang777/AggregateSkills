@@ -1,0 +1,465 @@
+{
+  "schema_version": 1,
+  "fixture_id": "generic-agent-skills-host-v1",
+  "inventory_sha256": "f357073a8553d8ab8b1c16c73d82046ea6e9d8ffcbf2aa775945d1a7a95081aa",
+  "reviews": [
+    {
+      "schema_version": 1,
+      "skill_name": "pr-and-merge",
+      "reviewer_id": "issue-104-workflow-portability-pr-and-merge",
+      "reviewer_role": "workflow_portability",
+      "fixture_id": "generic-agent-skills-host-v1",
+      "inventory_sha256": "f357073a8553d8ab8b1c16c73d82046ea6e9d8ffcbf2aa775945d1a7a95081aa",
+      "overall_status": "fail",
+      "criteria": [
+        {
+          "id": "generic_workflow_primary",
+          "status": "pass",
+          "evidence": [
+            {
+              "path": "SKILL.md",
+              "start_line": 10,
+              "end_line": 10,
+              "excerpt": "Start with the platform-independent batch, dependency, safety, and approval guidance below. GitHub CLI commands and publishing steps are GitHub-specific; for another host, tell the user the host handles those platform operations and follow only the generic guidance."
+            },
+            {
+              "path": "SKILL.md",
+              "start_line": 14,
+              "end_line": 14,
+              "excerpt": "Treat every supplied source as an entry identified by its exact repository and branch or worktree."
+            }
+          ],
+          "findings": []
+        },
+        {
+          "id": "harness_independence",
+          "status": "pass",
+          "evidence": [
+            {
+              "path": "SKILL.md",
+              "start_line": 10,
+              "end_line": 10,
+              "excerpt": "for another host, tell the user the host handles those platform operations and follow only the generic guidance."
+            },
+            {
+              "path": "SKILL.md",
+              "start_line": 24,
+              "end_line": 24,
+              "excerpt": "From that checkout, inspect `git rev-parse --show-toplevel`, `git remote -v`, `git branch --show-current`, `git rev-parse HEAD`, and `git status --porcelain=v1 --untracked-files=all`; record the source OID."
+            }
+          ],
+          "findings": []
+        },
+        {
+          "id": "capabilities_and_unavailable_behavior",
+          "status": "fail",
+          "evidence": [
+            {
+              "path": "SKILL.md",
+              "start_line": 5,
+              "end_line": 5,
+              "excerpt": "GitHub CLI (gh)"
+            },
+            {
+              "path": "SKILL.md",
+              "start_line": 10,
+              "end_line": 10,
+              "excerpt": "GitHub CLI commands and publishing steps are GitHub-specific; for another host, tell the user the host handles those platform operations and follow only the generic guidance."
+            },
+            {
+              "path": "SKILL.md",
+              "start_line": 56,
+              "end_line": 56,
+              "excerpt": "Treat permission, network, or incomplete-response errors as unknown; do not infer that checks or rules are absent."
+            },
+            {
+              "path": "SKILL.md",
+              "start_line": 60,
+              "end_line": 60,
+              "excerpt": "pass the durable-project-text language rule from the root `AGENTS.md` of the repository that will own the PR to `/conventional-git-messages`."
+            },
+            {
+              "path": "SKILL.md",
+              "start_line": 76,
+              "end_line": 76,
+              "excerpt": "Delegate title and body drafting to `/conventional-git-messages`"
+            },
+            {
+              "path": "SKILL.md",
+              "start_line": 111,
+              "end_line": 111,
+              "excerpt": "Use `/resolving-merge-conflicts` for a conflict, but stop before its commit step."
+            }
+          ],
+          "findings": [
+            {
+              "summary": "Front matter lists GitHub CLI as a prerequisite for the package even though the opening workflow scopes those operations to GitHub and gives other hosts a generic path.",
+              "impact": "A generic non-GitHub host may be blocked from using the platform-independent workflow because it honors an unconditional GitHub-only prerequisite."
+            },
+            {
+              "summary": "PR text drafting and conflict handling require separately installed skills, but the workflow does not define what to do when either skill is unavailable.",
+              "impact": "A host with only this package has no stated fallback or unavailable result for the applicable drafting or conflict-resolution path."
+            }
+          ]
+        },
+        {
+          "id": "external_requirements",
+          "status": "fail",
+          "evidence": [
+            {
+              "path": "SKILL.md",
+              "start_line": 5,
+              "end_line": 5,
+              "excerpt": "conventional-git-messages"
+            },
+            {
+              "path": "SKILL.md",
+              "start_line": 42,
+              "end_line": 42,
+              "excerpt": "Read the target repository's root `AGENTS.md`, contribution guidance, pull request template, and relevant GitHub workflow files."
+            },
+            {
+              "path": "SKILL.md",
+              "start_line": 60,
+              "end_line": 60,
+              "excerpt": "If the target differs from this skill's source repository, do not use the source or installation `AGENTS.md` as target policy; if both are the same repository, use its root file as the target policy."
+            },
+            {
+              "path": "SKILL.md",
+              "start_line": 111,
+              "end_line": 111,
+              "excerpt": "Use `/resolving-merge-conflicts` for a conflict, but stop before its commit step."
+            }
+          ],
+          "findings": [
+            {
+              "summary": "The isolated package depends on separately installed helper skills and target-repository policy files that are outside the package; it does not define a complete unavailable path for those inputs.",
+              "impact": "A host installing only this package cannot reliably draft governed PR text, determine repository-required checks, or follow the conflict path when the external skills or target documents are absent or inaccessible."
+            }
+          ]
+        }
+      ],
+      "required_capabilities": [
+        {
+          "name": "Git CLI and a command shell for repository and worktree operations",
+          "scope": "core",
+          "unavailable_behavior": "No explicit unavailable behavior is stated for Git or shell execution; the listed repository inspection and update steps cannot be carried out.",
+          "evidence": [
+            {
+              "path": "SKILL.md",
+              "start_line": 24,
+              "end_line": 24,
+              "excerpt": "inspect `git rev-parse --show-toplevel`, `git remote -v`, `git branch --show-current`, `git rev-parse HEAD`, and `git status --porcelain=v1 --untracked-files=all`"
+            },
+            {
+              "path": "SKILL.md",
+              "start_line": 68,
+              "end_line": 68,
+              "excerpt": "Fetch it with `git fetch REMOTE HEAD_BRANCH`."
+            }
+          ]
+        },
+        {
+          "name": "GitHub CLI, host-specific authentication, and network access",
+          "scope": "optional",
+          "unavailable_behavior": "For another host, let that host handle platform operations and continue only with generic guidance. For GitHub, permission, network, or incomplete-response errors leave state unknown and block affected publishing or merge actions.",
+          "evidence": [
+            {
+              "path": "SKILL.md",
+              "start_line": 10,
+              "end_line": 10,
+              "excerpt": "for another host, tell the user the host handles those platform operations and follow only the generic guidance."
+            },
+            {
+              "path": "SKILL.md",
+              "start_line": 26,
+              "end_line": 26,
+              "excerpt": "For GitHub, verify `gh auth status --hostname github.com` and resolve the exact `OWNER/REPO`."
+            },
+            {
+              "path": "SKILL.md",
+              "start_line": 56,
+              "end_line": 56,
+              "excerpt": "Unknown or unavailable check requirements block this entry and its dependents from any source-branch push or PR creation/update"
+            }
+          ]
+        },
+        {
+          "name": "The /conventional-git-messages skill for new or materially revised PR text",
+          "scope": "core",
+          "unavailable_behavior": "No unavailable behavior or alternate drafting path is stated; the workflow directs the agent to delegate drafting to this skill.",
+          "evidence": [
+            {
+              "path": "SKILL.md",
+              "start_line": 60,
+              "end_line": 60,
+              "excerpt": "to `/conventional-git-messages`."
+            },
+            {
+              "path": "SKILL.md",
+              "start_line": 76,
+              "end_line": 76,
+              "excerpt": "Delegate title and body drafting to `/conventional-git-messages`"
+            }
+          ]
+        },
+        {
+          "name": "The /resolving-merge-conflicts skill for the conflict path",
+          "scope": "optional",
+          "unavailable_behavior": "No unavailable behavior or alternate conflict-resolution path is stated when the referenced skill is missing.",
+          "evidence": [
+            {
+              "path": "SKILL.md",
+              "start_line": 111,
+              "end_line": 111,
+              "excerpt": "Use `/resolving-merge-conflicts` for a conflict, but stop before its commit step."
+            }
+          ]
+        },
+        {
+          "name": "Readable target-repository policy and check documents",
+          "scope": "core",
+          "unavailable_behavior": "Unknown or unavailable required-check information blocks source-branch publication; the behavior for a missing local policy document or PR template is not stated separately.",
+          "evidence": [
+            {
+              "path": "SKILL.md",
+              "start_line": 42,
+              "end_line": 42,
+              "excerpt": "Read the target repository's root `AGENTS.md`, contribution guidance, pull request template, and relevant GitHub workflow files."
+            },
+            {
+              "path": "SKILL.md",
+              "start_line": 56,
+              "end_line": 56,
+              "excerpt": "Unknown or unavailable check requirements block this entry and its dependents from any source-branch push or PR creation/update"
+            }
+          ]
+        },
+        {
+          "name": "Optional /show-me or /archify skill for a materially useful diagram",
+          "scope": "optional",
+          "unavailable_behavior": "Omit the diagram suggestion when the skill is unavailable or a diagram would not materially improve clarity.",
+          "evidence": [
+            {
+              "path": "SKILL.md",
+              "start_line": 76,
+              "end_line": 76,
+              "excerpt": "Consider `/show-me` or `/archify` only when a diagram materially improves clarity and an accessible skill is available; otherwise omit it."
+            }
+          ]
+        }
+      ],
+      "file_coverage": [
+        {
+          "path": "SKILL.md",
+          "classification": "Skill entrypoint containing prerequisite metadata and PR workflow instructions",
+          "disposition": "reviewed",
+          "evidence": [
+            {
+              "path": "SKILL.md",
+              "start_line": 8,
+              "end_line": 10,
+              "excerpt": "# /pr-and-merge\n\nStart with the platform-independent batch, dependency, safety, and approval guidance below. GitHub CLI commands and publishing steps are GitHub-specific; for another host, tell the user the host handles those platform operations and follow only the generic guidance."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "schema_version": 1,
+      "skill_name": "prune-worktrees-and-branches",
+      "reviewer_id": "issue-104-workflow-portability-prune-worktrees-and-branches",
+      "reviewer_role": "workflow_portability",
+      "fixture_id": "generic-agent-skills-host-v1",
+      "inventory_sha256": "f357073a8553d8ab8b1c16c73d82046ea6e9d8ffcbf2aa775945d1a7a95081aa",
+      "overall_status": "fail",
+      "criteria": [
+        {
+          "id": "generic_workflow_primary",
+          "status": "pass",
+          "evidence": [
+            {
+              "path": "SKILL.md",
+              "start_line": 14,
+              "end_line": 19,
+              "excerpt": "- Ask for the intended base branch if the user did not supply one. Do not guess.\n- Preview is read-only. Never remove a worktree or branch, prune metadata, fetch, push, update a ref, or change remote state while building it.\n- Report every registered worktree, local branch, and configured-remote branch as **safe to clean**, **keep**, or **needs manual confirmation**, with evidence and a reason.\n- Unknown, failed, incomplete, or out-of-date evidence must never produce **safe to clean**. The only stale-state candidate that can be safe is an exact worktree metadata target reported by a successful dry run.\n- Treat local cleanup and remote branch deletion as separate, one-time approval gates for the exact targets shown in the preview. Approval never upgrades a **keep** or **needs manual confirmation** item to safe.\n- If the user asked only for a preview, stop after presenting it. Otherwise, request the required approval before each kind of cleanup; never infer approval from the cleanup request itself."
+            },
+            {
+              "path": "SKILL.md",
+              "start_line": 48,
+              "end_line": 52,
+              "excerpt": "- For every configured remote, query live heads with `git ls-remote --heads <remote>`. This reads remote refs without updating local refs. Do not run `git fetch`, `git pull`, or `git remote prune`.\n- For each local branch, compare its tip to the resolved base with `git merge-base --is-ancestor <branch-ref> <base-ref>`. Exit 0 means merged; exit 1 means not merged; any other result is unknown.\n- If a local branch has an upstream, resolve the upstream's configured remote and exact branch ref. Confirm the live `ls-remote` object ID matches the local tracking ref before using `git rev-list --left-right --count <upstream>...<branch-ref>`; the left count is behind and the right count is ahead. If the remote query fails, the refs differ, or the object needed for comparison is unavailable locally, mark pushed state **unknown**. Do not fetch to fill the gap.\n- If a branch has no upstream, report that fact and do not claim it is pushed. Mark it **needs manual confirmation** unless its state can otherwise be proved without assuming remote state.\n- For each live remote branch, record the remote URL, branch name, and live object ID. Test ancestry against the base only when the required commit objects are already available locally; otherwise mark ancestry unknown. Never fetch during preview."
+            }
+          ],
+          "findings": []
+        },
+        {
+          "id": "harness_independence",
+          "status": "pass",
+          "evidence": [
+            {
+              "path": "SKILL.md",
+              "start_line": 105,
+              "end_line": 105,
+              "excerpt": "send the exact proposed `remote/branch` set, live tip OIDs, base, and supporting evidence to a separate agent in a fresh context."
+            },
+            {
+              "path": "SKILL.md",
+              "start_line": 105,
+              "end_line": 105,
+              "excerpt": "Do not treat your own review or a second message in the current context as an independent agent review."
+            }
+          ],
+          "findings": []
+        },
+        {
+          "id": "capabilities_and_unavailable_behavior",
+          "status": "pass",
+          "evidence": [
+            {
+              "path": "SKILL.md",
+              "start_line": 36,
+              "end_line": 36,
+              "excerpt": "a failed command makes the affected state unknown."
+            },
+            {
+              "path": "SKILL.md",
+              "start_line": 65,
+              "end_line": 65,
+              "excerpt": "use **safe to clean** only when every relevant check succeeded."
+            },
+            {
+              "path": "SKILL.md",
+              "start_line": 105,
+              "end_line": 105,
+              "excerpt": "If no separate agent is available, the review is incomplete, or any item is rejected or uncertain, do not delete any branch in that proposed set; report the review result."
+            },
+            {
+              "path": "SKILL.md",
+              "start_line": 103,
+              "end_line": 103,
+              "excerpt": "Remote deletion is available only for a configured GitHub remote when host-specific `gh` authentication and complete read-only PR, fork-base, default-branch, and protection checks are available."
+            }
+          ],
+          "findings": []
+        },
+        {
+          "id": "external_requirements",
+          "status": "fail",
+          "evidence": [
+            {
+              "path": "SKILL.md",
+              "start_line": 5,
+              "end_line": 5,
+              "excerpt": "prerequisites: '{\"skills\":[],\"mcps\":[],\"tools\":[]}'"
+            },
+            {
+              "path": "SKILL.md",
+              "start_line": 23,
+              "end_line": 24,
+              "excerpt": "Confirm the current directory is inside the intended Git repository with `git rev-parse --show-toplevel`.\n2. Collect branch refs with `git for-each-ref --format='%(refname)' refs/heads refs/remotes`."
+            },
+            {
+              "path": "SKILL.md",
+              "start_line": 36,
+              "end_line": 36,
+              "excerpt": "Run Git commands from this repository. Preserve their exit codes and error output; a failed command makes the affected state unknown."
+            }
+          ],
+          "findings": [
+            {
+              "summary": "The front matter declares no tool prerequisites, while every core preview and cleanup workflow depends on running Git commands in a shell.",
+              "impact": "Installers that rely on prerequisite metadata will not surface the Git CLI requirement. When Git or command execution is absent, the core workflow cannot proceed and the package does not offer an alternate host operation."
+            }
+          ]
+        }
+      ],
+      "required_capabilities": [
+        {
+          "name": "Git CLI and a command shell for repository/worktree inspection and cleanup",
+          "scope": "core",
+          "unavailable_behavior": "A failed command makes the affected state unknown; unknown evidence cannot classify a candidate as safe to clean, so affected destructive actions must not proceed.",
+          "evidence": [
+            {
+              "path": "SKILL.md",
+              "start_line": 23,
+              "end_line": 24,
+              "excerpt": "Confirm the current directory is inside the intended Git repository with `git rev-parse --show-toplevel`.\n2. Collect branch refs with `git for-each-ref --format='%(refname)' refs/heads refs/remotes`."
+            },
+            {
+              "path": "SKILL.md",
+              "start_line": 36,
+              "end_line": 36,
+              "excerpt": "a failed command makes the affected state unknown."
+            },
+            {
+              "path": "SKILL.md",
+              "start_line": 65,
+              "end_line": 65,
+              "excerpt": "use **safe to clean** only when every relevant check succeeded."
+            }
+          ]
+        },
+        {
+          "name": "GitHub CLI, network access, and host-specific authentication for remote deletion checks",
+          "scope": "optional",
+          "unavailable_behavior": "Remote deletion is unavailable unless the remote is GitHub and required authentication/checks succeed; uncertain or unavailable evidence remains unknown and cannot authorize deletion.",
+          "evidence": [
+            {
+              "path": "SKILL.md",
+              "start_line": 56,
+              "end_line": 61,
+              "excerpt": "If any value, host-specific authentication, network, or response is uncertain, mark the affected PR, protection, or default-branch state **unknown**."
+            },
+            {
+              "path": "SKILL.md",
+              "start_line": 103,
+              "end_line": 103,
+              "excerpt": "Remote deletion is available only for a configured GitHub remote when host-specific `gh` authentication and complete read-only PR, fork-base, default-branch, and protection checks are available."
+            }
+          ]
+        },
+        {
+          "name": "An independent agent in a fresh context for proposed remote branch deletion",
+          "scope": "optional",
+          "unavailable_behavior": "If no separate agent is available, the review is incomplete, or any item is rejected or uncertain, do not delete any branch in the proposed set and report the review result.",
+          "evidence": [
+            {
+              "path": "SKILL.md",
+              "start_line": 105,
+              "end_line": 105,
+              "excerpt": "Before asking the user to approve remote deletion, send the exact proposed `remote/branch` set, live tip OIDs, base, and supporting evidence to a separate agent in a fresh context."
+            },
+            {
+              "path": "SKILL.md",
+              "start_line": 105,
+              "end_line": 105,
+              "excerpt": "If no separate agent is available, the review is incomplete, or any item is rejected or uncertain, do not delete any branch in that proposed set; report the review result."
+            }
+          ]
+        }
+      ],
+      "file_coverage": [
+        {
+          "path": "SKILL.md",
+          "classification": "Skill entrypoint containing cleanup preview, capability gates, and local/remote deletion procedures",
+          "disposition": "reviewed",
+          "evidence": [
+            {
+              "path": "SKILL.md",
+              "start_line": 8,
+              "end_line": 10,
+              "excerpt": "# /prune-worktrees-and-branches\n\nRun this skill only for a cleanup request. The preview is the required first phase of cleanup. Do not use it as a general inventory or status-reporting mode."
+            },
+            {
+              "path": "SKILL.md",
+              "start_line": 103,
+              "end_line": 105,
+              "excerpt": "Remote deletion is available only for a configured GitHub remote when host-specific `gh` authentication and complete read-only PR, fork-base, default-branch, and protection checks are available. If the preview prune dry run failed or its targets could not be parsed exactly, do not perform any cleanup in this run. Never delete a branch on another host or when any required check is unknown.\n\nBefore asking the user to approve remote deletion, send the exact proposed `remote/branch` set, live tip OIDs, base, and supporting evidence to a separate agent in a fresh context."
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

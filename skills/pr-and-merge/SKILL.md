@@ -7,7 +7,7 @@ metadata:
 
 # /pr-and-merge
 
-This workflow is for GitHub. For another hosting platform, say in one sentence that the invoking agent handles that platform. Process one or more supplied branches or worktrees in one invocation, treating each source as a separate PR entry.
+Start with the platform-independent batch, dependency, safety, and approval guidance below. GitHub CLI commands and publishing steps are GitHub-specific; for another host, tell the user the host handles those platform operations and follow only the generic guidance.
 
 ## Process a batch
 
