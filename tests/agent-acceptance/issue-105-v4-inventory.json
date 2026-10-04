@@ -1,0 +1,28 @@
+{
+  "file_count": 2,
+  "inventory_sha256": "691fc681a51dfc917c7e269e27d7ea9a1f896685dd0af9180bff8f11ec975d13",
+  "package_count": 1,
+  "packages": [
+    {
+      "entrypoint_present": true,
+      "files": [
+        {
+          "kind": "file",
+          "line_count": 145,
+          "path": "SKILL.md",
+          "sha256": "d6d7813ed0d3d7bf57a8ff0a43c886e447b12b633869e00046de971d216a6384",
+          "size_bytes": 20166
+        },
+        {
+          "kind": "file",
+          "line_count": 2,
+          "path": "agents/openai.yaml",
+          "sha256": "3bf863a8856d04a6a1c4f23b3aae6cbf5388544129662c55cc733c2d9c23bbbf",
+          "size_bytes": 45
+        }
+      ],
+      "name": "requirements-to-spec-tickets"
+    }
+  ],
+  "schema_version": 1
+}

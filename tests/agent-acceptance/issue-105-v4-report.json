@@ -1,0 +1,561 @@
+{
+  "errors": [],
+  "fixture_id": "generic-agent-skills-host-v1",
+  "inventory_sha256": "691fc681a51dfc917c7e269e27d7ea9a1f896685dd0af9180bff8f11ec975d13",
+  "overall_status": "fail",
+  "packages": [
+    {
+      "reviews": [
+        {
+          "criteria": [
+            {
+              "evidence": [
+                {
+                  "end_line": 3,
+                  "excerpt": "---\nname: requirements-to-spec-tickets\ndescription: Turn one or more codebase ideas into approved, independently scoped specs and tracer-bullet tickets through interactive child sessions. Invoke only when the user explicitly requests this workflow.",
+                  "path": "SKILL.md",
+                  "start_line": 1
+                },
+                {
+                  "end_line": 10,
+                  "excerpt": "# /requirements-to-spec-tickets\n\nUse this skill only when the user wants to turn one or more codebase ideas into clarified specs and tickets. It can publish approved local repository artifacts on a task branch; it does not implement application code.",
+                  "path": "SKILL.md",
+                  "start_line": 8
+                },
+                {
+                  "end_line": 2,
+                  "excerpt": "policy:\n  allow_implicit_invocation: false",
+                  "path": "agents/openai.yaml",
+                  "start_line": 1
+                }
+              ],
+              "findings": [],
+              "id": "entrypoint_and_format",
+              "status": "pass"
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 47,
+                  "excerpt": "read and follow the current `SKILL.md` for `/grill-with-docs` in this parent session",
+                  "path": "SKILL.md",
+                  "start_line": 47
+                },
+                {
+                  "end_line": 69,
+                  "excerpt": "Include the target repository's rule in each child prompt and require the child to pass it to `/grill-with-docs`, `/to-spec`, and `/to-tickets`.",
+                  "path": "SKILL.md",
+                  "start_line": 69
+                },
+                {
+                  "end_line": 79,
+                  "excerpt": "1. Read and follow the `SKILL.md` for `/grill-with-docs`.\n2. After that phase reaches its own shared-understanding gate, read and follow the `SKILL.md` for `/to-spec`.\n3. After the spec and its required seam confirmation are complete, read and follow the `SKILL.md` for `/to-tickets`.",
+                  "path": "SKILL.md",
+                  "start_line": 77
+                },
+                {
+                  "end_line": 111,
+                  "excerpt": "Follow existing repository conventions and the live dependency skills for document locations and tracker publication.",
+                  "path": "SKILL.md",
+                  "start_line": 111
+                }
+              ],
+              "findings": [
+                {
+                  "impact": "These workflow steps cannot be resolved from the package alone and require external skill sources and repository-specific policy or conventions.",
+                  "summary": "Sections outside the explicitly prerequisite-owned preflight require unbundled live dependency skill files and target-repository rules or conventions; the frozen package contains only SKILL.md and agents/openai.yaml."
+                },
+                {
+                  "impact": "Record these preflight-owned references for prerequisite governance; they are not counted as package defects under the requested scope.",
+                  "summary": "Governance disposition: declared prerequisite skills and the prerequisite-guide reference within the preflight section are external to this package."
+                }
+              ],
+              "id": "resource_closure",
+              "status": "fail"
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 26,
+                  "excerpt": "If any declared source is missing or unreadable, stop and direct the user to the matching entry in the [prerequisite guide](../../docs/prerequisites.md). Do not install it automatically.",
+                  "path": "SKILL.md",
+                  "start_line": 26
+                },
+                {
+                  "end_line": 69,
+                  "excerpt": "If the target root `AGENTS.md` is missing or unreadable, pause drafting and ask the user to provide the applicable prose policy.",
+                  "path": "SKILL.md",
+                  "start_line": 69
+                },
+                {
+                  "end_line": 89,
+                  "excerpt": "Reading the live files is the dependency mechanism for this workflow.",
+                  "path": "SKILL.md",
+                  "start_line": 89
+                }
+              ],
+              "findings": [
+                {
+                  "impact": "The review cannot establish complete or acyclic closure across external dependencies; only package-internal closure can be assessed.",
+                  "summary": "The package itself has no internal dependency cycle, but the referenced live-skill and target-policy graph is absent from the frozen inventory, so transitive references and cycles cannot be resolved. The prerequisite-guide link in the preflight section is recorded as a governance disposition."
+                }
+              ],
+              "id": "references_and_cycles",
+              "status": "blocked"
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 10,
+                  "excerpt": "---\nname: requirements-to-spec-tickets\ndescription: Turn one or more codebase ideas into approved, independently scoped specs and tracer-bullet tickets through interactive child sessions. Invoke only when the user explicitly requests this workflow.\nmetadata:",
+                  "path": "SKILL.md",
+                  "start_line": 1
+                },
+                {
+                  "end_line": 2,
+                  "excerpt": "policy:\n  allow_implicit_invocation: false",
+                  "path": "agents/openai.yaml",
+                  "start_line": 1
+                }
+              ],
+              "findings": [],
+              "id": "all_files_classified",
+              "status": "pass"
+            }
+          ],
+          "file_coverage": [
+            {
+              "classification": "Skill entrypoint with frontmatter and workflow instructions",
+              "disposition": "reviewed",
+              "evidence": [
+                {
+                  "end_line": 10,
+                  "excerpt": "# /requirements-to-spec-tickets",
+                  "path": "SKILL.md",
+                  "start_line": 1
+                }
+              ],
+              "path": "SKILL.md"
+            },
+            {
+              "classification": "Host-specific invocation metadata",
+              "disposition": "reviewed",
+              "evidence": [
+                {
+                  "end_line": 2,
+                  "excerpt": "policy:\n  allow_implicit_invocation: false",
+                  "path": "agents/openai.yaml",
+                  "start_line": 1
+                }
+              ],
+              "path": "agents/openai.yaml"
+            }
+          ],
+          "fixture_id": "generic-agent-skills-host-v1",
+          "inventory_sha256": "691fc681a51dfc917c7e269e27d7ea9a1f896685dd0af9180bff8f11ec975d13",
+          "overall_status": "fail",
+          "required_capabilities": [
+            {
+              "evidence": [
+                {
+                  "end_line": 18,
+                  "excerpt": "Resolve and read the original `SKILL.md` for every skill declared in this file's `metadata.prerequisites.skills` array, and verify every source is readable before continuing.",
+                  "path": "SKILL.md",
+                  "start_line": 18
+                },
+                {
+                  "end_line": 26,
+                  "excerpt": "If any declared source is missing or unreadable, stop and direct the user to the matching entry in the [prerequisite guide](../../docs/prerequisites.md). Do not install it automatically.",
+                  "path": "SKILL.md",
+                  "start_line": 26
+                }
+              ],
+              "name": "Read declared live prerequisite skill sources and the prerequisite guide",
+              "scope": "core",
+              "unavailable_behavior": "Preflight stops when a declared source is missing or unreadable and directs the user to the matching prerequisite-guide entry; it does not install dependencies automatically."
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 53,
+                  "excerpt": "Each child must be visible to and directly interactive with the user: the user can enter it, answer its questions, and let it continue.",
+                  "path": "SKILL.md",
+                  "start_line": 53
+                },
+                {
+                  "end_line": 71,
+                  "excerpt": "If the platform cannot create one, provide a complete handoff prompt containing the approved group, repository path, dependency-reading rule, phase order, shared-workspace rules, and completion report format.",
+                  "path": "SKILL.md",
+                  "start_line": 65
+                }
+              ],
+              "name": "Create visible, user-interactive child sessions",
+              "scope": "core",
+              "unavailable_behavior": "Use a platform-equivalent visible child session; if none can be created, provide the complete manual handoff and mark the group blocked and not ready, without claiming successful creation."
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 14,
+                  "excerpt": "publish through the target repository's configured tracker. Keep approved local artifacts on a dedicated task branch. Use the configured tracker's native parent-child relationship when available",
+                  "path": "SKILL.md",
+                  "start_line": 14
+                },
+                {
+                  "end_line": 30,
+                  "excerpt": "If the setup or tracker configuration is absent, stop and tell the user to run `/setup-matt-pocock-skills`; do not run setup automatically or create child sessions.",
+                  "path": "SKILL.md",
+                  "start_line": 30
+                },
+                {
+                  "end_line": 81,
+                  "excerpt": "If the tracker cannot establish or write the required relationship, preserve created issues, stop linking, and report the exact blocker.",
+                  "path": "SKILL.md",
+                  "start_line": 81
+                }
+              ],
+              "name": "Configured issue tracker with native parent-child relationships",
+              "scope": "core",
+              "unavailable_behavior": "If tracker setup is absent, stop before creating child sessions and direct the user to the named setup skill. If a native relationship cannot be established or written, preserve created issues, stop linking, and report the exact blocker."
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 105,
+                  "excerpt": "If a local-artifact group's required Git, remote, or publication capability is unavailable, stop that group before the affected operation, preserve its files and commits, and report the exact missing capability and recovery needed.",
+                  "path": "SKILL.md",
+                  "start_line": 99
+                }
+              ],
+              "name": "Git branch, commit, remote, and push access for local-artifact groups",
+              "scope": "optional",
+              "unavailable_behavior": "For an affected local-artifact group, stop before the unavailable operation, preserve files and commits, report the missing capability and recovery needed, and do not claim publication; issue-only groups continue without Git."
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 65,
+                  "excerpt": "If the project cannot be identified uniquely, pause and ask the user to select or open it",
+                  "path": "SKILL.md",
+                  "start_line": 61
+                }
+              ],
+              "name": "Codex Desktop project and thread creation API",
+              "scope": "optional",
+              "unavailable_behavior": "This procedure applies only in Codex Desktop; other coding agents use their equivalent visible child-session mechanism. If the project cannot be identified uniquely, pause and ask the user to select or open it."
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 87,
+                  "excerpt": "Use the following GitHub-specific protocol only when GitHub is the configured tracker; for another tracker, use its documented native relationship and pre/post reads.",
+                  "path": "SKILL.md",
+                  "start_line": 81
+                },
+                {
+                  "end_line": 86,
+                  "excerpt": "Pause if the listing cannot be read completely.",
+                  "path": "SKILL.md",
+                  "start_line": 83
+                }
+              ],
+              "name": "GitHub CLI and API for GitHub-specific issue reconciliation and relationships",
+              "scope": "optional",
+              "unavailable_behavior": "These steps apply only when GitHub is the configured tracker. Pause if the full issue listing cannot be read or relationship state is unknown; if a relationship cannot be established or written, preserve created issues and stop linking."
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 69,
+                  "excerpt": "If the target root `AGENTS.md` is missing or unreadable, pause drafting and ask the user to provide the applicable prose policy.",
+                  "path": "SKILL.md",
+                  "start_line": 69
+                },
+                {
+                  "end_line": 122,
+                  "excerpt": "Before writing a shared file, read its latest contents. If a semantic conflict appears, pause the affected child and report both conclusions, the affected specs and documents, and the decision the user must make.",
+                  "path": "SKILL.md",
+                  "start_line": 111
+                }
+              ],
+              "name": "Target-repository policy and shared-document access",
+              "scope": "optional",
+              "unavailable_behavior": "Pause drafting and ask the user for applicable policy if the target root AGENTS.md is missing or unreadable. Shared-document read/write failure behavior is not specified; semantic conflicts require pausing and reporting both conclusions."
+            }
+          ],
+          "reviewer_id": "codex-105-v4-completeness-2026-10-04",
+          "reviewer_role": "completeness",
+          "schema_version": 1,
+          "skill_name": "requirements-to-spec-tickets"
+        },
+        {
+          "criteria": [
+            {
+              "evidence": [
+                {
+                  "end_line": 14,
+                  "excerpt": "## Portable workflow overview",
+                  "path": "SKILL.md",
+                  "start_line": 12
+                },
+                {
+                  "end_line": 14,
+                  "excerpt": "Approve a complete request grouping, create one user-interactive child task per approved group, run clarification, specification, and ticket planning in order, and publish through the target repository's configured tracker.",
+                  "path": "SKILL.md",
+                  "start_line": 14
+                },
+                {
+                  "end_line": 81,
+                  "excerpt": "Use the following GitHub-specific protocol only when GitHub is the configured tracker; for another tracker, use its documented native relationship and pre/post reads.",
+                  "path": "SKILL.md",
+                  "start_line": 81
+                }
+              ],
+              "findings": [],
+              "id": "generic_workflow_primary",
+              "status": "pass"
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 59,
+                  "excerpt": "### Codex Desktop",
+                  "path": "SKILL.md",
+                  "start_line": 59
+                },
+                {
+                  "end_line": 65,
+                  "excerpt": "Use the platform's equivalent visible child conversation or a new terminal session in the same working directory.",
+                  "path": "SKILL.md",
+                  "start_line": 65
+                },
+                {
+                  "end_line": 81,
+                  "excerpt": "Use the following GitHub-specific protocol only when GitHub is the configured tracker; for another tracker, use its documented native relationship and pre/post reads.",
+                  "path": "SKILL.md",
+                  "start_line": 81
+                }
+              ],
+              "findings": [],
+              "id": "harness_independence",
+              "status": "pass"
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 14,
+                  "excerpt": "If the host cannot create interactive child tasks, provide the complete manual handoff and report the group as blocked, not ready.",
+                  "path": "SKILL.md",
+                  "start_line": 14
+                },
+                {
+                  "end_line": 65,
+                  "excerpt": "If the platform cannot create one, provide a complete handoff prompt containing the approved group, repository path, dependency-reading rule, phase order, shared-workspace rules, and completion report format.",
+                  "path": "SKILL.md",
+                  "start_line": 65
+                },
+                {
+                  "end_line": 71,
+                  "excerpt": "a manual handoff is not a ready child and cannot count toward successful handoff.",
+                  "path": "SKILL.md",
+                  "start_line": 71
+                },
+                {
+                  "end_line": 85,
+                  "excerpt": "If native sub-issues or required permissions are unavailable, report the blocker and keep created issues and successful links.",
+                  "path": "SKILL.md",
+                  "start_line": 85
+                }
+              ],
+              "findings": [],
+              "id": "capabilities_and_unavailable_behavior",
+              "status": "pass"
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 5,
+                  "excerpt": "prerequisites: '{\"skills\":[[\"grill-with-docs\",\"mattpocock/skills\"]",
+                  "path": "SKILL.md",
+                  "start_line": 5
+                },
+                {
+                  "end_line": 18,
+                  "excerpt": "verify every source is readable before continuing.",
+                  "path": "SKILL.md",
+                  "start_line": 18
+                },
+                {
+                  "end_line": 26,
+                  "excerpt": "If any declared source is missing or unreadable, stop and direct the user to the matching entry in the [prerequisite guide](../../docs/prerequisites.md).",
+                  "path": "SKILL.md",
+                  "start_line": 26
+                },
+                {
+                  "end_line": 30,
+                  "excerpt": "If the setup or tracker configuration is absent, stop and tell the user to run",
+                  "path": "SKILL.md",
+                  "start_line": 30
+                }
+              ],
+              "findings": [
+                {
+                  "impact": "A host without the declared skill sources or the external guide cannot proceed to grouping or handoff; the package remains dependent on unbundled prerequisites even though it stops safely. Record this for prerequisite governance.",
+                  "summary": "The core preflight requires six separately declared prerequisite skills and directs missing-source recovery to a prerequisite guide outside this two-file package."
+                }
+              ],
+              "id": "external_requirements",
+              "status": "fail"
+            }
+          ],
+          "file_coverage": [
+            {
+              "classification": "workflow instructions",
+              "disposition": "reviewed",
+              "evidence": [
+                {
+                  "end_line": 14,
+                  "excerpt": "## Portable workflow overview",
+                  "path": "SKILL.md",
+                  "start_line": 12
+                },
+                {
+                  "end_line": 53,
+                  "excerpt": "Each child must be visible to and directly interactive with the user: the user can enter it, answer its questions, and let it continue.",
+                  "path": "SKILL.md",
+                  "start_line": 53
+                },
+                {
+                  "end_line": 82,
+                  "excerpt": "Use the following GitHub-specific protocol only when GitHub is the configured tracker; for another tracker, use its documented native relationship and pre/post reads.",
+                  "path": "SKILL.md",
+                  "start_line": 81
+                }
+              ],
+              "path": "SKILL.md"
+            },
+            {
+              "classification": "host metadata",
+              "disposition": "reviewed",
+              "evidence": [
+                {
+                  "end_line": 2,
+                  "excerpt": "policy:",
+                  "path": "agents/openai.yaml",
+                  "start_line": 1
+                },
+                {
+                  "end_line": 2,
+                  "excerpt": "  allow_implicit_invocation: false",
+                  "path": "agents/openai.yaml",
+                  "start_line": 2
+                }
+              ],
+              "path": "agents/openai.yaml"
+            }
+          ],
+          "fixture_id": "generic-agent-skills-host-v1",
+          "inventory_sha256": "691fc681a51dfc917c7e269e27d7ea9a1f896685dd0af9180bff8f11ec975d13",
+          "overall_status": "fail",
+          "required_capabilities": [
+            {
+              "evidence": [
+                {
+                  "end_line": 14,
+                  "excerpt": "If the host cannot create interactive child tasks, provide the complete manual handoff and report the group as blocked, not ready.",
+                  "path": "SKILL.md",
+                  "start_line": 14
+                },
+                {
+                  "end_line": 53,
+                  "excerpt": "Each child must be visible to and directly interactive with the user: the user can enter it, answer its questions, and let it continue.",
+                  "path": "SKILL.md",
+                  "start_line": 53
+                },
+                {
+                  "end_line": 71,
+                  "excerpt": "a manual handoff is not a ready child and cannot count toward successful handoff.",
+                  "path": "SKILL.md",
+                  "start_line": 71
+                }
+              ],
+              "name": "Host capability to create a user-visible, interactive child session",
+              "scope": "core",
+              "unavailable_behavior": "Provide the complete manual handoff, report the group blocked and not ready, and do not claim that a child session was created or that handoff is complete."
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 18,
+                  "excerpt": "verify every source is readable before continuing.",
+                  "path": "SKILL.md",
+                  "start_line": 18
+                },
+                {
+                  "end_line": 26,
+                  "excerpt": "Do not install it automatically.",
+                  "path": "SKILL.md",
+                  "start_line": 26
+                },
+                {
+                  "end_line": 30,
+                  "excerpt": "do not run setup automatically or create child sessions.",
+                  "path": "SKILL.md",
+                  "start_line": 30
+                }
+              ],
+              "name": "Readable sources for the declared prerequisite skills and configured tracker setup",
+              "scope": "core",
+              "unavailable_behavior": "Stop preflight, identify the missing source or tracker configuration, and direct the user to the stated recovery; do not install skills or run setup automatically."
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 82,
+                  "excerpt": "If the tracker cannot establish or write the required relationship, preserve created issues, stop linking, and report the exact blocker.",
+                  "path": "SKILL.md",
+                  "start_line": 81
+                },
+                {
+                  "end_line": 85,
+                  "excerpt": "If native sub-issues or required permissions are unavailable, report the blocker and keep created issues and successful links.",
+                  "path": "SKILL.md",
+                  "start_line": 85
+                }
+              ],
+              "name": "Configured tracker support for its native parent-child relation and relationship reads",
+              "scope": "core",
+              "unavailable_behavior": "Preserve created issues, stop linking, report the exact blocker, and do not substitute a textual task list or reparent automatically."
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 100,
+                  "excerpt": "If a local-artifact group's required Git, remote, or publication capability is unavailable, stop that group before the affected operation, preserve its files and commits, and report the exact missing capability and recovery needed.",
+                  "path": "SKILL.md",
+                  "start_line": 99
+                },
+                {
+                  "end_line": 107,
+                  "excerpt": "An issue-only group completes without any Git operation.",
+                  "path": "SKILL.md",
+                  "start_line": 107
+                }
+              ],
+              "name": "Git branch, commit, remote, and push capability for local-artifact groups",
+              "scope": "optional",
+              "unavailable_behavior": "Stop the affected group before the unavailable operation, preserve files and commits, state the missing capability and recovery needed, and do not claim local artifacts are published."
+            }
+          ],
+          "reviewer_id": "codex-105-v4-workflow_portability-2026-10-04",
+          "reviewer_role": "workflow_portability",
+          "schema_version": 1,
+          "skill_name": "requirements-to-spec-tickets"
+        }
+      ],
+      "skill_name": "requirements-to-spec-tickets",
+      "status": "fail"
+    }
+  ],
+  "schema_version": 1
+}
