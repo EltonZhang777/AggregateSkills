@@ -1,0 +1,326 @@
+{
+  "fixture_id": "generic-agent-skills-host-v1",
+  "inventory_sha256": "a590b9feb556da03817727db6e5c630db4da3cc3e68f52f14f223d003f5ce7df",
+  "reviews": [
+    {
+      "criteria": [
+        {
+          "evidence": [
+            {
+              "end_line": 6,
+              "excerpt": "---\nname: skill-scout\ndescription: Find suitable installed Agent Skills from the host's available inventory, with optional SkillRoute support for local-catalog discovery and routing.\nmetadata:\n  prerequisites: '{\"skills\":[],\"mcps\":[],\"tools\":[[\"SkillRoute CLI\",\"https://github.com/erichare/skillroute\",\"uv tool install skillroute\",\"Prepare a local catalog using the SkillRoute documentation\"]]}'\n---",
+              "path": "SKILL.md",
+              "start_line": 1
+            }
+          ],
+          "findings": [],
+          "id": "entrypoint_and_format",
+          "status": "pass"
+        },
+        {
+          "evidence": [
+            {
+              "end_line": 18,
+              "excerpt": "Start with an installed-skill inventory exposed by the host or supplied by the caller. Use its names, descriptions, and prerequisite metadata to find candidates. Treat an inventory as complete only when its source identifies it as covering all installed skills; the skills in the agent's current context are a partial view.\n\nRead source instructions only for the exact skill and shortlisted alternatives. Invocation metadata controls who may invoke a skill; it does not block read-only access to its `SKILL.md`. Preserve each prerequisite's user-only invocation, confirmation, and authorization gates.\n\nIf no complete inventory is available, describe only the skills visible in the available sources. When the requested decision requires exhaustive host-wide discovery, return `Unavailable`, state which inventory is missing, and ask the user to provide one or choose local SkillRoute discovery. A partial inventory never proves a skill is absent.",
+              "path": "SKILL.md",
+              "start_line": 14
+            },
+            {
+              "end_line": 24,
+              "excerpt": "Use this mode when the user requests SkillRoute, needs its prepared local catalog or routing behavior, or chooses it after general-host discovery is unavailable. SkillRoute is an optional local tool for this workflow; it does not define a general Agent Skills host API.\n\nRun the version and backend checks before a SkillRoute query. Continue only when the CLI is runnable, the local backend is ready, and the catalog contains skills:",
+              "path": "SKILL.md",
+              "start_line": 22
+            },
+            {
+              "end_line": 36,
+              "excerpt": "If the CLI, local backend, or catalog is unavailable, return `Unavailable` and name the missing part. Explain that SkillRoute CLI installation and local catalog preparation are required for this mode; do not present the result as evidence that a skill is absent. The user may inspect discoverable roots with `skillroute dogfood roots` or prepare a catalog with `skillroute dogfood index`; ask before running either command. Do not switch to filesystem scanning, web search, or a copied skill body.",
+              "path": "SKILL.md",
+              "start_line": 36
+            }
+          ],
+          "findings": [],
+          "id": "resource_closure",
+          "status": "pass"
+        },
+        {
+          "evidence": [
+            {
+              "end_line": 5,
+              "excerpt": "  prerequisites: '{\"skills\":[],\"mcps\":[],\"tools\":[[\"SkillRoute CLI\",\"https://github.com/erichare/skillroute\",\"uv tool install skillroute\",\"Prepare a local catalog using the SkillRoute documentation\"]]}'",
+              "path": "SKILL.md",
+              "start_line": 5
+            },
+            {
+              "end_line": 57,
+              "excerpt": "4. Read the selected skill's exact source when its prerequisite metadata is missing from the inventory. Resolve each declared skill prerequisite by exact name and source, deduplicate selections, and preserve prerequisite-before-consumer order.",
+              "path": "SKILL.md",
+              "start_line": 57
+            }
+          ],
+          "findings": [],
+          "id": "references_and_cycles",
+          "status": "pass"
+        },
+        {
+          "evidence": [
+            {
+              "end_line": 10,
+              "excerpt": "# /skill-scout\n\nUse `/skill-scout` when a workflow needs to find an installed skill, resolve prerequisites, compare similar skills, or choose skills for a task. Return a selection plan to the caller. The selected skill's own instructions govern any later work.",
+              "path": "SKILL.md",
+              "start_line": 8
+            },
+            {
+              "end_line": 6,
+              "excerpt": "interface:\n  display_name: \"Skill Scout\"\n  short_description: \"Find skills and prerequisites from available inventories\"\npolicy:\n  # Keep caller-skill invocation available while disabling implicit discovery.\n  allow_implicit_invocation: false",
+              "path": "agents/openai.yaml",
+              "start_line": 1
+            }
+          ],
+          "findings": [],
+          "id": "all_files_classified",
+          "status": "pass"
+        }
+      ],
+      "file_coverage": [
+        {
+          "classification": "Skill entrypoint and user-facing workflow instructions",
+          "disposition": "reviewed",
+          "evidence": [
+            {
+              "end_line": 10,
+              "excerpt": "# /skill-scout\n\nUse `/skill-scout` when a workflow needs to find an installed skill, resolve prerequisites, compare similar skills, or choose skills for a task. Return a selection plan to the caller. The selected skill's own instructions govern any later work.",
+              "path": "SKILL.md",
+              "start_line": 8
+            }
+          ],
+          "path": "SKILL.md"
+        },
+        {
+          "classification": "OpenAI host display and implicit-invocation policy metadata",
+          "disposition": "reviewed",
+          "evidence": [
+            {
+              "end_line": 6,
+              "excerpt": "interface:\n  display_name: \"Skill Scout\"\n  short_description: \"Find skills and prerequisites from available inventories\"\npolicy:\n  # Keep caller-skill invocation available while disabling implicit discovery.\n  allow_implicit_invocation: false",
+              "path": "agents/openai.yaml",
+              "start_line": 1
+            }
+          ],
+          "path": "agents/openai.yaml"
+        }
+      ],
+      "fixture_id": "generic-agent-skills-host-v1",
+      "inventory_sha256": "a590b9feb556da03817727db6e5c630db4da3cc3e68f52f14f223d003f5ce7df",
+      "overall_status": "pass",
+      "required_capabilities": [
+        {
+          "evidence": [
+            {
+              "end_line": 22,
+              "excerpt": "Use this mode when the user requests SkillRoute, needs its prepared local catalog or routing behavior, or chooses it after general-host discovery is unavailable. SkillRoute is an optional local tool for this workflow; it does not define a general Agent Skills host API.",
+              "path": "SKILL.md",
+              "start_line": 22
+            },
+            {
+              "end_line": 36,
+              "excerpt": "If the CLI, local backend, or catalog is unavailable, return `Unavailable` and name the missing part. Explain that SkillRoute CLI installation and local catalog preparation are required for this mode; do not present the result as evidence that a skill is absent. The user may inspect discoverable roots with `skillroute dogfood roots` or prepare a catalog with `skillroute dogfood index`; ask before running either command. Do not switch to filesystem scanning, web search, or a copied skill body.",
+              "path": "SKILL.md",
+              "start_line": 36
+            }
+          ],
+          "name": "SkillRoute CLI, local backend, and prepared local catalog",
+          "scope": "optional",
+          "unavailable_behavior": "In SkillRoute mode, return Unavailable and identify whether the CLI, local backend, or catalog is missing; CLI installation and local catalog preparation are required for that mode."
+        }
+      ],
+      "reviewer_id": "issue-102-v1-completeness-skill-scout",
+      "reviewer_role": "completeness",
+      "schema_version": 1,
+      "skill_name": "skill-scout"
+    },
+    {
+      "criteria": [
+        {
+          "evidence": [
+            {
+              "end_line": 14,
+              "excerpt": "Start with an installed-skill inventory exposed by the host or supplied by the caller. Use its names, descriptions, and prerequisite metadata to find candidates. Treat an inventory as complete only when its source identifies it as covering all installed skills; the skills in the agent's current context are a partial view.",
+              "path": "SKILL.md",
+              "start_line": 14
+            },
+            {
+              "end_line": 22,
+              "excerpt": "Use this mode when the user requests SkillRoute, needs its prepared local catalog or routing behavior, or chooses it after general-host discovery is unavailable. SkillRoute is an optional local tool for this workflow; it does not define a general Agent Skills host API.",
+              "path": "SKILL.md",
+              "start_line": 22
+            }
+          ],
+          "findings": [],
+          "id": "generic_workflow_primary",
+          "status": "pass"
+        },
+        {
+          "evidence": [
+            {
+              "end_line": 14,
+              "excerpt": "Start with an installed-skill inventory exposed by the host or supplied by the caller. Use its names, descriptions, and prerequisite metadata to find candidates. Treat an inventory as complete only when its source identifies it as covering all installed skills; the skills in the agent's current context are a partial view.",
+              "path": "SKILL.md",
+              "start_line": 14
+            },
+            {
+              "end_line": 18,
+              "excerpt": "If no complete inventory is available, describe only the skills visible in the available sources. When the requested decision requires exhaustive host-wide discovery, return ",
+              "path": "SKILL.md",
+              "start_line": 18
+            }
+          ],
+          "findings": [],
+          "id": "harness_independence",
+          "status": "pass"
+        },
+        {
+          "evidence": [
+            {
+              "end_line": 5,
+              "excerpt": "  prerequisites: '{\"skills\":[],\"mcps\":[],\"tools\":[[\"SkillRoute CLI\",\"https://github.com/erichare/skillroute\",\"uv tool install skillroute\",\"Prepare a local catalog using the SkillRoute documentation\"]]}'",
+              "path": "SKILL.md",
+              "start_line": 5
+            },
+            {
+              "end_line": 22,
+              "excerpt": "Use this mode when the user requests SkillRoute, needs its prepared local catalog or routing behavior, or chooses it after general-host discovery is unavailable. SkillRoute is an optional local tool for this workflow; it does not define a general Agent Skills host API.",
+              "path": "SKILL.md",
+              "start_line": 22
+            },
+            {
+              "end_line": 36,
+              "excerpt": "do not present the result as evidence that a skill is absent.",
+              "path": "SKILL.md",
+              "start_line": 36
+            }
+          ],
+          "findings": [
+            {
+              "impact": "A host that honors the prerequisite metadata may block the skill's general-host workflow until SkillRoute and a catalog are available.",
+              "summary": "The prerequisite metadata lists SkillRoute CLI installation and local catalog preparation unconditionally, while the workflow describes SkillRoute as optional and mode-specific."
+            }
+          ],
+          "id": "capabilities_and_unavailable_behavior",
+          "status": "fail"
+        },
+        {
+          "evidence": [
+            {
+              "end_line": 5,
+              "excerpt": "  prerequisites: '{\"skills\":[],\"mcps\":[],\"tools\":[[\"SkillRoute CLI\",\"https://github.com/erichare/skillroute\",\"uv tool install skillroute\",\"Prepare a local catalog using the SkillRoute documentation\"]]}'",
+              "path": "SKILL.md",
+              "start_line": 5
+            },
+            {
+              "end_line": 22,
+              "excerpt": "Use this mode when the user requests SkillRoute, needs its prepared local catalog or routing behavior, or chooses it after general-host discovery is unavailable. SkillRoute is an optional local tool for this workflow; it does not define a general Agent Skills host API.",
+              "path": "SKILL.md",
+              "start_line": 22
+            },
+            {
+              "end_line": 36,
+              "excerpt": "SkillRoute CLI installation and local catalog preparation are required for this mode;",
+              "path": "SKILL.md",
+              "start_line": 36
+            }
+          ],
+          "findings": [
+            {
+              "impact": "Users may be told to install SkillRoute and prepare a catalog even when an adequate host or caller inventory supports the requested workflow.",
+              "summary": "The external SkillRoute dependency is not marked conditional in prerequisite metadata, despite the documented general-host inventory path."
+            }
+          ],
+          "id": "external_requirements",
+          "status": "fail"
+        }
+      ],
+      "file_coverage": [
+        {
+          "classification": "Skill entrypoint containing workflow instructions, metadata, and capability behavior",
+          "disposition": "reviewed",
+          "evidence": [
+            {
+              "end_line": 10,
+              "excerpt": "when a workflow needs to find an installed skill, resolve prerequisites, compare similar skills, or choose skills for a task.",
+              "path": "SKILL.md",
+              "start_line": 10
+            },
+            {
+              "end_line": 14,
+              "excerpt": "## General-host discovery\n\nStart with an installed-skill inventory exposed by the host or supplied by the caller.",
+              "path": "SKILL.md",
+              "start_line": 12
+            }
+          ],
+          "path": "SKILL.md"
+        },
+        {
+          "classification": "Agent host interface and invocation policy metadata",
+          "disposition": "reviewed",
+          "evidence": [
+            {
+              "end_line": 6,
+              "excerpt": "  allow_implicit_invocation: false",
+              "path": "agents/openai.yaml",
+              "start_line": 6
+            }
+          ],
+          "path": "agents/openai.yaml"
+        }
+      ],
+      "fixture_id": "generic-agent-skills-host-v1",
+      "inventory_sha256": "a590b9feb556da03817727db6e5c630db4da3cc3e68f52f14f223d003f5ce7df",
+      "overall_status": "fail",
+      "required_capabilities": [
+        {
+          "evidence": [
+            {
+              "end_line": 14,
+              "excerpt": "Start with an installed-skill inventory exposed by the host or supplied by the caller. Use its names, descriptions, and prerequisite metadata to find candidates. Treat an inventory as complete only when its source identifies it as covering all installed skills; the skills in the agent's current context are a partial view.",
+              "path": "SKILL.md",
+              "start_line": 14
+            },
+            {
+              "end_line": 18,
+              "excerpt": "If no complete inventory is available, describe only the skills visible in the available sources. When the requested decision requires exhaustive host-wide discovery, return ",
+              "path": "SKILL.md",
+              "start_line": 18
+            }
+          ],
+          "name": "Installed-skill inventory supplied by the host or caller",
+          "scope": "core",
+          "unavailable_behavior": "Describe only skills visible in available sources; if exhaustive host-wide discovery is required, return Unavailable, identify the missing inventory, and ask the user to provide one or choose local SkillRoute discovery."
+        },
+        {
+          "evidence": [
+            {
+              "end_line": 24,
+              "excerpt": "Use this mode when the user requests SkillRoute, needs its prepared local catalog or routing behavior, or chooses it after general-host discovery is unavailable. SkillRoute is an optional local tool for this workflow; it does not define a general Agent Skills host API.\n\nRun the version and backend checks before a SkillRoute query. Continue only when the CLI is runnable, the local backend is ready, and the catalog contains skills:",
+              "path": "SKILL.md",
+              "start_line": 22
+            },
+            {
+              "end_line": 36,
+              "excerpt": "If the CLI, local backend, or catalog is unavailable, return ",
+              "path": "SKILL.md",
+              "start_line": 36
+            }
+          ],
+          "name": "SkillRoute CLI, local backend, and prepared local catalog",
+          "scope": "optional",
+          "unavailable_behavior": "In SkillRoute local-catalog mode, return Unavailable and name the missing CLI, backend, or catalog; do not treat that result as evidence that a skill is absent. Ask before running the documented catalog inspection or preparation commands."
+        }
+      ],
+      "reviewer_id": "issue-102-v1-ROLE-skill-scout",
+      "reviewer_role": "workflow_portability",
+      "schema_version": 1,
+      "skill_name": "skill-scout"
+    }
+  ],
+  "schema_version": 1
+}
