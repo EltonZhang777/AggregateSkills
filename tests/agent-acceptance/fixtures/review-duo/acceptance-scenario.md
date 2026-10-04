@@ -2,6 +2,8 @@
 
 Operator instructions only. Do not send this file to reviewers because it contains expected findings.
 
+This repository-specific manual fixture is stored under `tests/agent-acceptance`; it is not part of the installable `/review-duo` package. Its `AGENTS.md`, `CONTEXT.md`, and domain-document entries are target-repository review inputs. If a listed input is missing or unreadable in the repository under review, mark the affected source or check `not_run` or partial with the exact path. Do not treat that as a missing `/review-duo` package resource.
+
 ## Fixed inputs
 
 - Synthetic code: acceptance-fixture.patch
@@ -13,7 +15,7 @@ The patch has two deliberate defects: it silently accepts an unknown coupon and 
 
 ## Procedure
 
-1. Verify the resolved upstream /code-review skill URI and normalized-text SHA-256, every other source SHA-256, and the code-scope patch SHA-256 and exact byte size. Normalize text sources by converting CRLF or CR line endings to LF and encoding as UTF-8. Hash and measure the frozen patch using its exact bytes. Compute the SHA-256 of the exact manifest file bytes once before dispatch.
+1. Verify the resolved upstream /code-review skill URI and normalized-text SHA-256, every other source SHA-256, and the code-scope patch SHA-256 and exact byte size. The fixture uses `active-skill-root:` as a portable locator rooted at the active skill inventory; do not encode a user's home or operating-system path. Normalize text sources by converting CRLF or CR line endings to LF and encoding as UTF-8. Hash and measure the frozen patch using its exact bytes. Compute the SHA-256 of the exact manifest file bytes once before dispatch.
 2. Start one strict review with independent Standards and Spec agents. Give both the exact patch, requirements, standard, applicable repository sources, resolved skill URI and hash, manifest bytes, and manifest digest. The orchestrator verifies the pinned hashes before dispatch. Permit read-only verification tools; prohibit writes.
 3. Collect both reports before comparing them. Confirm each echoes the manifest digest, patch SHA-256 and exact byte size, included paths, and its checked and unchecked sources and checks. Compare each report with the frozen manifest and the other report before marking the review current; a mismatch in the shared scope makes the overall status blocked. Confirm the expected findings below appear with their stated IDs and severities, and were not merged or reordered.
 4. Confirm repository tests are shown as not run with a reason. Confirm the fixture patch was not applied and no review agent wrote files.

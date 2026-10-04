@@ -13,6 +13,10 @@ Use the portable `/grill-duo` protocol with repository-aware documentation maint
 
 Use this entrypoint when the user explicitly wants a grilling session that records confirmed domain terms or project decisions in project documentation. Use `/grill-duo` when no project-document maintenance is needed.
 
+## Host capability
+
+Use the host's independent subagent capability to run the reviewer required by `/grill-duo`. If the host cannot start or recover that reviewer, follow `/grill-duo`'s solo fallback: disclose unavailability, continue the grilling protocol without claiming independent review, and preserve the user's review gates.
+
 ## Dependencies
 
 Read the original `SKILL.md` files for `/grill-duo` and `/domain-modeling` from the active skill roots regardless of their invocation metadata. This exception permits source reading only. Before invoking a dependency, follow its invocation metadata and preserve all user-confirmation, authorization, and clarification gates in its instructions; if direct user invocation is required, pause at that gate. If either source is missing or unreadable, stop and direct the user to the matching entry in the [prerequisite guide](../../docs/prerequisites.md).
@@ -26,6 +30,10 @@ The host owns documentation context; the reviewer does not read project document
 Before a documentation write, the host reads the target repository's root `AGENTS.md`, its domain-document routing rules, and the applicable glossary/context and relevant decisions. The target is the repository receiving the document. When source and target differ, do not use the source or installation `AGENTS.md` as a substitute; when they are the same repository, the shared root is the target rule. Follow target-repository routing over generic defaults. If `CONTEXT-MAP.md` exists, follow it to read the relevant context's `CONTEXT.md`; otherwise read the root `CONTEXT.md`. Read relevant `docs/adr/` files, plus context-specific `docs/adr/` files in a multi-context repository. Also read any architecture, contract, version-decision, or other authoritative files named by repository rules before choosing a destination. If the route is unclear, stop that write and ask the user rather than inventing a file location.
 
 Before every documentation write, apply the durable-project-text language rule from the target repository's root `AGENTS.md`, using only its normative prose. Pause if the target rule has no discernible dominant language, preserve untouched passages, and report any resulting language mixture. Pass the target rule to `/grill-duo` and `/domain-modeling`; do not modify their external sources.
+
+Follow the target repository's root `AGENTS.md` when a required routing, glossary, context, decision, or authoritative file is absent or unreadable. If the root `AGENTS.md` itself is missing or unreadable, pause the write and ask the user for the applicable prose policy. If that policy does not resolve how to proceed with another unavailable file, pause the affected write and ask rather than guessing. Do not infer project terms or decisions from unreadable material.
+
+Writing to the target repository is a core capability. If the host lacks a file-writing tool or write access, do not claim that documentation changed. Preserve the confirmed content in the session, identify the exact documents and updates that remain unwritten, and report the missing capability and the step needed to resume. Continue independent grilling and user-confirmation steps when possible.
 
 ## Record only confirmed content
 

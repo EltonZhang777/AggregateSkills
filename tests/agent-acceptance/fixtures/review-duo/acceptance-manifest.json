@@ -12,7 +12,7 @@
       "src/pricing.py"
     ],
     "kind": "synthetic patch",
-    "path": "skills/review-duo/references/acceptance-fixture.patch",
+    "path": "tests/agent-acceptance/fixtures/review-duo/acceptance-fixture.patch",
     "sha256": "6f667e2413dc6081ec83ec81756fcfa3e15397922c4231cce942697a53b78c3f",
     "size_bytes": 398
   },
@@ -32,13 +32,13 @@
       "included": true,
       "path": "AGENTS.md",
       "role": "repository instructions",
-      "sha256": "f0c3cca9d22bfcbff449ea239f254b8284a3d16efff3a21abf6228af53c0a57d"
+      "sha256": "9ce4ce810a2aead2f8caadfe7e7e299bee1d8f92b2a48ae5e069e89671a7ee79"
     },
     {
       "included": true,
       "path": "CONTEXT.md",
       "role": "review terminology",
-      "sha256": "38431712cec5a685c758a4e473c762e38e12b22f2bd7a2b50b81de12a64e8472"
+      "sha256": "257915bb7765282b57fa639f946e1e7ecee999b9a7b37928553fe54f707cd10d"
     },
     {
       "included": true,
@@ -50,36 +50,36 @@
       "included": true,
       "normalized_text_sha256": "47f4e52c21694def9c7c11cbfbf891ca35eac7a93e395797515be3c8a409ae50",
       "role": "resolved upstream /code-review skill",
-      "uri": "file:///C:/Users/28090/.codex/skills/code-review/SKILL.md"
+      "uri": "active-skill-root:/code-review/SKILL.md"
     },
     {
       "included": true,
       "path": "skills/review-duo/SKILL.md",
       "role": "strict review workflow",
-      "sha256": "02c7cedb619e11eba30eb7979aaf1d070e780c77722c3364b33384cd9e18255c"
+      "sha256": "2a6c690859128bc4ecd1691a38f57e4c3fd40731a0c5a1ab0aa759abcc345dcc"
     },
     {
       "included": true,
-      "path": "skills/review-duo/references/acceptance-fixture.patch",
+      "path": "tests/agent-acceptance/fixtures/review-duo/acceptance-fixture.patch",
       "role": "synthetic implementation patch",
       "sha256": "6f667e2413dc6081ec83ec81756fcfa3e15397922c4231cce942697a53b78c3f"
     },
     {
       "included": true,
-      "path": "skills/review-duo/references/acceptance-requirements.md",
+      "path": "tests/agent-acceptance/fixtures/review-duo/acceptance-requirements.md",
       "role": "pinned requirements",
       "sha256": "03216a79ee7aa4d2d8526977fcd89f02ef2c6b20d613959278fb01da398b7a23"
     },
     {
       "included": false,
-      "path": "skills/review-duo/references/acceptance-scenario.md",
+      "path": "tests/agent-acceptance/fixtures/review-duo/acceptance-scenario.md",
       "reason": "Contains the oracle and is not reviewer input.",
       "role": "operator procedure with expected findings",
-      "sha256": "5451d34b5b6139c30bd50190f08d5f922b6e5d5377199998522271366e2ad0db"
+      "sha256": "3f6ffaa1513533c6e9e7eef976600be13b56c218e32038588a085b1a2694966d"
     },
     {
       "included": true,
-      "path": "skills/review-duo/references/acceptance-standard.md",
+      "path": "tests/agent-acceptance/fixtures/review-duo/acceptance-standard.md",
       "role": "pinned Decimal money standard",
       "sha256": "a39387fd1195726d124eb259eba6fb23b836c7cf948804c09cbb3c73e6f67e19"
     },
@@ -95,7 +95,7 @@
       "path": "tests/test_prerequisite_guide.py",
       "reason": "Unrelated to the synthetic pricing patch.",
       "role": "repository test source",
-      "sha256": "fe6cdde71846608b2c6da8556b1c1631ca8a98d5d478e023cd2114b16da05dcc"
+      "sha256": "06fdd7a15f5d879501434ece6e58bea944f247eafd2c56e6a3a25d45162d11dc"
     }
   ]
 }

@@ -1,6 +1,6 @@
 ---
 name: grill-duo
-description: "Use only when the user explicitly asks for a fixed independent subagent to review a multi-round grilling session. Use `/grill-duo-with-docs` when maintaining project documents; do not use for solo grilling or unrelated requests."
+description: "Use only when the user explicitly asks for independent subagent review during a multi-round grilling session without project-document maintenance."
 metadata:
   prerequisites: '{"skills":[["grilling","mattpocock/skills"]],"mcps":[],"tools":[]}'
 ---
@@ -11,7 +11,7 @@ Run a portable two-agent grilling session. The host interviews the user; one ind
 
 ## Activation Criteria & Objective
 
-Use this entrypoint only when the user explicitly requests independent two-agent review while clarifying or pressure-testing a plan, requirement, design, or decision. Use `/grill-duo-with-docs` when the session needs to maintain confirmed project documents. Do not activate for ordinary solo grilling, group discussion, or unrelated implementation work.
+Use this entrypoint only when the user explicitly requests independent two-agent review while clarifying or pressure-testing a plan, requirement, design, or decision, and the session does not maintain confirmed project documents. Do not activate for ordinary solo grilling, group discussion, or unrelated implementation work.
 
 ## Dependencies
 
@@ -33,7 +33,7 @@ Maintain the user's goal, confirmed decisions and constraints, the open question
 
 - Follow the current `/grilling` skill's design-tree method. Ask every decision whose prerequisites are settled and that can be answered now. Defer questions that depend on an unresolved answer. There is no fixed question-count cap.
 - Give each question a stable ID such as Q1. Do not reuse an ID during the session. Keep an unanswered question's ID and wording when it remains unchanged. Do not add newly answerable questions to an open round; recompute the frontier after that round closes.
-- Research facts with available tools or agents instead of asking the user to supply facts they could not decide. Keep genuine preferences and trade-offs for the user.
+- Research facts with available tools or agents instead of asking the user to supply facts they could not decide. If no suitable research capability is available, state which fact remains unverified, defer questions that depend on it, and continue with independent questions. Never present an unsupported claim as fact.
 - Form the host's recommendation independently. Do not send it to the reviewer before the reviewer returns.
 
 ## Review each round

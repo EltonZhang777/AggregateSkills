@@ -1,0 +1,68 @@
+{
+  "file_count": 6,
+  "inventory_sha256": "d9a8b4396e1835baaec47f676607cb90f7155f79e7bfb256361f2e9f95a5a3fd",
+  "package_count": 3,
+  "packages": [
+    {
+      "entrypoint_present": true,
+      "files": [
+        {
+          "kind": "file",
+          "line_count": 29,
+          "path": "NOTICE",
+          "sha256": "2ac99bd02c2a57420f5b897b8d56174ac6ae05a4db41ced554913237eb3d5b63",
+          "size_bytes": 1613
+        },
+        {
+          "kind": "file",
+          "line_count": 69,
+          "path": "SKILL.md",
+          "sha256": "2fd177e4ac67a961b9900c08356e6e3e5e2be63c5fdc722aae1cca47cbd4d902",
+          "size_bytes": 7713
+        }
+      ],
+      "name": "grill-duo"
+    },
+    {
+      "entrypoint_present": true,
+      "files": [
+        {
+          "kind": "file",
+          "line_count": 28,
+          "path": "NOTICE",
+          "sha256": "7520f5491a610d0b3a9d3669afb8e0eba8b8c4da1180e0035c60c287298ef9dd",
+          "size_bytes": 1720
+        },
+        {
+          "kind": "file",
+          "line_count": 51,
+          "path": "SKILL.md",
+          "sha256": "59b8ccddc0dadf9e666fc1ee188098603e2be5d318fc4ea91d6451f27a1fb9c2",
+          "size_bytes": 6196
+        }
+      ],
+      "name": "grill-duo-with-docs"
+    },
+    {
+      "entrypoint_present": true,
+      "files": [
+        {
+          "kind": "file",
+          "line_count": 67,
+          "path": "SKILL.md",
+          "sha256": "1728d4e88d253840cc774e19ccf312fdea90b5a45772c502bf3f5012b5f415a5",
+          "size_bytes": 8578
+        },
+        {
+          "kind": "file",
+          "line_count": 5,
+          "path": "agents/openai.yaml",
+          "sha256": "cea841fcc0302a8987cbb47a87c318444fc1efcc1a07cadae9890c695c4f9330",
+          "size_bytes": 160
+        }
+      ],
+      "name": "review-duo"
+    }
+  ],
+  "schema_version": 1
+}
