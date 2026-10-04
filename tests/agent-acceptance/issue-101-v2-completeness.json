@@ -1,0 +1,184 @@
+{
+  "schema_version": 1,
+  "fixture_id": "generic-agent-skills-host-v1",
+  "inventory_sha256": "83f367afe63be37e948254784612986d6129e7ea639ec05bb9eb0cefa8b358d7",
+  "reviews": [
+    {
+      "schema_version": 1,
+      "skill_name": "compress-docs",
+      "reviewer_id": "issue-101-v2-completeness-compress-docs",
+      "reviewer_role": "completeness",
+      "fixture_id": "generic-agent-skills-host-v1",
+      "inventory_sha256": "83f367afe63be37e948254784612986d6129e7ea639ec05bb9eb0cefa8b358d7",
+      "overall_status": "pass",
+      "criteria": [
+        {
+          "id": "entrypoint_and_format",
+          "status": "pass",
+          "evidence": [
+            { "path": "SKILL.md", "start_line": 1, "end_line": 1, "excerpt": "---" },
+            { "path": "SKILL.md", "start_line": 2, "end_line": 2, "excerpt": "name: compress-docs" },
+            { "path": "SKILL.md", "start_line": 3, "end_line": 3, "excerpt": "description: Compress explicitly named documents or user-approved files selected by directory, glob, or all-under-root discovery, preserving protected content and applying each validated shorter candidate." },
+            { "path": "SKILL.md", "start_line": 6, "end_line": 6, "excerpt": "---" }
+          ],
+          "findings": []
+        },
+        {
+          "id": "resource_closure",
+          "status": "pass",
+          "evidence": [
+            { "path": "SKILL.md", "start_line": 43, "end_line": 43, "excerpt": "the [compression rules](#compression-rules)" },
+            { "path": "SKILL.md", "start_line": 57, "end_line": 57, "excerpt": "scripts/apply_candidate.py" },
+            { "path": "scripts/apply_candidate.py", "start_line": 1, "end_line": 8, "excerpt": "import argparse\nimport hashlib\nimport json\nimport os\nimport stat\nimport sys\nimport tempfile\nfrom pathlib import Path" }
+          ],
+          "findings": []
+        },
+        {
+          "id": "references_and_cycles",
+          "status": "pass",
+          "evidence": [
+            { "path": "SKILL.md", "start_line": 5, "end_line": 5, "excerpt": "prerequisites: '{\"skills\":[],\"mcps\":[],\"tools\":[]}'" },
+            { "path": "SKILL.md", "start_line": 43, "end_line": 43, "excerpt": "the [compression rules](#compression-rules)" },
+            { "path": "SKILL.md", "start_line": 57, "end_line": 57, "excerpt": "scripts/apply_candidate.py" },
+            { "path": "scripts/apply_candidate.py", "start_line": 36, "end_line": 36, "excerpt": "def apply_candidate(source_path, expected_sha256, candidate, approved_root=None):" }
+          ],
+          "findings": []
+        },
+        {
+          "id": "all_files_classified",
+          "status": "pass",
+          "evidence": [
+            { "path": "SKILL.md", "start_line": 8, "end_line": 8, "excerpt": "# Compress Docs" },
+            { "path": "scripts/apply_candidate.py", "start_line": 36, "end_line": 36, "excerpt": "def apply_candidate(source_path, expected_sha256, candidate, approved_root=None):" }
+          ],
+          "findings": []
+        }
+      ],
+      "required_capabilities": [
+        {
+          "name": "Host native isolated subagent capability",
+          "scope": "core",
+          "unavailable_behavior": "Ask the user once whether to approve inline compression for the approved list; continue inline only after an explicit yes, otherwise stop without changing any file.",
+          "evidence": [
+            { "path": "SKILL.md", "start_line": 43, "end_line": 43, "excerpt": "Use the host's native subagent capability" },
+            { "path": "SKILL.md", "start_line": 45, "end_line": 45, "excerpt": "If no native subagent is available, ask the user once whether to approve inline compression for the approved list. Continue inline only after an explicit yes; otherwise stop without changing any file." }
+          ]
+        },
+        {
+          "name": "Python 3 standard-library runtime",
+          "scope": "core",
+          "unavailable_behavior": "Report that file as not applied and continue with other files.",
+          "evidence": [
+            { "path": "SKILL.md", "start_line": 57, "end_line": 57, "excerpt": "Use the host's Python 3 standard-library runtime" },
+            { "path": "SKILL.md", "start_line": 57, "end_line": 57, "excerpt": "If the runtime is unavailable, report that file as not applied and continue other files." }
+          ]
+        },
+        {
+          "name": "Host path and file checks, file access, and replacement",
+          "scope": "core",
+          "unavailable_behavior": "Skip a file without reading its content if containment or file identity cannot be confirmed. If replacement may have started but no valid result is returned, report that the replacement result is uncertain, preserve and report the backup path if known, and do not read back or roll back.",
+          "evidence": [
+            { "path": "SKILL.md", "start_line": 37, "end_line": 37, "excerpt": "If containment or file identity cannot be confirmed, or a check fails, skip that file without reading its content." },
+            { "path": "scripts/apply_candidate.py", "start_line": 91, "end_line": 93, "excerpt": "            os.replace(staged, source)\n        except OSError:\n            return _apply_result(\"replacement_unknown\", backup=backup)" },
+            { "path": "SKILL.md", "start_line": 66, "end_line": 66, "excerpt": "report \"replacement result uncertain\"; preserve and report the backup path if known. Do not read back or roll back." }
+          ]
+        }
+      ],
+      "file_coverage": [
+        {
+          "path": "SKILL.md",
+          "classification": "Agent Skills entrypoint and document-compression workflow instructions",
+          "disposition": "reviewed",
+          "evidence": [
+            { "path": "SKILL.md", "start_line": 8, "end_line": 8, "excerpt": "# Compress Docs" }
+          ]
+        },
+        {
+          "path": "scripts/apply_candidate.py",
+          "classification": "Python standard-library helper for snapshot validation, backup, staging, and candidate replacement",
+          "disposition": "reviewed",
+          "evidence": [
+            { "path": "scripts/apply_candidate.py", "start_line": 36, "end_line": 36, "excerpt": "def apply_candidate(source_path, expected_sha256, candidate, approved_root=None):" }
+          ]
+        }
+      ]
+    },
+    {
+      "schema_version": 1,
+      "skill_name": "conventional-git-messages",
+      "reviewer_id": "issue-101-v2-completeness-conventional-git-messages",
+      "reviewer_role": "completeness",
+      "fixture_id": "generic-agent-skills-host-v1",
+      "inventory_sha256": "83f367afe63be37e948254784612986d6129e7ea639ec05bb9eb0cefa8b358d7",
+      "overall_status": "pass",
+      "criteria": [
+        {
+          "id": "entrypoint_and_format",
+          "status": "pass",
+          "evidence": [
+            { "path": "SKILL.md", "start_line": 1, "end_line": 1, "excerpt": "---" },
+            { "path": "SKILL.md", "start_line": 2, "end_line": 2, "excerpt": "name: conventional-git-messages" },
+            { "path": "SKILL.md", "start_line": 3, "end_line": 3, "excerpt": "description: Draft concise commit, pull request, and issue text without Git or GitHub operations." },
+            { "path": "SKILL.md", "start_line": 6, "end_line": 6, "excerpt": "---" }
+          ],
+          "findings": []
+        },
+        {
+          "id": "resource_closure",
+          "status": "pass",
+          "evidence": [
+            { "path": "SKILL.md", "start_line": 12, "end_line": 12, "excerpt": "root `AGENTS.md` of the target repository that will own the issue or pull request." },
+            { "path": "SKILL.md", "start_line": 14, "end_line": 14, "excerpt": "Treat a missing or unreadable target `AGENTS.md` as a missing-input condition: ask the user to provide the target's prose policy and pause drafting until it is available." },
+            { "path": "SKILL.md", "start_line": 79, "end_line": 79, "excerpt": "For a diagram, use an accessible artifact supplied by the user or created with an available host capability. If neither is available, omit the optional diagram; the copy-ready text remains the complete deliverable." }
+          ],
+          "findings": []
+        },
+        {
+          "id": "references_and_cycles",
+          "status": "pass",
+          "evidence": [
+            { "path": "SKILL.md", "start_line": 5, "end_line": 5, "excerpt": "prerequisites: '{\"skills\":[],\"mcps\":[],\"tools\":[]}'" }
+          ],
+          "findings": []
+        },
+        {
+          "id": "all_files_classified",
+          "status": "pass",
+          "evidence": [
+            { "path": "SKILL.md", "start_line": 8, "end_line": 8, "excerpt": "# /conventional-git-messages" }
+          ],
+          "findings": []
+        }
+      ],
+      "required_capabilities": [
+        {
+          "name": "Target repository root AGENTS.md prose policy access",
+          "scope": "core",
+          "unavailable_behavior": "Ask the user to provide the target repository's prose policy and pause drafting until it is available.",
+          "evidence": [
+            { "path": "SKILL.md", "start_line": 12, "end_line": 12, "excerpt": "root `AGENTS.md` of the target repository that will own the issue or pull request." },
+            { "path": "SKILL.md", "start_line": 14, "end_line": 14, "excerpt": "ask the user to provide the target's prose policy and pause drafting until it is available." }
+          ]
+        },
+        {
+          "name": "Accessible user-supplied artifact or host artifact-creation capability",
+          "scope": "optional",
+          "unavailable_behavior": "Omit the optional diagram; the copy-ready text remains the complete deliverable.",
+          "evidence": [
+            { "path": "SKILL.md", "start_line": 79, "end_line": 79, "excerpt": "For a diagram, use an accessible artifact supplied by the user or created with an available host capability. If neither is available, omit the optional diagram; the copy-ready text remains the complete deliverable." }
+          ]
+        }
+      ],
+      "file_coverage": [
+        {
+          "path": "SKILL.md",
+          "classification": "Agent Skills entrypoint and commit, pull request, and issue drafting instructions",
+          "disposition": "reviewed",
+          "evidence": [
+            { "path": "SKILL.md", "start_line": 8, "end_line": 8, "excerpt": "# /conventional-git-messages" }
+          ]
+        }
+      ]
+    }
+  ]
+}

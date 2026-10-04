@@ -11,6 +11,8 @@ Draft only the commit, pull request, or issue text the user asks for. Never perf
 
 For GitHub issue and pull request titles, bodies, and comments, use only the normative prose in the root `AGENTS.md` of the target repository that will own the issue or pull request. If the target differs from this skill's source repository, do not use the source or installation `AGENTS.md` as target policy; if both are the same repository, use its root file as the target policy. Pause before drafting if the target rule has no discernible dominant language. Preserve untouched text when revising, use the target language for new or materially rewritten passages, and report resulting language mixtures. Spelling-only and formatting-only edits and commit messages are excluded.
 
+Treat a missing or unreadable target `AGENTS.md` as a missing-input condition: ask the user to provide the target's prose policy and pause drafting until it is available.
+
 ## Commit subject
 
 - Use `<type>(<scope>): <imperative summary>`; omit the scope when it adds no useful context.
@@ -74,7 +76,7 @@ For GitHub issue and pull request titles, bodies, and comments, use only the nor
 ## Optional diagrams
 
 - Consider a diagram only when it materially improves both clarity and concision; diagrams are optional.
-- If a needed diagram requires `/skill-scout`, read its current `SKILL.md` regardless of invocation metadata; metadata governs invocation, not source access. Use its local catalog and follow its result, preserving any user-only invocation, confirmation, clarification, or missing-prerequisite gate. Do not install, index, copy, or silently substitute a skill.
+- For a diagram, use an accessible artifact supplied by the user or created with an available host capability. If neither is available, omit the optional diagram; the copy-ready text remains the complete deliverable.
 - Include only artifacts readers can access directly from the pull request description. Omit inaccessible artifacts; never upload or publish them.
 
 ## Output
