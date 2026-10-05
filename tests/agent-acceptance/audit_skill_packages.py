@@ -351,6 +351,46 @@ def validate_review(review, inventory, package, reviewer_ids, errors, skills_roo
     return review if isinstance(status, str) and status in STATUSES else None
 
 
+def capability_scopes_disagree(items):
+    scopes_by_evidence = []
+    for review in items:
+        capabilities = review.get("required_capabilities")
+        if not isinstance(capabilities, list):
+            continue
+        scopes = {}
+        for capability in capabilities:
+            if (
+                not isinstance(capability, dict)
+                or capability.get("scope") not in ("core", "optional")
+            ):
+                continue
+            evidence = capability.get("evidence")
+            if not isinstance(evidence, list) or not evidence:
+                continue
+            anchors = set()
+            for item in evidence:
+                if not isinstance(item, dict):
+                    break
+                path, start, end = item.get("path"), item.get("start_line"), item.get("end_line")
+                if not isinstance(path, str) or not integer(start) or not integer(end):
+                    break
+                anchors.add((path, start, end))
+            else:
+                if anchors:
+                    scopes.setdefault(frozenset(anchors), set()).add(capability["scope"])
+        scopes_by_evidence.append(scopes)
+
+    for index, first in enumerate(scopes_by_evidence):
+        for second in scopes_by_evidence[index + 1:]:
+            if any(
+                scopes != second[anchors]
+                for anchors, scopes in first.items()
+                if anchors in second
+            ):
+                return True
+    return False
+
+
 def check(skills_root, inventory, results):
     errors = []
     try:
@@ -419,8 +459,16 @@ def check(skills_root, inventory, results):
         if roles != set(ROLES):
             err(errors, "missing_reviewer", "Skill needs one reviewer for each role.", name)
             status = "blocked"
-        elif len({item["overall_status"] for item in items}) != 1:
-            err(errors, "reviewer_disagreement", "The reviewers disagree on overall status.", name)
+        elif (
+            len({item["overall_status"] for item in items}) != 1
+            or capability_scopes_disagree(items)
+        ):
+            err(
+                errors,
+                "reviewer_disagreement",
+                "The reviewers disagree on overall status or capability scope.",
+                name,
+            )
             status = "blocked"
         else:
             status = items[0]["overall_status"]

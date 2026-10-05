@@ -121,6 +121,14 @@ class SkillPackageAuditCliTests(unittest.TestCase):
             "reviews": reports,
         }
 
+    def add_required_capability(self, review, scope, evidence):
+        review["required_capabilities"] = [{
+            "name": "Required capability",
+            "scope": scope,
+            "unavailable_behavior": "The outcome cannot be completed.",
+            "evidence": evidence,
+        }]
+
     def run_check(self, inventory, results, output=None):
         inventory_path = self.base / "inventory.json"
         results_path = self.base / "reviews.json"
@@ -378,6 +386,95 @@ class SkillPackageAuditCliTests(unittest.TestCase):
         self.assertIn("reviewer_disagreement", {error["code"] for error in report["errors"]})
         self.assertEqual(report["overall_status"], "blocked")
         self.assertNotEqual(report["packages"][0]["status"], "pass")
+
+    def test_check_rejects_capability_scope_disagreement_for_same_evidence(self):
+        self.make_package("alpha", {"SKILL.md": "# alpha\n"})
+        inventory = self.inventory()
+        results = self.make_results(inventory)
+        for review in results["reviews"]:
+            scope = "core" if review["reviewer_role"] == "completeness" else "optional"
+            self.add_required_capability(review, scope, [{
+                "path": "SKILL.md",
+                "start_line": 1,
+                "end_line": 1,
+                "excerpt": "# alpha",
+            }])
+            review["required_capabilities"][0]["name"] = review["reviewer_role"]
+
+        completed, report = self.run_check(inventory, results)
+
+        self.assertEqual(completed.returncode, 2)
+        self.assertIn("reviewer_disagreement", {error["code"] for error in report["errors"]})
+        self.assertEqual(report["packages"][0]["status"], "blocked")
+        self.assertEqual(report["overall_status"], "blocked")
+
+    def test_check_allows_matching_capability_scopes_for_same_evidence(self):
+        self.make_package("alpha", {"SKILL.md": "# alpha\nA workflow.\n"})
+        inventory = self.inventory()
+        results = self.make_results(inventory)
+        evidence = [
+            {"path": "SKILL.md", "start_line": 1, "end_line": 1, "excerpt": "# alpha"},
+            {"path": "SKILL.md", "start_line": 2, "end_line": 2, "excerpt": "A workflow."},
+        ]
+        for review in results["reviews"]:
+            anchors = evidence if review["reviewer_role"] == "completeness" else list(reversed(evidence))
+            self.add_required_capability(review, "core", anchors)
+
+        completed, report = self.run_check(inventory, results)
+
+        self.assertEqual(completed.returncode, 0)
+        self.assertNotIn("reviewer_disagreement", {error["code"] for error in report["errors"]})
+        self.assertEqual(report["overall_status"], "pass")
+
+    def test_check_allows_matching_scope_sets_for_shared_evidence(self):
+        self.make_package("alpha", {"SKILL.md": "# alpha\n"})
+        inventory = self.inventory()
+        results = self.make_results(inventory)
+        capability = {
+            "name": "Required capability",
+            "unavailable_behavior": "The outcome cannot be completed.",
+            "evidence": [{
+                "path": "SKILL.md",
+                "start_line": 1,
+                "end_line": 1,
+                "excerpt": "# alpha",
+            }],
+        }
+        for review in results["reviews"]:
+            review["required_capabilities"] = [
+                {**capability, "scope": "core"},
+                {**capability, "scope": "optional"},
+            ]
+
+        completed, report = self.run_check(inventory, results)
+
+        self.assertEqual(completed.returncode, 0)
+        self.assertNotIn("reviewer_disagreement", {error["code"] for error in report["errors"]})
+        self.assertEqual(report["overall_status"], "pass")
+
+    def test_check_compares_exact_capability_evidence_sets(self):
+        self.make_package("alpha", {"SKILL.md": "# alpha\nA workflow.\nAnother detail.\n"})
+        inventory = self.inventory()
+        results = self.make_results(inventory)
+        evidence_by_role = {
+            "completeness": [
+                {"path": "SKILL.md", "start_line": 1, "end_line": 1, "excerpt": "# alpha"},
+                {"path": "SKILL.md", "start_line": 2, "end_line": 2, "excerpt": "A workflow."},
+            ],
+            "workflow_portability": [
+                {"path": "SKILL.md", "start_line": 1, "end_line": 1, "excerpt": "# alpha"},
+                {"path": "SKILL.md", "start_line": 3, "end_line": 3, "excerpt": "Another detail."},
+            ],
+        }
+        for review in results["reviews"]:
+            scope = "core" if review["reviewer_role"] == "completeness" else "optional"
+            self.add_required_capability(review, scope, evidence_by_role[review["reviewer_role"]])
+
+        completed, report = self.run_check(inventory, results)
+
+        self.assertEqual(completed.returncode, 0)
+        self.assertNotIn("reviewer_disagreement", {error["code"] for error in report["errors"]})
+        self.assertEqual(report["overall_status"], "pass")
 
     def test_check_rejects_unhashable_fields_and_boolean_schema_versions(self):
         self.make_package("alpha", {"SKILL.md": "# alpha\\n"})

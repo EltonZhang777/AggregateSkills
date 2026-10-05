@@ -8,6 +8,8 @@ Use `generic-agent-skills-host-v1` for every review. Assume the host can read th
 
 Assess each package's ordinary, user-visible workflow from its own files. Report any additional capability needed by a core or optional workflow and what the instructions say happens when it is unavailable. A generic host capability is not automatically a portability defect when the package identifies it and explains the effect of its absence. An undisclosed hard dependency in a core workflow is a failure. Report uncertainty as blocked or not-run, with a finding; do not infer a pass.
 
+Classify a capability as `core` when its absence prevents the ordinary user-facing outcome after documented gates. Classify it as `optional` when a documented alternative completes the same outcome, even if that alternative requires user consent. When independent reviewers cite the same exact set of evidence anchors (package-relative path and inclusive line bounds), different capability scopes are a `reviewer_disagreement`, regardless of capability name or wording. Partially overlapping or different anchor sets are not the same evidence.
+
 ## Inventory and isolated reviews
 
 Capture the inventory before starting reviews. It covers each immediate child directory of `skills/`, including directories without `SKILL.md`, and every nested file, including hidden, generated, and unused files. Symlinks are recorded without following them. Keep the package files unchanged until the checker finishes.
