@@ -1,0 +1,28 @@
+{
+  "file_count": 2,
+  "inventory_sha256": "279507ed797fc2f61d6cf073f106085f0bfbd9e95af138fa64075321859ee9c2",
+  "package_count": 1,
+  "packages": [
+    {
+      "entrypoint_present": true,
+      "files": [
+        {
+          "kind": "file",
+          "line_count": 29,
+          "path": "NOTICE",
+          "sha256": "2ac99bd02c2a57420f5b897b8d56174ac6ae05a4db41ced554913237eb3d5b63",
+          "size_bytes": 1613
+        },
+        {
+          "kind": "file",
+          "line_count": 68,
+          "path": "SKILL.md",
+          "sha256": "39e166381ace2b4bd55ad3f3bf0f9db56db469718a3600b3bdb69b75c4be5b60",
+          "size_bytes": 9092
+        }
+      ],
+      "name": "grill-duo"
+    }
+  ],
+  "schema_version": 1
+}

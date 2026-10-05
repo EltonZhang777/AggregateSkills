@@ -1,0 +1,392 @@
+{
+  "errors": [],
+  "fixture_id": "generic-agent-skills-host-v1",
+  "inventory_sha256": "279507ed797fc2f61d6cf073f106085f0bfbd9e95af138fa64075321859ee9c2",
+  "overall_status": "pass",
+  "packages": [
+    {
+      "reviews": [
+        {
+          "criteria": [
+            {
+              "evidence": [
+                {
+                  "end_line": 1,
+                  "excerpt": "---",
+                  "path": "SKILL.md",
+                  "start_line": 1
+                },
+                {
+                  "end_line": 2,
+                  "excerpt": "name: grill-duo",
+                  "path": "SKILL.md",
+                  "start_line": 2
+                },
+                {
+                  "end_line": 3,
+                  "excerpt": "description: \"Use only when the user explicitly asks for independent subagent review during a multi-round grilling session without project-document maintenance.\"",
+                  "path": "SKILL.md",
+                  "start_line": 3
+                }
+              ],
+              "findings": [],
+              "id": "entrypoint_and_format",
+              "status": "pass"
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 5,
+                  "excerpt": "\"name\":\"grilling\",\"source\":\"mattpocock/skills\"",
+                  "path": "SKILL.md",
+                  "start_line": 5
+                },
+                {
+                  "end_line": 3,
+                  "excerpt": "- mattpocock/skills at revision 84fdeffd12f2ee307994d1eb6feb48173b6e0502:",
+                  "path": "NOTICE",
+                  "start_line": 3
+                },
+                {
+                  "end_line": 4,
+                  "excerpt": "skills/productivity/grilling/SKILL.md and skills/productivity/grill-me/SKILL.md",
+                  "path": "NOTICE",
+                  "start_line": 4
+                }
+              ],
+              "findings": [],
+              "id": "resource_closure",
+              "status": "pass"
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 5,
+                  "excerpt": "\"name\":\"grilling\",\"source\":\"mattpocock/skills\"",
+                  "path": "SKILL.md",
+                  "start_line": 5
+                },
+                {
+                  "end_line": 35,
+                  "excerpt": "- Follow `/grilling` for the design-tree method and current answerable frontier.",
+                  "path": "SKILL.md",
+                  "start_line": 35
+                },
+                {
+                  "end_line": 68,
+                  "excerpt": "Follow `/grilling` for round closure and frontier refresh.",
+                  "path": "SKILL.md",
+                  "start_line": 68
+                },
+                {
+                  "end_line": 4,
+                  "excerpt": "- mattpocock/skills at revision 84fdeffd12f2ee307994d1eb6feb48173b6e0502:\n  skills/productivity/grilling/SKILL.md and skills/productivity/grill-me/SKILL.md",
+                  "path": "NOTICE",
+                  "start_line": 3
+                }
+              ],
+              "findings": [],
+              "id": "references_and_cycles",
+              "status": "pass"
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 8,
+                  "excerpt": "# /grill-duo",
+                  "path": "SKILL.md",
+                  "start_line": 8
+                },
+                {
+                  "end_line": 1,
+                  "excerpt": "This portable rewrite is informed by:",
+                  "path": "NOTICE",
+                  "start_line": 1
+                },
+                {
+                  "end_line": 8,
+                  "excerpt": "MIT License",
+                  "path": "NOTICE",
+                  "start_line": 8
+                }
+              ],
+              "findings": [],
+              "id": "all_files_classified",
+              "status": "pass"
+            }
+          ],
+          "file_coverage": [
+            {
+              "classification": "license-and-source-provenance",
+              "disposition": "reviewed",
+              "evidence": [
+                {
+                  "end_line": 1,
+                  "excerpt": "This portable rewrite is informed by:",
+                  "path": "NOTICE",
+                  "start_line": 1
+                },
+                {
+                  "end_line": 8,
+                  "excerpt": "MIT License",
+                  "path": "NOTICE",
+                  "start_line": 8
+                }
+              ],
+              "path": "NOTICE"
+            },
+            {
+              "classification": "entrypoint",
+              "disposition": "reviewed",
+              "evidence": [
+                {
+                  "end_line": 10,
+                  "excerpt": "# /grill-duo\n\nRun a portable two-agent grilling session. The host interviews the user; one independent reviewer assesses each current round. The host remains the user's only conversational counterpart.",
+                  "path": "SKILL.md",
+                  "start_line": 8
+                }
+              ],
+              "path": "SKILL.md"
+            }
+          ],
+          "fixture_id": "generic-agent-skills-host-v1",
+          "inventory_sha256": "279507ed797fc2f61d6cf073f106085f0bfbd9e95af138fa64075321859ee9c2",
+          "overall_status": "pass",
+          "required_capabilities": [
+            {
+              "evidence": [
+                {
+                  "end_line": 18,
+                  "excerpt": "Resolve `/grilling` by exact identity (declared name and source).",
+                  "path": "SKILL.md",
+                  "start_line": 18
+                },
+                {
+                  "end_line": 18,
+                  "excerpt": "then read the full original `SKILL.md` from the active skill roots.",
+                  "path": "SKILL.md",
+                  "start_line": 18
+                }
+              ],
+              "name": "Prerequisite skill `/grilling` from `mattpocock/skills`",
+              "scope": "core",
+              "unavailable_behavior": "If the exact source cannot be located or read, record the dependency as unresolved and block work that requires it. Stop only if the source is confirmed absent, invalid, or permission-denied; do not guess or substitute."
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 5,
+                  "excerpt": "\"name\":\"SkillRoute CLI\",\"source\":\"https://github.com/erichare/skillroute\",\"install\":\"uv tool install skillroute\",\"setup\":\"Prepare a local catalog using the SkillRoute documentation\"",
+                  "path": "SKILL.md",
+                  "start_line": 5
+                },
+                {
+                  "end_line": 18,
+                  "excerpt": "If SkillRoute CLI, its catalog, or a required lookup/read operation is unavailable, fails, or returns an unusable result, record the affected dependency as unresolved and report it; do not guess, substitute, or invoke it.",
+                  "path": "SKILL.md",
+                  "start_line": 18
+                }
+              ],
+              "name": "SkillRoute CLI and prepared catalog for conditional prerequisite resolution",
+              "scope": "core",
+              "unavailable_behavior": "If needed for lookup or reading, an unavailable or unusable resolver/catalog leaves the dependency unresolved and blocks work requiring it; do not guess or substitute."
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 28,
+                  "excerpt": "- Use the host runtime's independent subagent mechanism for one reviewer. Keep and reuse the same reviewer handle for the whole session. Do not assume a named-agent roster or choose or replace reviewers based on subjective topic fit.\n- Change reviewers only when the user requests it and the runtime supports the change. If the runtime cannot preserve one reviewer across rounds, disclose that limitation and continue in solo mode rather than silently switching reviewers.\n- If the runtime cannot start a reviewer invocation or recovery invocation, disclose that independent review is unavailable and continue the same grilling protocol in solo mode. Never invent or imply a second opinion.\n- If the runtime cannot return or retain reviewer output privately, do not expose, quote, summarize, or use it. Disclose that independent review is unavailable and continue in solo mode only if the session remains safe without that output; otherwise pause and explain the limitation. Never imply a second opinion was received.",
+                  "path": "SKILL.md",
+                  "start_line": 25
+                }
+              ],
+              "name": "Host runtime independent subagent mechanism with persistent, private reviewer output",
+              "scope": "core",
+              "unavailable_behavior": "Disclose when independent review is unavailable and continue in solo mode only if safe; otherwise pause. Never imply a second opinion was received."
+            }
+          ],
+          "reviewer_id": "codex-completeness-grill-duo-2026-10-05",
+          "reviewer_role": "completeness",
+          "schema_version": 1,
+          "skill_name": "grill-duo"
+        },
+        {
+          "criteria": [
+            {
+              "evidence": [
+                {
+                  "end_line": 10,
+                  "excerpt": "Run a portable two-agent grilling session. The host interviews the user; one independent reviewer assesses each current round. The host remains the user's only conversational counterpart.",
+                  "path": "SKILL.md",
+                  "start_line": 10
+                },
+                {
+                  "end_line": 25,
+                  "excerpt": "- Use the host runtime's independent subagent mechanism for one reviewer. Keep and reuse the same reviewer handle for the whole session. Do not assume a named-agent roster or choose or replace reviewers based on subjective topic fit.",
+                  "path": "SKILL.md",
+                  "start_line": 25
+                }
+              ],
+              "findings": [],
+              "id": "generic_workflow_primary",
+              "status": "pass"
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 28,
+                  "excerpt": "- Use the host runtime's independent subagent mechanism for one reviewer. Keep and reuse the same reviewer handle for the whole session. Do not assume a named-agent roster or choose or replace reviewers based on subjective topic fit.\n- Change reviewers only when the user requests it and the runtime supports the change. If the runtime cannot preserve one reviewer across rounds, disclose that limitation and continue in solo mode rather than silently switching reviewers.\n- If the runtime cannot start a reviewer invocation or recovery invocation, disclose that independent review is unavailable and continue the same grilling protocol in solo mode. Never invent or imply a second opinion.\n- If the runtime cannot return or retain reviewer output privately, do not expose, quote, summarize, or use it. Disclose that independent review is unavailable and continue in solo mode only if the session remains safe without that output; otherwise pause and explain the limitation. Never imply a second opinion was received.",
+                  "path": "SKILL.md",
+                  "start_line": 25
+                }
+              ],
+              "findings": [],
+              "id": "harness_independence",
+              "status": "pass"
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 20,
+                  "excerpt": "Resolve `/grilling` by exact identity (declared name and source). If no exact name-and-source match appears in the available skill list because the skill is absent or a same-name candidate has a missing, ambiguous, or mismatched source, use the conditional SkillRoute CLI dependency in metadata to verify its identity and source, then read the full original `SKILL.md` from the active skill roots. Read it regardless of invocation metadata; reading permits source access only. Before invoking the dependency, follow its invocation metadata and preserve all user-confirmation, authorization, and clarification gates; if direct invocation is required, pause at that gate. Record inaccessible sources. If SkillRoute CLI, its catalog, or a required lookup/read operation is unavailable, fails, or returns an unusable result, record the affected dependency as unresolved and report it; do not guess, substitute, or invoke it. Block only work that requires the affected source and continue only independent work. Do not retry in a loop; retry only when the resolver, catalog, or source becomes available or new evidence changes the result. If no independent work remains, pause and report the exact dependency, blocked step, and recovery condition; this pause does not classify the source as missing. Stop the workflow only when the required source is confirmed absent, invalid, or permission-denied, and report its exact identity and source; do not infer or substitute another skill.\n\nAn unavailable reviewer is different from a missing dependency: only reviewer unavailability uses solo mode.",
+                  "path": "SKILL.md",
+                  "start_line": 18
+                },
+                {
+                  "end_line": 29,
+                  "excerpt": "- Use the host runtime's independent subagent mechanism for one reviewer. Keep and reuse the same reviewer handle for the whole session. Do not assume a named-agent roster or choose or replace reviewers based on subjective topic fit.\n- Change reviewers only when the user requests it and the runtime supports the change. If the runtime cannot preserve one reviewer across rounds, disclose that limitation and continue in solo mode rather than silently switching reviewers.\n- If the runtime cannot start a reviewer invocation or recovery invocation, disclose that independent review is unavailable and continue the same grilling protocol in solo mode. Never invent or imply a second opinion.\n- If the runtime cannot return or retain reviewer output privately, do not expose, quote, summarize, or use it. Disclose that independent review is unavailable and continue in solo mode only if the session remains safe without that output; otherwise pause and explain the limitation. Never imply a second opinion was received.\n- Keep the reviewer response in the host's private tool result. Do not create a group discussion or let the reviewer contact the user, implement the user's underlying request, delegate, or write project documents.",
+                  "path": "SKILL.md",
+                  "start_line": 25
+                },
+                {
+                  "end_line": 54,
+                  "excerpt": "If the runtime cannot correlate a response to its invocation, require the reviewer to echo both IDs and accept only an exact `review_request_id`/`invocation_id` match. If the response abstains or does not assess a requested question, disclose that gap; do not fill it with invented reviewer advice.",
+                  "path": "SKILL.md",
+                  "start_line": 54
+                }
+              ],
+              "findings": [],
+              "id": "capabilities_and_unavailable_behavior",
+              "status": "pass"
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 4,
+                  "excerpt": "metadata:",
+                  "path": "SKILL.md",
+                  "start_line": 4
+                },
+                {
+                  "end_line": 5,
+                  "excerpt": "  prerequisites: '{\"skills\":[{\"name\":\"grilling\",\"source\":\"mattpocock/skills\"}],\"mcps\":[],\"tools\":[{\"name\":\"SkillRoute CLI\",\"source\":\"https://github.com/erichare/skillroute\",\"install\":\"uv tool install skillroute\",\"setup\":\"Prepare a local catalog using the SkillRoute documentation\",\"when\":\"When a prerequisite skill is absent from the available skill list or its exact source cannot be verified.\"}]}'",
+                  "path": "SKILL.md",
+                  "start_line": 5
+                },
+                {
+                  "end_line": 18,
+                  "excerpt": "Resolve `/grilling` by exact identity (declared name and source). If no exact name-and-source match appears in the available skill list because the skill is absent or a same-name candidate has a missing, ambiguous, or mismatched source, use the conditional SkillRoute CLI dependency in metadata to verify its identity and source, then read the full original `SKILL.md` from the active skill roots. Read it regardless of invocation metadata; reading permits source access only. Before invoking the dependency, follow its invocation metadata and preserve all user-confirmation, authorization, and clarification gates; if direct invocation is required, pause at that gate. Record inaccessible sources. If SkillRoute CLI, its catalog, or a required lookup/read operation is unavailable, fails, or returns an unusable result, record the affected dependency as unresolved and report it; do not guess, substitute, or invoke it. Block only work that requires the affected source and continue only independent work. Do not retry in a loop; retry only when the resolver, catalog, or source becomes available or new evidence changes the result. If no independent work remains, pause and report the exact dependency, blocked step, and recovery condition; this pause does not classify the source as missing. Stop the workflow only when the required source is confirmed absent, invalid, or permission-denied, and report its exact identity and source; do not infer or substitute another skill.",
+                  "path": "SKILL.md",
+                  "start_line": 18
+                }
+              ],
+              "findings": [],
+              "id": "external_requirements",
+              "status": "pass"
+            }
+          ],
+          "file_coverage": [
+            {
+              "classification": "Source attribution and license notice",
+              "disposition": "reviewed",
+              "evidence": [
+                {
+                  "end_line": 6,
+                  "excerpt": "This portable rewrite is informed by:\n- murray17/rovai-ai, skills/grill-duo/SKILL.md (https://github.com/murray17/rovai-ai/blob/main/skills/grill-duo/SKILL.md)\n- mattpocock/skills at revision 84fdeffd12f2ee307994d1eb6feb48173b6e0502:\n  skills/productivity/grilling/SKILL.md and skills/productivity/grill-me/SKILL.md\n\nThe Matt Pocock and Rovai AI material adapted here is licensed under MIT. Preserve these copyright and permission notices when copying substantial portions.",
+                  "path": "NOTICE",
+                  "start_line": 1
+                },
+                {
+                  "end_line": 11,
+                  "excerpt": "MIT License\n\nCopyright (c) 2026 Matt Pocock\nCopyright (c) 2026 rovai-ai contributors",
+                  "path": "NOTICE",
+                  "start_line": 8
+                }
+              ],
+              "path": "NOTICE"
+            },
+            {
+              "classification": "Skill entrypoint and workflow instructions",
+              "disposition": "reviewed",
+              "evidence": [
+                {
+                  "end_line": 3,
+                  "excerpt": "name: grill-duo\ndescription: \"Use only when the user explicitly asks for independent subagent review during a multi-round grilling session without project-document maintenance.\"",
+                  "path": "SKILL.md",
+                  "start_line": 2
+                },
+                {
+                  "end_line": 10,
+                  "excerpt": "Run a portable two-agent grilling session. The host interviews the user; one independent reviewer assesses each current round. The host remains the user's only conversational counterpart.",
+                  "path": "SKILL.md",
+                  "start_line": 10
+                }
+              ],
+              "path": "SKILL.md"
+            }
+          ],
+          "fixture_id": "generic-agent-skills-host-v1",
+          "inventory_sha256": "279507ed797fc2f61d6cf073f106085f0bfbd9e95af138fa64075321859ee9c2",
+          "overall_status": "pass",
+          "required_capabilities": [
+            {
+              "evidence": [
+                {
+                  "end_line": 4,
+                  "excerpt": "metadata:",
+                  "path": "SKILL.md",
+                  "start_line": 4
+                },
+                {
+                  "end_line": 5,
+                  "excerpt": "  prerequisites: '{\"skills\":[{\"name\":\"grilling\",\"source\":\"mattpocock/skills\"}],\"mcps\":[],\"tools\":[{\"name\":\"SkillRoute CLI\",\"source\":\"https://github.com/erichare/skillroute\",\"install\":\"uv tool install skillroute\",\"setup\":\"Prepare a local catalog using the SkillRoute documentation\",\"when\":\"When a prerequisite skill is absent from the available skill list or its exact source cannot be verified.\"}]}'",
+                  "path": "SKILL.md",
+                  "start_line": 5
+                },
+                {
+                  "end_line": 18,
+                  "excerpt": "Resolve `/grilling` by exact identity (declared name and source). If no exact name-and-source match appears in the available skill list because the skill is absent or a same-name candidate has a missing, ambiguous, or mismatched source, use the conditional SkillRoute CLI dependency in metadata to verify its identity and source, then read the full original `SKILL.md` from the active skill roots. Read it regardless of invocation metadata; reading permits source access only. Before invoking the dependency, follow its invocation metadata and preserve all user-confirmation, authorization, and clarification gates; if direct invocation is required, pause at that gate. Record inaccessible sources. If SkillRoute CLI, its catalog, or a required lookup/read operation is unavailable, fails, or returns an unusable result, record the affected dependency as unresolved and report it; do not guess, substitute, or invoke it. Block only work that requires the affected source and continue only independent work. Do not retry in a loop; retry only when the resolver, catalog, or source becomes available or new evidence changes the result. If no independent work remains, pause and report the exact dependency, blocked step, and recovery condition; this pause does not classify the source as missing. Stop the workflow only when the required source is confirmed absent, invalid, or permission-denied, and report its exact identity and source; do not infer or substitute another skill.",
+                  "path": "SKILL.md",
+                  "start_line": 18
+                }
+              ],
+              "name": "Access to the exact declared /grilling prerequisite source, using SkillRoute CLI and its catalog for conditional resolution",
+              "scope": "core",
+              "unavailable_behavior": "If the exact source cannot be resolved or read, or the conditional resolver or lookup fails, record and report the dependency as unresolved, block only work requiring it, and pause if no independent work remains. Stop only when the source is confirmed absent, invalid, or permission-denied."
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 29,
+                  "excerpt": "- Use the host runtime's independent subagent mechanism for one reviewer. Keep and reuse the same reviewer handle for the whole session. Do not assume a named-agent roster or choose or replace reviewers based on subjective topic fit.\n- Change reviewers only when the user requests it and the runtime supports the change. If the runtime cannot preserve one reviewer across rounds, disclose that limitation and continue in solo mode rather than silently switching reviewers.\n- If the runtime cannot start a reviewer invocation or recovery invocation, disclose that independent review is unavailable and continue the same grilling protocol in solo mode. Never invent or imply a second opinion.\n- If the runtime cannot return or retain reviewer output privately, do not expose, quote, summarize, or use it. Disclose that independent review is unavailable and continue in solo mode only if the session remains safe without that output; otherwise pause and explain the limitation. Never imply a second opinion was received.\n- Keep the reviewer response in the host's private tool result. Do not create a group discussion or let the reviewer contact the user, implement the user's underlying request, delegate, or write project documents.",
+                  "path": "SKILL.md",
+                  "start_line": 25
+                }
+              ],
+              "name": "Host runtime support for an independent reviewer, retaining the reviewer handle and returning its output privately",
+              "scope": "core",
+              "unavailable_behavior": "Disclose when an independent reviewer cannot be retained, invoked, or returned privately; continue in solo mode only when safe, otherwise pause. Never imply that a second opinion was received."
+            }
+          ],
+          "reviewer_id": "wp-20261005-5d41ca2a-6ddc-49c4-8f8a-b8270bb9cf8e",
+          "reviewer_role": "workflow_portability",
+          "schema_version": 1,
+          "skill_name": "grill-duo"
+        }
+      ],
+      "skill_name": "grill-duo",
+      "status": "pass"
+    }
+  ],
+  "schema_version": 1
+}

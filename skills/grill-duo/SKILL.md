@@ -25,6 +25,7 @@ An unavailable reviewer is different from a missing dependency: only reviewer un
 - Use the host runtime's independent subagent mechanism for one reviewer. Keep and reuse the same reviewer handle for the whole session. Do not assume a named-agent roster or choose or replace reviewers based on subjective topic fit.
 - Change reviewers only when the user requests it and the runtime supports the change. If the runtime cannot preserve one reviewer across rounds, disclose that limitation and continue in solo mode rather than silently switching reviewers.
 - If the runtime cannot start a reviewer invocation or recovery invocation, disclose that independent review is unavailable and continue the same grilling protocol in solo mode. Never invent or imply a second opinion.
+- If the runtime cannot return or retain reviewer output privately, do not expose, quote, summarize, or use it. Disclose that independent review is unavailable and continue in solo mode only if the session remains safe without that output; otherwise pause and explain the limitation. Never imply a second opinion was received.
 - Keep the reviewer response in the host's private tool result. Do not create a group discussion or let the reviewer contact the user, implement the user's underlying request, delegate, or write project documents.
 
 ## Build the frontier
