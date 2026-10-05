@@ -2,7 +2,7 @@
 name: grill-duo
 description: "Use only when the user explicitly asks for a fixed independent subagent to review a multi-round grilling session. Use `/grill-duo-with-docs` when maintaining project documents; do not use for solo grilling or unrelated requests."
 metadata:
-  prerequisites: '{"skills":[["grilling","mattpocock/skills"]],"mcps":[],"tools":[]}'
+  prerequisites: '{"skills":[{"name":"grilling","source":"mattpocock/skills"}],"mcps":[],"tools":[{"name":"SkillRoute CLI","source":"https://github.com/erichare/skillroute","install":"uv tool install skillroute","setup":"Prepare a local catalog using the SkillRoute documentation","when":"When a prerequisite skill is absent from the available skill list or its exact source cannot be verified."}]}'
 ---
 
 # /grill-duo
@@ -15,7 +15,7 @@ Use this entrypoint only when the user explicitly requests independent two-agent
 
 ## Dependencies
 
-Read the original `/grilling` `SKILL.md` from the active skill roots regardless of its invocation metadata. This exception permits source reading only. Before invoking the dependency, follow its invocation metadata and preserve all user-confirmation, authorization, and clarification gates in its instructions; if direct user invocation is required, pause at that gate. If the source is missing or unreadable, stop and direct the user to `/grilling` in the [prerequisite guide](../../docs/prerequisites.md).
+Resolve `/grilling` by exact identity (declared name and source). If no exact name-and-source match appears in the available skill list because the skill is absent or a same-name candidate has a missing, ambiguous, or mismatched source, use the conditional SkillRoute CLI dependency in metadata to verify its identity and source, then read the full original `SKILL.md` from the active skill roots. Read it regardless of invocation metadata; reading permits source access only. Before invoking the dependency, follow its invocation metadata and preserve all user-confirmation, authorization, and clarification gates; if direct invocation is required, pause at that gate. Record inaccessible sources. If SkillRoute CLI, its catalog, or a required lookup/read operation is unavailable, fails, or returns an unusable result, record the affected dependency as unresolved and report it; do not guess, substitute, or invoke it. Block only work that requires the affected source and continue only independent work. Do not retry in a loop; retry only when the resolver, catalog, or source becomes available or new evidence changes the result. If no independent work remains, pause and report the exact dependency, blocked step, and recovery condition; this pause does not classify the source as missing. Stop the workflow only when the required source is confirmed absent, invalid, or permission-denied, and report its exact identity and source; do not infer or substitute another skill.
 
 An unavailable reviewer is different from a missing dependency: only reviewer unavailability uses solo mode.
 
@@ -31,9 +31,8 @@ An unavailable reviewer is different from a missing dependency: only reviewer un
 
 Maintain the user's goal, confirmed decisions and constraints, the open questions, their dependencies, the reviewer handle, and the active `review_request_id` and `invocation_id`.
 
-- Follow the current `/grilling` skill's design-tree method. Ask every decision whose prerequisites are settled and that can be answered now. Defer questions that depend on an unresolved answer. There is no fixed question-count cap.
-- Give each question a stable ID such as Q1. Do not reuse an ID during the session. Keep an unanswered question's ID and wording when it remains unchanged. Do not add newly answerable questions to an open round; recompute the frontier after that round closes.
-- Research facts with available tools or agents instead of asking the user to supply facts they could not decide. Keep genuine preferences and trade-offs for the user.
+- Use `/grilling` for the design-tree method and current answerable frontier. Give each question an ID unique across the session; never reuse it. Keep its ID and wording while it remains unchanged.
+- Keep each round's frontier fixed. Defer newly answerable questions until the current round closes, then recompute the frontier.
 - Form the host's recommendation independently. Do not send it to the reviewer before the reviewer returns.
 
 ## Review each round
@@ -62,8 +61,6 @@ Use visible history for host continuity, but build the replacement request from 
 
 ## Present and continue
 
-After a valid review arrives, combine it with the host's independent analysis. Present all currently answerable questions together in one ordinary-text message. Do not use a harness or an agent question component. For every question, show its stable ID, meaningful options, the host's recommendation, and the reviewer's advice, rationale, risks, and relevant factual findings. State factual findings separately from value judgments and accurately describe any disagreement.
+After a valid review arrives, combine it with the host's independent analysis and present the current frontier together in ordinary text; do not use a harness or an agent question component. For each stable ID, show meaningful options, the host's recommendation, and the reviewer's advice, rationale, risks, and relevant factual findings. Separate facts from value judgments and describe disagreements accurately.
 
-Wait for the user's batch response. Close only answered, cancelled, or invalidated questions; keep unanswered questions and their IDs open for later rounds. After the current round closes, update confirmed decisions and constraints, recompute the tree, and review the next answerable frontier. Do not treat silence, a reviewer suggestion, or an assumption as the user's decision.
-
-When no decision remains open, summarize the goal, confirmed decisions, constraints, and material risks. Ask the user to confirm that shared understanding. Do not begin the user's underlying implementation until they confirm.
+After the user responds, close only answered, cancelled, or invalidated questions; keep unanswered IDs open. Follow `/grilling` for round closure and frontier refresh. When no decision remains, summarize the goal, confirmed decisions, constraints, and material risks, then ask for the user's final shared-understanding confirmation. Treat only the user's response as a decision. Do not begin the underlying implementation before the user confirms.

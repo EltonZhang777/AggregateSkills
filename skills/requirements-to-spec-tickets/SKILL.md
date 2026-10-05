@@ -3,30 +3,36 @@ name: requirements-to-spec-tickets
 description: Turn one or more codebase ideas into approved, independently scoped specs and tracer-bullet tickets through interactive child sessions.
 disable-model-invocation: true
 metadata:
-  prerequisites: '{"skills":[["grill-with-docs","mattpocock/skills"],["to-spec","mattpocock/skills"],["to-tickets","mattpocock/skills"],["grilling","mattpocock/skills"],["domain-modeling","mattpocock/skills"],["setup-matt-pocock-skills","mattpocock/skills"]],"mcps":[],"tools":[]}'
+  prerequisites: '{"skills":[{"name":"grill-duo-with-docs","source":"EltonZhang777/AggregateSkills"},{"name":"to-spec","source":"mattpocock/skills"},{"name":"to-tickets","source":"mattpocock/skills"},{"name":"setup-matt-pocock-skills","source":"mattpocock/skills"}],"mcps":[],"tools":[{"name":"Git CLI","source":"https://git-scm.com/","install":"Install Git from https://git-scm.com/downloads","setup":"Make `git` available in a command shell at the intended repository.","when":"When publishing a group with local repository artifacts."},{"name":"GitHub CLI (gh)","source":"https://cli.github.com/","install":"Install from https://cli.github.com/","setup":"Authenticate with `gh auth login`; for GitHub Enterprise, use `gh auth login --hostname <host>`.","when":"When using GitHub issue tracking."},{"name":"SkillRoute CLI","source":"https://github.com/erichare/skillroute","install":"uv tool install skillroute","setup":"Prepare a local catalog using the SkillRoute documentation","when":"When a prerequisite skill is absent from the available skill list or its exact source cannot be verified."}]}'
 ---
 
 # /requirements-to-spec-tickets
 
-Use this skill only when the user wants to turn one or more codebase ideas into clarified specs and tickets. It can publish approved local repository artifacts on a task branch; it does not implement application code.
+## Activation Criteria & Objective
 
-## 1. Preflight
+Use this skill when the user wants to turn one or more codebase ideas into clarified specs and tickets. It can publish approved local repository artifacts on a task branch; it does not implement application code.
 
-Resolve and read the original `SKILL.md` for every skill declared in this file's `metadata.prerequisites.skills` array, and verify every source is readable before continuing. Do this regardless of each dependency's invocation metadata, including for transitive prerequisites beyond the three workflow skills below. This exception permits source reading only. Before invoking a dependency, follow its invocation metadata and preserve all user-confirmation, authorization, and clarification gates in its instructions; if direct user invocation is required, pause at that gate.
+## Dependencies
 
-The three workflow dependencies are:
+Resolve and read the original `SKILL.md` for each direct skill declared in this file's `metadata.prerequisites.skills` array by exact identity (declared name and source). If no exact name-and-source match appears in the available skill list because the skill is absent or a same-name candidate has a missing, ambiguous, or mismatched source, use the conditional SkillRoute CLI dependency in metadata to verify its identity and source, then read the full original file from the active skill roots. Read it regardless of invocation metadata; reading permits source access only. Before invoking a dependency, follow its invocation metadata and preserve all user-confirmation, authorization, and clarification gates. Record inaccessible sources. If SkillRoute CLI, its catalog, or a required lookup/read operation is unavailable, fails, or returns an unusable result, record the affected dependency as unresolved and report it; do not guess, substitute, or invoke it. Block only work that requires the affected source and continue only independent work. Do not retry in a loop; retry only when the resolver, catalog, or source becomes available or new evidence changes the result. If no independent work remains, pause and report the exact dependency, blocked step, and recovery condition; this pause does not classify the source as missing. Stop the workflow only when a required source is confirmed absent, invalid, or permission-denied, and report its exact identity and source; do not infer or install a replacement.
 
-- `/grill-with-docs`
+The workflow dependencies are:
+
+- `/grill-duo-with-docs`
 - `/to-spec`
 - `/to-tickets`
 
-Treat the live files as the source of truth, not as text to copy into this skill. If any declared source is missing or unreadable, stop and direct the user to the matching entry in the [prerequisite guide](../../docs/prerequisites.md). Do not install it automatically.
+Treat the live files as the source of truth, not as text to copy into this skill. When a dependency points to another skill, resolve and read that skill's current `SKILL.md` at the point of use; that skill resolves its own declared dependencies. Do not expand this skill's metadata with transitive dependencies or replace a referenced skill with a copied summary.
 
-When a dependency points to another skill, resolve and read that skill's current `SKILL.md` at the point of use; apply the same missing-file stop rule. Do not replace a referenced skill with a copied summary.
+GitHub CLI (`gh`) from `https://cli.github.com/` is required only when using GitHub issue tracking. If it is unavailable or unauthenticated, ask the user for explicit approval before installing it or authenticating with `gh auth login`. If approval is not given, do not install or authenticate; keep the CLI prerequisite unresolved, pause only work that needs it, and report the recovery condition. For GitHub Enterprise, authenticate with `gh auth login --hostname <host>` only after approval.
 
-After checking every declared source, verify that `/setup-matt-pocock-skills` has supplied the issue tracker and triage-label configuration required by `/to-spec` and `/to-tickets`. If the setup or tracker configuration is absent, stop and tell the user to run `/setup-matt-pocock-skills`; do not run setup automatically or create child sessions.
+Git CLI from `https://git-scm.com/` is required only for groups that publish local repository artifacts. If unavailable, ask for explicit approval before installing it from `https://git-scm.com/downloads`; without approval, keep the prerequisite unresolved and pause that group's branch and publication steps. Issue-only groups do not require Git.
 
-Preflight is complete only when every declared skill source is readable and the tracker configuration is available.
+## 1. Preflight
+
+Confirm the declared skill identities and sources according to Dependencies above. Read each direct skill's current `SKILL.md` immediately before the phase that uses it; later-phase sources do not block independent earlier work. Verify that `/setup-matt-pocock-skills` has supplied the issue tracker and triage-label configuration required by `/to-spec` and `/to-tickets`. If the setup or tracker configuration is absent, stop and tell the user to run `/setup-matt-pocock-skills`; do not run setup automatically or create child sessions.
+
+Preflight is complete when the tracker configuration is available and the sources needed for the first active phase are verified. A temporary lookup/read failure blocks only the phase that needs that source; continue independent preflight or work. If no independent work remains, pause and report the exact dependency and recovery condition. Do not retry in a loop; retry only when the resolver, catalog, or source becomes available or new evidence changes the result. Do not report a source as missing until it is confirmed absent, invalid, or permission-denied.
 
 ## 2. Turn the request into groups
 
@@ -36,12 +42,13 @@ Read the user's current conversation as the source of the requirements. For each
 - one independent user outcome;
 - scope and non-goals;
 - acceptance intent;
+- explicit opt-in to the canonical `/grill-duo-with-docs` two-agent grilling and confirmed project-document updates;
 - local repository artifacts included in the approved output, if any;
 - dependencies on other groups, if any.
 
 For several requests, make one group per independently implementable, single-target behavior. Shared implementation details do not justify merging groups. A single request is one group, but still follows the approval gate.
 
-Show the complete proposed grouping and wait for an explicit approval such as "Approve grouping" before creating any child session. A tentative response is not approval. If the user objects but the requested change is unclear, read and follow the current `SKILL.md` for `/grill-with-docs` in this parent session, then present a revised complete grouping and wait again.
+Show the complete proposed grouping with each group's opt-in clearly identified. Wait for explicit approval that names or clearly includes the `/grill-duo-with-docs` two-agent grilling and document-maintenance phase; a generic grouping approval does not authorize it. Do not create a child session for a group whose opt-in is declined or unresolved. If the user objects but the requested change is unclear, seek opt-in before using `/grill-duo-with-docs` for clarification; without opt-in, ask a direct clarification question and do not invoke it. Then present the revised grouping and wait again.
 
 The grouping step is complete only when the user has explicitly approved the current complete grouping.
 
@@ -63,17 +70,15 @@ Use the platform's equivalent visible child conversation or a new terminal sessi
 
 Give each child only its approved group, global workflow rules, dependency information, repository/workspace context, and known group dependencies. Include the first-response requirement from Section 4. Keep unrelated sibling requirements and parent-history noise out of the child prompt.
 
-For new or materially rewritten project text, use only the normative prose in the root `AGENTS.md` of the repository receiving that text. When source and target differ, do not use the source or installation `AGENTS.md` as a substitute; when they are the same repository, the shared root is the target rule. Include the target repository's rule in each child prompt and require the child to pass it to `/grill-with-docs`, `/to-spec`, and `/to-tickets`. If the child will write to a different repository, it must read that repository's root rule before drafting. Pause if the target rule has no discernible dominant language, preserve untouched text, and report resulting language mixtures. Do not modify the external dependency skills.
+For new or materially rewritten project text, use only the normative prose in the root `AGENTS.md` of the repository receiving that text. When source and target differ, do not use the source or installation `AGENTS.md` as a substitute; when they are the same repository, the shared root is the target rule. Include the target repository's rule in each child prompt and require the child to pass it to `/grill-duo-with-docs`, `/to-spec`, and `/to-tickets`. If the child will write to a different repository, it must read that repository's root rule before drafting. Pause if the target rule has no discernible dominant language, preserve untouched text, and report resulting language mixtures. Do not modify the external dependency skills.
 
 Child-session creation is complete only when every approved group has a real interactive child-session identifier. If the platform cannot create one, provide the complete manual handoff described above and report the group as blocked; a manual handoff is not a ready child and cannot count toward successful handoff.
 
 ## 4. Child-session protocol
 
-In every child session, re-read the current dependency files immediately before proceeding. The child's first response must briefly restate the group's outcome, scope and non-goals, and key workflow constraints, then post the first actual grilling turn. That turn must cover the complete currently answerable decision frontier, with stable IDs, options, and recommendations. If no decisions remain, present the shared-understanding summary and request the confirmation required by the live grilling skill. In either case, wait for the user's response. The child prompt alone does not establish readiness.
+In every child session, re-read each current dependency file immediately before its phase. If a source is unavailable, follow the Dependencies recovery rule and pause only the phase that needs that source. The first response must briefly restate the group's outcome, scope, non-goals, and key workflow constraints. Only a group whose approved grouping explicitly includes the opt-in may invoke `/grill-duo-with-docs` to present the current answerable frontier and wait for the user's response. If the frontier is empty, use its shared-understanding summary and wait for confirmation. The child prompt alone does not establish readiness.
 
-1. Read and follow the `SKILL.md` for `/grill-with-docs`.
-2. After that phase reaches its own shared-understanding gate, read and follow the `SKILL.md` for `/to-spec`.
-3. After the spec and its required seam confirmation are complete, read and follow the `SKILL.md` for `/to-tickets`.
+For a group with explicit opt-in, run `/grill-duo-with-docs` first, then `/to-spec` and `/to-tickets` in that order. Advance only after the current skill's confirmation gate passes, including `/to-spec`'s seam confirmation and `/to-tickets`' ticket-granularity, blocking-edge, and publication gates.
 
 After `/to-tickets` publishes every planned ticket, the child session for that spec links those issues as native sub-issues of its spec; the parent does not create or retry these links. Approval of the planned ticket set authorizes these routine associations without a separate prompt and does not authorize issue creation or any other GitHub write. Keep this phase outside the `/to-tickets` run so its existing parent-issue boundary stays intact:
 
@@ -83,9 +88,7 @@ After `/to-tickets` publishes every planned ticket, the child session for that s
 - After any failed or ambiguous relationship write, re-read both relationships before retrying. If the link now exists under the same spec, treat it as complete. Otherwise preserve successful links and retry only the missing link, only for a clearly transient failure, with at most three total write attempts per link. Record the cumulative write-attempt count for each link in the child task progress summary before each write, and update it before every retry. Carry the count forward on resume. If the prior summary is missing or incomplete, do not retry automatically. Re-read before every retry; stop on other errors or when the limit is reached, and report which links succeeded or remain pending.
 - Preserve ticket and spec issue titles, bodies, labels, states, and blocking edges. Read these fields before linking, then verify them and every native parent relationship afterward. Re-read the spec `/sub_issues` list with `--paginate` and confirm it contains every planned ticket; leave the spec issue state unchanged.
 
-Reading the live files is the dependency mechanism for this workflow. It keeps the child aligned with dependency updates without modifying or duplicating those skills. If a required file becomes unavailable, stop that child and report the missing dependency.
-
-The child must preserve the dependencies' own confirmation gates. In particular, it must let the user clarify the requirement, confirm proposed seams, approve ticket granularity and blocking edges, and approve publication wherever the dependency requires it. The child must not answer user-facing clarification questions on the user's behalf.
+Preserve each dependency's user-confirmation, seam, ticket-granularity, blocking-edge, and publication gates. The child must not answer user-facing questions on the user's behalf.
 
 The child protocol is complete only when the three dependency processes have finished in order, or the child has reported a specific blocker and stopped.
 
@@ -106,16 +109,7 @@ An issue-only group completes without any Git operation. A local-artifact group 
 
 All child sessions use the current shared working directory. Keep spec-specific documents and ticket files uniquely named by feature slug. Follow existing repository conventions and the live dependency skills for document locations and tracker publication.
 
-For shared ADRs, glossaries, and other public documents, use additive reconciliation:
-
-- preserve existing public content by default;
-- retain distinct new content from both sides;
-- deduplicate exact repeats;
-- adjust placement when edits are compatible;
-- reserve deletion or replacement for an explicit user decision;
-- report a conflict only when the conclusions cannot both be true.
-
-Before writing a shared file, read its latest contents. If a semantic conflict appears, pause the affected child and report both conclusions, the affected specs and documents, and the decision the user must make. Do not silently choose one conclusion.
+For shared glossary and decision documents, follow `/grill-duo-with-docs` for repository routing, latest-content checks, additive edits, and semantic-conflict handling. Serialize writes across child sessions. If conclusions conflict, show both and wait for the user's decision.
 
 ## 7. Child readiness, handoff, and resumption
 
