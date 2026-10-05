@@ -3,7 +3,7 @@ name: requirements-to-spec-tickets
 description: Turn one or more codebase ideas into approved, independently scoped specs and tracer-bullet tickets through interactive child sessions.
 disable-model-invocation: true
 metadata:
-  prerequisites: '{"skills":[{"name":"grill-with-docs","source":"mattpocock/skills"},{"name":"to-spec","source":"mattpocock/skills"},{"name":"to-tickets","source":"mattpocock/skills"},{"name":"setup-matt-pocock-skills","source":"mattpocock/skills"}],"mcps":[],"tools":[{"name":"GitHub CLI (gh)","source":"https://cli.github.com/","install":"Install from https://cli.github.com/","setup":"Authenticate with `gh auth login`; for GitHub Enterprise, use `gh auth login --hostname <host>`.","when":"When using GitHub issue tracking."},{"name":"SkillRoute CLI","source":"https://github.com/erichare/skillroute","install":"uv tool install skillroute","setup":"Prepare a local catalog using the SkillRoute documentation","when":"When a prerequisite skill is absent from the available skill list or its exact source cannot be verified."}]}'
+  prerequisites: '{"skills":[{"name":"grill-with-docs","source":"mattpocock/skills"},{"name":"to-spec","source":"mattpocock/skills"},{"name":"to-tickets","source":"mattpocock/skills"},{"name":"setup-matt-pocock-skills","source":"mattpocock/skills"}],"mcps":[],"tools":[{"name":"Git CLI","source":"https://git-scm.com/","install":"Install Git from https://git-scm.com/downloads","setup":"Make `git` available in a command shell at the intended repository.","when":"When publishing a group with local repository artifacts."},{"name":"GitHub CLI (gh)","source":"https://cli.github.com/","install":"Install from https://cli.github.com/","setup":"Authenticate with `gh auth login`; for GitHub Enterprise, use `gh auth login --hostname <host>`.","when":"When using GitHub issue tracking."},{"name":"SkillRoute CLI","source":"https://github.com/erichare/skillroute","install":"uv tool install skillroute","setup":"Prepare a local catalog using the SkillRoute documentation","when":"When a prerequisite skill is absent from the available skill list or its exact source cannot be verified."}]}'
 ---
 
 # /requirements-to-spec-tickets
@@ -25,6 +25,8 @@ The three workflow dependencies are:
 Treat the live files as the source of truth, not as text to copy into this skill. When a dependency points to another skill, resolve and read that skill's current `SKILL.md` at the point of use; that skill resolves its own declared dependencies. Do not expand this skill's metadata with transitive dependencies or replace a referenced skill with a copied summary.
 
 GitHub CLI (`gh`) from `https://cli.github.com/` is required only when using GitHub issue tracking. If it is unavailable or unauthenticated, ask the user for explicit approval before installing it or authenticating with `gh auth login`. If approval is not given, do not install or authenticate; keep the CLI prerequisite unresolved, pause only work that needs it, and report the recovery condition. For GitHub Enterprise, authenticate with `gh auth login --hostname <host>` only after approval.
+
+Git CLI from `https://git-scm.com/` is required only for groups that publish local repository artifacts. If unavailable, ask for explicit approval before installing it from `https://git-scm.com/downloads`; without approval, keep the prerequisite unresolved and pause that group's branch and publication steps. Issue-only groups do not require Git.
 
 ## 1. Preflight
 

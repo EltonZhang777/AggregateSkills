@@ -2,7 +2,7 @@
 name: prune-worktrees-and-branches
 description: Preview cleanup candidates and safely clean approved worktrees and local or eligible GitHub remote branches.
 metadata:
-  prerequisites: '{"skills":[],"mcps":[],"tools":[{"name":"GitHub CLI (gh)","source":"https://cli.github.com/","install":"Install from https://cli.github.com/","setup":"Authenticate with `gh auth login`; for GitHub Enterprise, use `gh auth login --hostname <host>`." ,"when":"When checking GitHub remotes for pull requests, protection, or default-branch state."}]}'
+  prerequisites: '{"skills":[],"mcps":[],"tools":[{"name":"Git CLI","source":"https://git-scm.com/","install":"Install Git from https://git-scm.com/downloads","setup":"Make `git` available in a command shell at the intended repository."},{"name":"GitHub CLI (gh)","source":"https://cli.github.com/","install":"Install from https://cli.github.com/","setup":"Authenticate with `gh auth login`; for GitHub Enterprise, use `gh auth login --hostname <host>`." ,"when":"When checking GitHub remotes for pull requests, protection, or default-branch state."}]}'
 ---
 
 # /prune-worktrees-and-branches
@@ -13,7 +13,7 @@ Use this skill only for a worktree or branch cleanup request. The preview is the
 
 ## Dependencies
 
-No skill prerequisites are declared. GitHub CLI (`gh`) from `https://cli.github.com/` is required only when checking a GitHub remote for pull requests, protection, or default-branch state. If it is unavailable or unauthenticated for those checks, ask the user for explicit approval before installing it or authenticating with `gh auth login`. If approval is not given, do not install or authenticate; keep the CLI prerequisite unresolved, pause only work that needs it, and report the recovery condition. For GitHub Enterprise, authenticate with `gh auth login --hostname <host>` only after approval. If the CLI or any required check is unavailable, mark the affected state unknown and do not classify the branch as safe to clean.
+No skill prerequisites are declared. Git CLI is required for every workflow step; install it from `https://git-scm.com/downloads` and make it available in a command shell at the intended repository. Ask for explicit approval before installing it. If approval is not given, do not install it; keep the prerequisite unresolved and pause the workflow. GitHub CLI (`gh`) from `https://cli.github.com/` is required only when checking a GitHub remote for pull requests, protection, or default-branch state. If it is unavailable or unauthenticated for those checks, ask the user for explicit approval before installing it or authenticating with `gh auth login`. If approval is not given, do not install or authenticate; keep the CLI prerequisite unresolved, pause only work that needs it, and report the recovery condition. For GitHub Enterprise, authenticate with `gh auth login --hostname <host>` only after approval. If the CLI or any required check is unavailable, mark the affected state unknown and do not classify the branch as safe to clean.
 
 ## Preview contract
 

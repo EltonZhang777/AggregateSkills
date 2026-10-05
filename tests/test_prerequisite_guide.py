@@ -398,27 +398,101 @@ class PrerequisiteGuideTests(unittest.TestCase):
                     any(dependency_text.find(clause, confirmed_at) > confirmed_at for clause in terminal_reports)
                 )
 
-    def test_skill_scout_distinguishes_unresolved_from_missing_prerequisites(self):
+    def test_skill_scout_supports_general_inventory_and_optional_skillroute(self):
+        path = ROOT / "skills" / "skill-scout" / "SKILL.md"
+        _, prerequisites = read_prerequisites(path)
+        skillroute = next(item for item in prerequisites["tools"] if item["name"] == "SkillRoute CLI")
+        self.assertEqual(
+            skillroute.get("when"),
+            "When the user selects SkillRoute local-catalog mode for discovery or routing.",
+        )
+        text = path.read_text(encoding="utf-8").lower()
+        general = text.split("## general-host discovery", 1)[1].split("\n## skillroute local-catalog mode", 1)[0]
+        local = text.split("## skillroute local-catalog mode", 1)[1].split("\n## source and selection safety", 1)[0]
+        dependencies = text.split("## dependencies", 1)[1].split("\n## ", 1)[0]
+        explicit = text.split("### resolve an explicitly named skill", 1)[1].split("\n### resolve an unstated skill", 1)[0]
+        report = text.split("## report", 1)[1].split("\n## ", 1)[0]
+        self.assertIn(
+            "start with an installed-skill inventory exposed by the host or supplied by the caller",
+            general,
+        )
+        self.assertIn(
+            "treat an inventory as complete only when its source identifies it as covering all installed skills",
+            general,
+        )
+        self.assertIn("a partial inventory never proves a skill is absent", general)
+        self.assertIn("return `unavailable`", general)
+        self.assertIn("optional local-catalog mode", local)
+        self.assertIn("if the cli, local backend, or catalog is unavailable, return `unavailable`", local)
+        self.assertIn("do not present the result as evidence that a skill is absent", local)
+        self.assertIn("temporary resolver or backend errors", local)
+        self.assertIn("return an `unresolved prerequisite` result", local)
+        self.assertIn("exact failed check and recovery condition", local)
+        self.assertIn("do not install the cli or prepare/index a catalog automatically", dependencies)
+        self.assertIn("if a complete inventory does not contain it, return `missing prerequisite`", explicit)
+        self.assertIn("if the inventory is partial, return `unavailable`", explicit)
+        self.assertIn("`unresolved prerequisite`", report)
+        self.assertIn("`unavailable`", report)
+
+    def test_skill_scout_requires_source_choice_for_ambiguous_explicit_names(self):
         path = ROOT / "skills" / "skill-scout" / "SKILL.md"
         text = path.read_text(encoding="utf-8").lower()
-        dependencies = text.split("## dependencies", 1)[1].split("\n## ", 1)[0]
-        resolver = text.split("### 1. check the resolver", 1)[1].split("\n### ", 1)[0]
-        report = text.split("### 4. report the result", 1)[1].split("\n## ", 1)[0]
-        self.assertIn(
-            "if a check fails without confirming one of those conditions, or its result is inconclusive, stop with an `unresolved prerequisite` result",
-            dependencies,
+        explicit = text.split("### resolve an explicitly named skill", 1)[1].split("\n### resolve an unstated skill", 1)[0]
+        self.assertIn("treat a supplied source as part of the identity", explicit)
+        self.assertIn("a same-name entry from another source is not a match", explicit)
+        self.assertIn("if multiple entries match, return `user decision required`", explicit)
+        self.assertIn("show each candidate and its declared or undeclared source", explicit)
+        self.assertIn("do not choose by inventory order or rank", explicit)
+
+    def test_pr_and_merge_github_cli_requirement_matches_activation_scope(self):
+        path = ROOT / "skills" / "pr-and-merge" / "SKILL.md"
+        _, prerequisites = read_prerequisites(path)
+        github_cli = next(item for item in prerequisites["tools"] if item["name"] == "GitHub CLI (gh)")
+        self.assertNotIn("when", github_cli)
+        text = path.read_text(encoding="utf-8").lower()
+        activation = text.split("## activation criteria & objective", 1)[1].split("\n## ", 1)[0]
+        self.assertIn("it handles github only", activation)
+
+    def test_pr_and_merge_skill_prerequisites_are_conditional_by_phase(self):
+        path = ROOT / "skills" / "pr-and-merge" / "SKILL.md"
+        _, prerequisites = read_prerequisites(path)
+        skills = {item["name"]: item for item in prerequisites["skills"]}
+        self.assertEqual(
+            skills["conventional-git-messages"].get("when"),
+            "When drafting or materially updating a pull request title or body.",
         )
-        self.assertIn("stop with an `unresolved prerequisite` result", dependencies)
-        self.assertIn(
-            "if the cli or catalog is confirmed absent, invalid, or permission-denied, report `missing prerequisite`",
-            dependencies,
+        self.assertEqual(
+            skills["resolving-merge-conflicts"].get("when"),
+            "When resolving a conflict during an approved pull request merge.",
         )
-        self.assertIn("do not install the cli or index roots automatically", dependencies)
-        self.assertIn("for temporary resolver or backend errors", resolver)
-        self.assertIn("other inconclusive results", resolver)
-        self.assertIn("`unresolved prerequisite`", resolver)
-        self.assertIn("exact failed check and recovery condition", resolver)
-        self.assertIn("`unresolved prerequisite`", report)
+        dependencies = path.read_text(encoding="utf-8").lower().split("## dependencies", 1)[1].split("\n## ", 1)[0]
+        self.assertIn("immediately before drafting or materially updating a pull request title or body", dependencies)
+        self.assertIn("only when an approved merge encounters a conflict", dependencies)
+
+    def test_git_cli_declarations_match_workflows(self):
+        conditions = {
+            "pr-and-merge": None,
+            "prune-worktrees-and-branches": None,
+            "requirements-to-spec-tickets": "When publishing a group with local repository artifacts.",
+            "review-duo": "When reviewing a Git range or capturing a repository worktree diff.",
+            "spec-implement-loop": None,
+        }
+        for name, condition in conditions.items():
+            path = ROOT / "skills" / name / "SKILL.md"
+            _, prerequisites = read_prerequisites(path)
+            git_cli = next(item for item in prerequisites["tools"] if item["name"] == "Git CLI")
+            with self.subTest(skill=name):
+                self.assertEqual(git_cli["source"], "https://git-scm.com/")
+                self.assertIn("https://git-scm.com/downloads", git_cli["install"])
+                self.assertIn("command shell", git_cli["setup"])
+                dependencies = path.read_text(encoding="utf-8").lower().split("## dependencies", 1)[1].split("\n## ", 1)[0]
+                self.assertIn("git cli", dependencies)
+                self.assertIn("https://git-scm.com/downloads", dependencies)
+                self.assertIn("unresolved", dependencies)
+                if condition is None:
+                    self.assertNotIn("when", git_cli)
+                else:
+                    self.assertEqual(git_cli.get("when"), condition)
 
     def test_prune_marks_unavailable_checks_unknown_and_never_safe_to_clean(self):
         path = ROOT / "skills" / "prune-worktrees-and-branches" / "SKILL.md"
@@ -481,6 +555,31 @@ class PrerequisiteGuideTests(unittest.TestCase):
             {item["name"] for item in prerequisites["skills"]},
             {"grill-with-docs", "to-spec", "to-tickets", "setup-matt-pocock-skills"},
         )
+
+    def test_spec_implement_loop_declares_only_direct_skills(self):
+        path = ROOT / "skills" / "spec-implement-loop" / "SKILL.md"
+        _, prerequisites = read_prerequisites(path)
+        declared = {item["name"] for item in prerequisites["skills"] if "name" in item}
+        self.assertEqual(
+            declared,
+            {
+                "implement",
+                "tdd",
+                "code-review",
+                "grill-duo-with-docs",
+                "to-spec",
+                "to-tickets",
+                "setup-matt-pocock-skills",
+                "ponytail-review",
+                "conventional-git-messages",
+            },
+        )
+        dependencies = path.read_text(encoding="utf-8").split("## Dependencies", 1)[1].split("\n## ", 1)[0]
+        self.assertNotIn("`/grilling`", dependencies)
+        self.assertNotIn("`/domain-modeling`", dependencies)
+        text = path.read_text(encoding="utf-8")
+        self.assertIn("Pass the target rule to `/grill-duo-with-docs`", text)
+        self.assertNotIn("`/grill-with-docs`", text)
 
     def test_requirements_workflow_resolves_each_dependency_at_its_phase(self):
         path = ROOT / "skills" / "requirements-to-spec-tickets" / "SKILL.md"
