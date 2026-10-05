@@ -2,16 +2,20 @@
 name: review-duo
 description: Run `/code-review` in opt-in strict mode with one fixed scope, independent review axes, and evidence-based findings.
 metadata:
-  prerequisites: '{"skills":[["code-review","mattpocock/skills"]],"mcps":[],"tools":[]}'
+  prerequisites: '{"skills":[{"name":"code-review","source":"mattpocock/skills"}],"mcps":[],"tools":[{"name":"Git CLI","source":"https://git-scm.com/","install":"Install Git from https://git-scm.com/downloads","setup":"Make `git` available in a command shell at the intended repository.","when":"When reviewing a Git range or capturing a repository worktree diff."},{"name":"SkillRoute CLI","source":"https://github.com/erichare/skillroute","install":"uv tool install skillroute","setup":"Prepare a local catalog using the SkillRoute documentation","when":"When a prerequisite skill is absent from the available skill list or its exact source cannot be verified."}]}'
 ---
 
 # /review-duo
 
+## Activation Criteria & Objective
+
 Use this skill only when the user explicitly requests `/review-duo` or strict `/code-review`. It adds a strict contract to the existing `/code-review` workflow; it is not a second review implementation.
 
-## Resolve and run the upstream skill
+## Dependencies
 
-Resolve and read the original `/code-review` `SKILL.md` from the active skill roots regardless of its invocation metadata; reading is read-only and does not invoke it. Before invoking `/code-review`, follow its invocation metadata and preserve its user-confirmation, authorization, and clarification gates. If direct user invocation is required, pause at that gate. Preserve its other stated requirements when applying the skill. If the source is missing or unreadable, stop and direct the user to `/code-review` in the [prerequisite guide](../../docs/prerequisites.md). Never copy a fallback body or continue with a locally vendored version. Record the resolved source URI and SHA-256 of its LF-normalized UTF-8 text in the frozen manifest; do not copy or vendor its body.
+Resolve `/code-review` by exact identity (declared name and source). If no exact name-and-source match appears in the available skill list because the skill is absent or a same-name candidate has a missing, ambiguous, or mismatched source, use the conditional SkillRoute CLI dependency in metadata to verify its identity and source, then read the full original `SKILL.md` from the active skill roots regardless of invocation metadata; reading is read-only and does not invoke it. Before invoking `/code-review`, follow its invocation metadata and preserve its user-confirmation, authorization, and clarification gates. If direct user invocation is required, pause at that gate. Preserve its other stated requirements when applying the skill. Record inaccessible sources. If SkillRoute CLI, its catalog, or a required lookup/read operation is unavailable, fails, or returns an unusable result, record the affected dependency as unresolved and report it; do not guess, substitute, or invoke it. Block only work that requires the affected source and continue only independent work. Do not retry in a loop; retry only when the resolver, catalog, or source becomes available or new evidence changes the result. If no independent work remains, pause and report the exact dependency, blocked step, and recovery condition; this pause does not classify the source as missing. Stop the workflow only when the required source is confirmed absent, invalid, or permission-denied, and report the exact dependency identity and source. Never copy a fallback body or continue with a locally vendored version. Record the resolved source URI and SHA-256 of its LF-normalized UTF-8 text in the frozen manifest; do not copy or vendor its body.
+
+Git CLI from `https://git-scm.com/` is required only for Git-range reviews and repository worktree diff snapshots. If unavailable, ask for explicit approval before installing it from `https://git-scm.com/downloads`; without approval, keep that review input unresolved and pause it. A supplied patch can be reviewed without Git.
 
 Keep the `/code-review` workflow and its two-agent topology. Pass the strict scope and axis instructions below to those two agents in that one run. Do not start another review pair or nest a second `/code-review` run.
 
@@ -36,8 +40,6 @@ Before review, if the host cannot start two independent agents or pass identical
 
 
 ## Independent review axes
-
-Start the `/code-review` workflow's two agents in parallel, with no cross-agent discussion:
 
 - **Standards and Quality** checks repository rules, correctness, error handling, security, concurrency, retries, consistency, APIs, databases, migrations, lifecycle, important test gaps, and material maintenance cost. It does not decide whether the change satisfies product requirements.
 - **Spec Conformance** checks only missing, partial, or incorrect requirements, unmet acceptance criteria, unrequested behavior, and conflicts or gaps in requirement sources. Derive severity from the pinned requirements and their stated impact; do not inherit severity from a Standards finding about the same defect. Do not report style or preference opinions.
