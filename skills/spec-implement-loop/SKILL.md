@@ -3,7 +3,7 @@ name: spec-implement-loop
 description: Run an explicitly approved root spec or ticket tree through implementation, verification, commit, push, status sync, and bounded review remediation.
 disable-model-invocation: true
 metadata:
-  prerequisites: '{"skills":[{"name":"implement","source":"mattpocock/skills"},{"name":"tdd","source":"mattpocock/skills"},{"name":"code-review","source":"mattpocock/skills"},{"name":"grill-duo-with-docs","source":"mattpocock/skills"},{"name":"to-spec","source":"mattpocock/skills"},{"name":"to-tickets","source":"mattpocock/skills"},{"name":"setup-matt-pocock-skills","source":"mattpocock/skills"},{"name":"ponytail-review","source":"DietrichGebert/ponytail"},{"name":"conventional-git-messages","source":"EltonZhang777/AggregateSkills"},{"one_of":[{"name":"show-me","source":null,"install":"The local skill file is readable, but it declares no publisher or portable install source."},{"name":"archify","source":null,"install":"The local skill file names author tt-a1i but declares no publisher URL or portable install source."}],"when":"For every commit explanation and the final summary."}],"mcps":[],"tools":[{"name":"Git CLI","source":"https://git-scm.com/","install":"Install Git from https://git-scm.com/downloads","setup":"Make `git` available in a command shell at the intended repository."},{"name":"GitHub CLI (gh)","source":"https://cli.github.com/","install":"Install from https://cli.github.com/","setup":"Authenticate with `gh auth login`; for GitHub Enterprise, use `gh auth login --hostname <host>`.","when":"When using GitHub issue tracking."},{"name":"SkillRoute CLI","source":"https://github.com/erichare/skillroute","install":"uv tool install skillroute","setup":"Prepare a local catalog using the SkillRoute documentation","when":"When a prerequisite skill is absent from the available skill list or its exact source cannot be verified."}]}'
+  prerequisites: '{"skills":[{"name":"implement","source":"mattpocock/skills"},{"name":"tdd","source":"mattpocock/skills"},{"name":"code-review","source":"mattpocock/skills"},{"name":"grill-duo-with-docs","source":"EltonZhang777/AggregateSkills"},{"name":"to-spec","source":"mattpocock/skills"},{"name":"to-tickets","source":"mattpocock/skills"},{"name":"setup-matt-pocock-skills","source":"mattpocock/skills"},{"name":"ponytail-review","source":"DietrichGebert/ponytail"},{"name":"conventional-git-messages","source":"EltonZhang777/AggregateSkills"},{"one_of":[{"name":"show-me","source":null,"install":"The local skill file is readable, but it declares no publisher or portable install source."},{"name":"archify","source":null,"install":"The local skill file names author tt-a1i but declares no publisher URL or portable install source."}],"when":"For every commit explanation and the final summary."}],"mcps":[],"tools":[{"name":"Git CLI","source":"https://git-scm.com/","install":"Install Git from https://git-scm.com/downloads","setup":"Make `git` available in a command shell at the intended repository."},{"name":"GitHub CLI (gh)","source":"https://cli.github.com/","install":"Install from https://cli.github.com/","setup":"Authenticate with `gh auth login`; for GitHub Enterprise, use `gh auth login --hostname <host>`.","when":"When using GitHub issue tracking."},{"name":"SkillRoute CLI","source":"https://github.com/erichare/skillroute","install":"uv tool install skillroute","setup":"Prepare a local catalog using the SkillRoute documentation","when":"When a prerequisite skill is absent from the available skill list or its exact source cannot be verified."}]}'
 ---
 
 # /spec-implement-loop
@@ -16,9 +16,9 @@ Run an explicitly approved root spec or ticket tree to verified delivery in the 
 
 Required skills:
 
-- `mattpocock/skills`: `/implement`, `/tdd`, `/code-review`, `/grill-duo-with-docs`, `/to-spec`, `/to-tickets`, `/setup-matt-pocock-skills`
+- `mattpocock/skills`: `/implement`, `/tdd`, `/code-review`, `/to-spec`, `/to-tickets`, `/setup-matt-pocock-skills`
 - `DietrichGebert/ponytail`: `/ponytail-review`
-- `EltonZhang777/AggregateSkills`: `/conventional-git-messages`
+- `EltonZhang777/AggregateSkills`: `/grill-duo-with-docs`, `/conventional-git-messages`
 - One of `/show-me` or `/archify`; their publisher and portable install sources are not declared in the local skill files. Follow the source-status note in `metadata.prerequisites` rather than inferring a publisher.
 
 `/skill-creator`, `/writing-for-agents`, and `/grill-me` are authoring-time skills, not runtime dependencies.
@@ -100,7 +100,7 @@ For new or materially rewritten project text, use only the normative prose in th
 For each ready ticket:
 
 1. Read and follow the original `SKILL.md` for `/implement`; use its `/tdd` and `/code-review` discipline. Implement only the ticket scope and use its agreed seams.
-2. Run every acceptance check, including the smallest relevant tests and any other specified verification. If a check fails, enter `blocked` with the reason class selected by its cause (for example, an implementation or verification defect is `technical`, while a known service or network failure is `external-service`), and preserve the failure evidence and safe resume point. Resume only when the recorded recovery condition is met; resume implementation for a `technical` failure only when its correction stays within the approved scope, otherwise stop for the required user decision. Do not call the issue complete until its acceptance criteria, tests, and issue-level review pass.
+2. Run the ticket's acceptance checks and specified verification, following `/implement` for test cadence. If a check fails, enter `blocked` with the reason class selected by its cause (for example, an implementation or verification defect is `technical`, while a known service or network failure is `external-service`), and preserve the failure evidence and safe resume point. Resume only when the recorded recovery condition is met; resume implementation for a `technical` failure only when its correction stays within the approved scope, otherwise stop for the required user decision. Do not call the issue complete until its acceptance criteria, tests, and issue-level review pass.
 3. Read the original `SKILL.md` for `/conventional-git-messages` and use its commit mode to produce the commit message. Resolve `/show-me` or `/archify` dynamically at this step and use its smallest useful view to explain the commit's effect with the missing context restored.
 4. After acceptance checks and ticket-level review pass, create exactly one focused commit under the task-scoped authorization. The outer loop owns this commit boundary; treat `/implement`'s commit instruction as satisfied by this commit and never create a duplicate commit.
 5. Push the confirmed commit to the task branch under the task-scoped authorization. For a confirmed transient failure, choose a retry count based on the error, capped at three total attempts for the same ref and commit including the first; do not retry permanent or unsafe-to-repeat errors. Before retrying an uncertain result, reconcile the local commit and exact remote branch state. Never repeat a confirmed successful push, amend, or rewrite history. After retries fail, stop and report the local commit and error.
@@ -138,7 +138,7 @@ Report `complete` only when all of these hold:
 
 - no uncompleted, non-deferred ticket remains;
 - every completed ticket meets its acceptance criteria;
-- the full test suite passes after the final implementation batch;
+- the full suite required by `/implement` passes after the final implementation batch;
 - final review is complete;
 - every approved P0/P1 repair is complete;
 - low-priority findings are recorded as deferred tickets;

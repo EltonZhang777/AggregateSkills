@@ -2,14 +2,22 @@
 name: conventional-git-messages
 description: Draft concise commit, pull request, and issue text without Git or GitHub operations.
 metadata:
-  prerequisites: '{"skills":[],"mcps":[],"tools":[]}'
+  prerequisites: '{"skills":[{"name":"skill-scout","source":"EltonZhang777/AggregateSkills","when":"When a requested diagram requires skill discovery."}],"mcps":[],"tools":[{"name":"SkillRoute CLI","source":"https://github.com/erichare/skillroute","install":"uv tool install skillroute","setup":"Prepare a local catalog using the SkillRoute documentation","when":"When a prerequisite skill is absent from the available skill list or its exact source cannot be verified."}]}'
 ---
 
 # /conventional-git-messages
 
+## Activation Criteria & Objective
+
 Draft only the commit, pull request, or issue text the user asks for. Never perform a Git operation, create or modify an issue, open or edit a pull request, or post a comment.
 
 For GitHub issue and pull request titles, bodies, and comments, use only the normative prose in the root `AGENTS.md` of the target repository that will own the issue or pull request. If the target differs from this skill's source repository, do not use the source or installation `AGENTS.md` as target policy; if both are the same repository, use its root file as the target policy. Pause before drafting if the target rule has no discernible dominant language. Preserve untouched text when revising, use the target language for new or materially rewritten passages, and report resulting language mixtures. Spelling-only and formatting-only edits and commit messages are excluded.
+
+## Dependencies
+
+Resolve and read the original `SKILL.md` for each direct skill declared in this file's `metadata.prerequisites.skills` array by exact identity (declared name and source). If no exact name-and-source match appears in the available skill list because the skill is absent or a same-name candidate has a missing, ambiguous, or mismatched source, use the conditional SkillRoute CLI dependency in metadata to verify its identity and source, then read the full original file from the active skill roots. Read it regardless of invocation metadata; reading permits source access only. Before invoking the dependency, follow its invocation metadata and preserve all user-confirmation, authorization, and clarification gates; if direct invocation is required, pause at that gate. Record inaccessible sources. If SkillRoute CLI, its catalog, or a required lookup/read operation is unavailable, fails, or returns an unusable result, record the affected dependency as unresolved and report it; do not guess, substitute, or invoke it. Block only work that requires the affected source and continue only independent work. Do not retry in a loop; retry only when the resolver, catalog, or source becomes available or new evidence changes the result. If no independent work remains, pause and report the exact dependency, blocked step, and recovery condition; this pause does not classify the source as missing. Stop the workflow only when the required source is confirmed absent, invalid, or permission-denied, and report its exact identity and source; do not infer or substitute another skill.
+
+The /skill-scout prerequisite is needed only when a requested diagram requires skill discovery. The conditional SkillRoute CLI tool is only for verifying that prerequisite's identity and source.
 
 ## Commit subject
 
@@ -74,7 +82,7 @@ For GitHub issue and pull request titles, bodies, and comments, use only the nor
 ## Optional diagrams
 
 - Consider a diagram only when it materially improves both clarity and concision; diagrams are optional.
-- If a needed diagram requires `/skill-scout`, read its current `SKILL.md` regardless of invocation metadata; metadata governs invocation, not source access. Use its local catalog and follow its result, preserving any user-only invocation, confirmation, clarification, or missing-prerequisite gate. Do not install, index, copy, or silently substitute a skill.
+- When a needed diagram requires skill discovery, follow `/skill-scout`'s general-host flow with host/caller inventory. Use its SkillRoute local-catalog mode only when the user selects it. Preserve its user-only invocation, confirmation, clarification, and missing-prerequisite gates. Do not install, index, copy, or silently substitute a skill.
 - Include only artifacts readers can access directly from the pull request description. Omit inaccessible artifacts; never upload or publish them.
 
 ## Output

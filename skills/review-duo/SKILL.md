@@ -41,8 +41,6 @@ Before review, if the host cannot start two independent agents or pass identical
 
 ## Independent review axes
 
-Start the `/code-review` workflow's two agents in parallel, with no cross-agent discussion:
-
 - **Standards and Quality** checks repository rules, correctness, error handling, security, concurrency, retries, consistency, APIs, databases, migrations, lifecycle, important test gaps, and material maintenance cost. It does not decide whether the change satisfies product requirements.
 - **Spec Conformance** checks only missing, partial, or incorrect requirements, unmet acceptance criteria, unrequested behavior, and conflicts or gaps in requirement sources. Derive severity from the pinned requirements and their stated impact; do not inherit severity from a Standards finding about the same defect. Do not report style or preference opinions.
 

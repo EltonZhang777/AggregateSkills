@@ -12,14 +12,14 @@ Install this repository with the general Agent Skills command in the [README](..
 | `/conventional-git-messages` | [EltonZhang777/AggregateSkills](https://github.com/EltonZhang777/AggregateSkills) | npx skills@latest add EltonZhang777/AggregateSkills --skill=conventional-git-messages | Always | `/spec-implement-loop` |
 | `/conventional-git-messages` | [EltonZhang777/AggregateSkills](https://github.com/EltonZhang777/AggregateSkills) | npx skills@latest add EltonZhang777/AggregateSkills --skill=conventional-git-messages | When drafting or materially updating a pull request title or body. | `/pr-and-merge` |
 | `/domain-modeling` | [mattpocock/skills](https://github.com/mattpocock/skills) | npx skills@latest add mattpocock/skills --skill=domain-modeling | Always | `/grill-duo-with-docs` |
-| `/grill-duo-with-docs` | [mattpocock/skills](https://github.com/mattpocock/skills) | npx skills@latest add mattpocock/skills --skill=grill-duo-with-docs | Always | `/spec-implement-loop` |
+| `/grill-duo-with-docs` | [EltonZhang777/AggregateSkills](https://github.com/EltonZhang777/AggregateSkills) | npx skills@latest add EltonZhang777/AggregateSkills --skill=grill-duo-with-docs | Always | `/requirements-to-spec-tickets`, `/spec-implement-loop` |
 | `/grill-duo` | [EltonZhang777/AggregateSkills](https://github.com/EltonZhang777/AggregateSkills) | npx skills@latest add EltonZhang777/AggregateSkills --skill=grill-duo | Always | `/grill-duo-with-docs` |
-| `/grill-with-docs` | [mattpocock/skills](https://github.com/mattpocock/skills) | npx skills@latest add mattpocock/skills --skill=grill-with-docs | Always | `/requirements-to-spec-tickets` |
 | `/grilling` | [mattpocock/skills](https://github.com/mattpocock/skills) | npx skills@latest add mattpocock/skills --skill=grilling | Always | `/grill-duo` |
 | `/implement` | [mattpocock/skills](https://github.com/mattpocock/skills) | npx skills@latest add mattpocock/skills --skill=implement | Always | `/spec-implement-loop` |
 | `/ponytail-review` | [DietrichGebert/ponytail](https://github.com/DietrichGebert/ponytail) | npx skills@latest add DietrichGebert/ponytail --skill=ponytail-review | Always | `/spec-implement-loop` |
 | `/resolving-merge-conflicts` | [mattpocock/skills](https://github.com/mattpocock/skills) | npx skills@latest add mattpocock/skills --skill=resolving-merge-conflicts | When resolving a conflict during an approved pull request merge. | `/pr-and-merge` |
 | `/setup-matt-pocock-skills` | [mattpocock/skills](https://github.com/mattpocock/skills) | npx skills@latest add mattpocock/skills --skill=setup-matt-pocock-skills | Always | `/requirements-to-spec-tickets`, `/spec-implement-loop` |
+| `/skill-scout` | [EltonZhang777/AggregateSkills](https://github.com/EltonZhang777/AggregateSkills) | npx skills@latest add EltonZhang777/AggregateSkills --skill=skill-scout | When a requested diagram requires skill discovery. | `/conventional-git-messages` |
 | `/tdd` | [mattpocock/skills](https://github.com/mattpocock/skills) | npx skills@latest add mattpocock/skills --skill=tdd | Always | `/spec-implement-loop` |
 | `/to-spec` | [mattpocock/skills](https://github.com/mattpocock/skills) | npx skills@latest add mattpocock/skills --skill=to-spec | Always | `/requirements-to-spec-tickets`, `/spec-implement-loop` |
 | `/to-tickets` | [mattpocock/skills](https://github.com/mattpocock/skills) | npx skills@latest add mattpocock/skills --skill=to-tickets | Always | `/requirements-to-spec-tickets`, `/spec-implement-loop` |
@@ -38,7 +38,8 @@ None currently.
 | GitHub CLI (gh) | [GitHub CLI (gh) project](https://cli.github.com/) | Install from https://cli.github.com/; Authenticate with `gh auth login`; for GitHub Enterprise, use `gh auth login --hostname <host>`. | Always | `/pr-and-merge` |
 | GitHub CLI (gh) | [GitHub CLI (gh) project](https://cli.github.com/) | Install from https://cli.github.com/; Authenticate with `gh auth login`; for GitHub Enterprise, use `gh auth login --hostname <host>`. | When checking GitHub remotes for pull requests, protection, or default-branch state. | `/prune-worktrees-and-branches` |
 | GitHub CLI (gh) | [GitHub CLI (gh) project](https://cli.github.com/) | Install from https://cli.github.com/; Authenticate with `gh auth login`; for GitHub Enterprise, use `gh auth login --hostname <host>`. | When using GitHub issue tracking. | `/requirements-to-spec-tickets`, `/spec-implement-loop` |
-| SkillRoute CLI | [SkillRoute CLI project](https://github.com/erichare/skillroute) | uv tool install skillroute; Prepare a local catalog using the SkillRoute documentation | When a prerequisite skill is absent from the available skill list or its exact source cannot be verified. | `/grill-duo`, `/grill-duo-with-docs`, `/pr-and-merge`, `/requirements-to-spec-tickets`, `/review-duo`, `/spec-implement-loop` |
+| Python 3.8+ interpreter | [Python 3.8+ interpreter project](https://www.python.org/) | Install Python 3.8 or later from https://www.python.org/downloads/ or use a host-provided Python 3.8+ interpreter; Make Python 3.8 or later available to run scripts/apply_candidate.py with its standard library | When applying a validated candidate. | `/compress-docs` |
+| SkillRoute CLI | [SkillRoute CLI project](https://github.com/erichare/skillroute) | uv tool install skillroute; Prepare a local catalog using the SkillRoute documentation | When a prerequisite skill is absent from the available skill list or its exact source cannot be verified. | `/conventional-git-messages`, `/grill-duo`, `/grill-duo-with-docs`, `/pr-and-merge`, `/requirements-to-spec-tickets`, `/review-duo`, `/spec-implement-loop` |
 | SkillRoute CLI | [SkillRoute CLI project](https://github.com/erichare/skillroute) | uv tool install skillroute; Prepare a local catalog using the SkillRoute documentation | When the user selects SkillRoute local-catalog mode for discovery or routing. | `/skill-scout` |
 <!-- prerequisite-list:end -->
 
@@ -50,7 +51,7 @@ This guide is an installation and reference index. Each skill's own instructions
 
 ## Runtime checks
 
-Use `/skill-scout` to check runtime prerequisites. If it reports a missing skill, tool, or local catalog, stop and follow the matching source and install instructions above. This guide does not inspect your environment, download, install, or index dependencies.
+Use `/skill-scout` to check skill prerequisites against the host inventory. Check whether command-line tools are available and authenticated using the host environment; if a required tool is unavailable, follow its install and setup instructions above. This guide does not inspect your environment, download, install, or index dependencies.
 
 ## Keep this guide current
 

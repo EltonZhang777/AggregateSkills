@@ -190,9 +190,17 @@ def dependency_rows(category):
     ]
 
 
+def render_table_cell(value):
+    value = value.replace("\\", "\\\\").replace("|", "\\|")
+    return value.replace("\r\n", "<br>").replace("\r", "<br>").replace("\n", "<br>")
+
+
 def render_table(headers, rows):
-    lines = ["| " + " | ".join(headers) + " |", "| " + " | ".join("---" for _ in headers) + " |"]
-    lines.extend("| " + " | ".join(row) + " |" for row in rows)
+    lines = [
+        "| " + " | ".join(render_table_cell(cell) for cell in headers) + " |",
+        "| " + " | ".join("---" for _ in headers) + " |",
+    ]
+    lines.extend("| " + " | ".join(render_table_cell(cell) for cell in row) + " |" for row in rows)
     return "\n".join(lines)
 
 
@@ -213,6 +221,12 @@ def render_prerequisite_list():
 
 class PrerequisiteGuideTests(unittest.TestCase):
     maxDiff = None
+
+    def test_render_table_escapes_pipes_and_newlines(self):
+        self.assertEqual(
+            render_table(("Name",), (("git status | findstr OK\r\nnext\nline\rlast",),)),
+            "| Name |\n| --- |\n| git status \\| findstr OK<br>next<br>line<br>last |",
+        )
 
     def test_one_of_guide_conditions_include_conditional_alternatives(self):
         entry = {
@@ -295,6 +309,8 @@ class PrerequisiteGuideTests(unittest.TestCase):
         self.assertIn(alternatives, guide)
         self.assertIn("When using GitHub issue tracking.", guide)
         self.assertIn("Publisher source not declared", guide)
+        self.assertIn("check skill prerequisites against the host inventory", guide.lower())
+        self.assertIn("check whether command-line tools are available and authenticated", guide.lower())
         self.assertIn("Always | " + MARKDOWN_TICK + "/pr-and-merge" + MARKDOWN_TICK, guide)
 
     def test_installed_skills_do_not_reference_the_prerequisite_guide(self):
@@ -548,13 +564,63 @@ class PrerequisiteGuideTests(unittest.TestCase):
             with self.subTest(skill=name):
                 self.assertEqual(len(resolver), 1)
 
+    def test_conventional_git_messages_declares_conditional_skill_scout(self):
+        path = ROOT / "skills" / "conventional-git-messages" / "SKILL.md"
+        _, prerequisites = read_prerequisites(path)
+        self.assertEqual(
+            prerequisites["skills"],
+            [{
+                "name": "skill-scout",
+                "source": "EltonZhang777/AggregateSkills",
+                "when": "When a requested diagram requires skill discovery.",
+            }],
+        )
+        skillroute = next(item for item in prerequisites["tools"] if item["name"] == "SkillRoute CLI")
+        self.assertEqual(
+            skillroute["when"],
+            "When a prerequisite skill is absent from the available skill list or its exact source cannot be verified.",
+        )
+        text = path.read_text(encoding="utf-8").lower()
+        self.assertIn("follow `/skill-scout`'s general-host flow", text)
+        self.assertIn("use its skillroute local-catalog mode only when the user selects it", text)
+        dependencies = text.split("## dependencies", 1)[1].split("\n## commit subject", 1)[0]
+        self.assertIn("the /skill-scout prerequisite is needed only when a requested diagram requires skill discovery", dependencies)
+        self.assertIn("the conditional skillroute cli tool is only for verifying that prerequisite's identity and source", dependencies)
+        self.assertNotIn("local-catalog", dependencies)
+
+    def test_compress_docs_declares_python_runtime_for_candidate_application(self):
+        path = ROOT / "skills" / "compress-docs" / "SKILL.md"
+        _, prerequisites = read_prerequisites(path)
+        self.assertEqual(
+            prerequisites["tools"],
+            [{
+                "name": "Python 3.8+ interpreter",
+                "source": "https://www.python.org/",
+                "install": "Install Python 3.8 or later from https://www.python.org/downloads/ or use a host-provided Python 3.8+ interpreter",
+                "setup": "Make Python 3.8 or later available to run scripts/apply_candidate.py with its standard library",
+                "when": "When applying a validated candidate.",
+            }],
+        )
+        text = path.read_text(encoding="utf-8").lower()
+        self.assertIn("## activation criteria & objective", text)
+        self.assertIn("python 3.8 or later's standard-library runtime is required only to run scripts/apply_candidate.py", text)
+
+    def test_grill_duo_retains_final_summary_fields(self):
+        text = (ROOT / "skills" / "grill-duo" / "SKILL.md").read_text(encoding="utf-8")
+        self.assertIn(
+            "summarize the goal, confirmed decisions, constraints, and material risks",
+            text,
+        )
+
     def test_requirements_workflow_declares_only_direct_skills(self):
         path = ROOT / "skills" / "requirements-to-spec-tickets" / "SKILL.md"
         _, prerequisites = read_prerequisites(path)
         self.assertEqual(
             {item["name"] for item in prerequisites["skills"]},
-            {"grill-with-docs", "to-spec", "to-tickets", "setup-matt-pocock-skills"},
+            {"grill-duo-with-docs", "to-spec", "to-tickets", "setup-matt-pocock-skills"},
         )
+        sources = {item["name"]: item["source"] for item in prerequisites["skills"]}
+        self.assertEqual(sources["grill-duo-with-docs"], "EltonZhang777/AggregateSkills")
 
     def test_spec_implement_loop_declares_only_direct_skills(self):
         path = ROOT / "skills" / "spec-implement-loop" / "SKILL.md"
@@ -574,7 +640,11 @@ class PrerequisiteGuideTests(unittest.TestCase):
                 "conventional-git-messages",
             },
         )
+        sources = {item["name"]: item["source"] for item in prerequisites["skills"] if "name" in item}
+        self.assertEqual(sources["grill-duo-with-docs"], "EltonZhang777/AggregateSkills")
         dependencies = path.read_text(encoding="utf-8").split("## Dependencies", 1)[1].split("\n## ", 1)[0]
+        self.assertIn("`EltonZhang777/AggregateSkills`: `/grill-duo-with-docs`", dependencies)
+        self.assertNotIn("`mattpocock/skills`: `/grill-duo-with-docs`", dependencies)
         self.assertNotIn("`/grilling`", dependencies)
         self.assertNotIn("`/domain-modeling`", dependencies)
         text = path.read_text(encoding="utf-8")
@@ -585,13 +655,20 @@ class PrerequisiteGuideTests(unittest.TestCase):
         path = ROOT / "skills" / "requirements-to-spec-tickets" / "SKILL.md"
         text = path.read_text(encoding="utf-8").lower()
         preflight = text.split("## 1. preflight", 1)[1].split("\n## 2.", 1)[0]
+        grouping = text.split("## 2. turn the request into groups", 1)[1].split("\n## 3.", 1)[0]
         child_protocol = text.split("## 4. child-session protocol", 1)[1].split("\n## 5.", 1)[0]
+        dependencies = text.split("## dependencies", 1)[1].split("\n## 1.", 1)[0]
         self.assertIn("read each direct skill's current `skill.md` immediately before the phase that uses it", preflight)
         self.assertIn("sources needed for the first active phase", preflight)
         self.assertIn("temporary lookup/read failure blocks only the phase that needs that source", preflight)
         self.assertNotIn("every declared skill source is readable", preflight)
-        self.assertIn("pause only the phase that needs it", child_protocol)
-        self.assertIn("report it as missing only after confirming it is absent, invalid, or permission-denied", child_protocol)
+        self.assertIn("explicit opt-in to the canonical `/grill-duo-with-docs`", grouping)
+        self.assertIn("a generic grouping approval does not authorize it", grouping)
+        self.assertIn("do not create a child session for a group whose opt-in is declined or unresolved", grouping)
+        self.assertIn("pause only the phase that needs that source", child_protocol)
+        self.assertIn("only a group whose approved grouping explicitly includes the opt-in may invoke `/grill-duo-with-docs`", child_protocol)
+        self.assertIn("for a group with explicit opt-in, run `/grill-duo-with-docs` first", child_protocol)
+        self.assertIn("source is confirmed absent, invalid, or permission-denied", dependencies)
 
     def test_readme_has_generic_install_command_and_guide_link(self):
         readme = (ROOT / "README.md").read_text(encoding="utf-8")

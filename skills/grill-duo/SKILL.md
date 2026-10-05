@@ -31,9 +31,8 @@ An unavailable reviewer is different from a missing dependency: only reviewer un
 
 Maintain the user's goal, confirmed decisions and constraints, the open questions, their dependencies, the reviewer handle, and the active `review_request_id` and `invocation_id`.
 
-- Follow the current `/grilling` skill's design-tree method. Ask every decision whose prerequisites are settled and that can be answered now. Defer questions that depend on an unresolved answer. There is no fixed question-count cap.
-- Give each question a stable ID such as Q1. Do not reuse an ID during the session. Keep an unanswered question's ID and wording when it remains unchanged. Do not add newly answerable questions to an open round; recompute the frontier after that round closes.
-- Research facts with available tools or agents instead of asking the user to supply facts they could not decide. Keep genuine preferences and trade-offs for the user.
+- Use `/grilling` for the design-tree method and current answerable frontier. Give each question an ID unique across the session; never reuse it. Keep its ID and wording while it remains unchanged.
+- Keep each round's frontier fixed. Defer newly answerable questions until the current round closes, then recompute the frontier.
 - Form the host's recommendation independently. Do not send it to the reviewer before the reviewer returns.
 
 ## Review each round
@@ -62,8 +61,6 @@ Use visible history for host continuity, but build the replacement request from 
 
 ## Present and continue
 
-After a valid review arrives, combine it with the host's independent analysis. Present all currently answerable questions together in one ordinary-text message. Do not use a harness or an agent question component. For every question, show its stable ID, meaningful options, the host's recommendation, and the reviewer's advice, rationale, risks, and relevant factual findings. State factual findings separately from value judgments and accurately describe any disagreement.
+After a valid review arrives, combine it with the host's independent analysis and present the current frontier together in ordinary text; do not use a harness or an agent question component. For each stable ID, show meaningful options, the host's recommendation, and the reviewer's advice, rationale, risks, and relevant factual findings. Separate facts from value judgments and describe disagreements accurately.
 
-Wait for the user's batch response. Close only answered, cancelled, or invalidated questions; keep unanswered questions and their IDs open for later rounds. After the current round closes, update confirmed decisions and constraints, recompute the tree, and review the next answerable frontier. Do not treat silence, a reviewer suggestion, or an assumption as the user's decision.
-
-When no decision remains open, summarize the goal, confirmed decisions, constraints, and material risks. Ask the user to confirm that shared understanding. Do not begin the user's underlying implementation until they confirm.
+After the user responds, close only answered, cancelled, or invalidated questions; keep unanswered IDs open. Follow `/grilling` for round closure and frontier refresh. When no decision remains, summarize the goal, confirmed decisions, constraints, and material risks, then ask for the user's final shared-understanding confirmation. Treat only the user's response as a decision. Do not begin the underlying implementation before the user confirms.

@@ -36,8 +36,6 @@ The host may update documentation as each item is confirmed; it need not wait fo
 3. Read its latest contents. Apply the confirmed information additively, preserving independent content and deduplicating exact repeats.
 4. If the new statement conflicts semantically with existing project knowledge, do not write it or silently choose a side. Show the existing and proposed meanings to the user and pause that documentation decision until it is resolved.
 
-Use CONTEXT.md only as a glossary; keep implementation decisions in the repository's appropriate authoritative documents. Follow the repository's convention for architecture, contract, or version decisions. Create or update an ADR only when the decision is hard to reverse, surprising without context, and a genuine trade-off; follow the repository's ADR format and routing.
-
 Keep unresolved questions, host assumptions, reviewer suggestions, and unverified facts out of project documents. The reviewer must not read or write project documents, choose a destination, or communicate with the user.
 
 When the frontier is empty, summarize the confirmed understanding and the documentation changes, then request the user's final confirmation. Do not begin the underlying implementation before confirmation.
