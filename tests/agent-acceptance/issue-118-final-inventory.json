@@ -1,0 +1,28 @@
+{
+  "file_count": 2,
+  "inventory_sha256": "73b34f584a80c5c5ea1061dbbdf05e7676f7806bb2a50d5ae2533f9f59568645",
+  "package_count": 1,
+  "packages": [
+    {
+      "entrypoint_present": true,
+      "files": [
+        {
+          "kind": "file",
+          "line_count": 75,
+          "path": "SKILL.md",
+          "sha256": "927122f34e97b4768bdae678a9b5771659461b0638378ffca6b57dd2ae573ba5",
+          "size_bytes": 10982
+        },
+        {
+          "kind": "file",
+          "line_count": 5,
+          "path": "agents/openai.yaml",
+          "sha256": "cea841fcc0302a8987cbb47a87c318444fc1efcc1a07cadae9890c695c4f9330",
+          "size_bytes": 160
+        }
+      ],
+      "name": "review-duo"
+    }
+  ],
+  "schema_version": 1
+}

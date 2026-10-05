@@ -1,0 +1,479 @@
+{
+  "errors": [],
+  "fixture_id": "generic-agent-skills-host-v1",
+  "inventory_sha256": "73b34f584a80c5c5ea1061dbbdf05e7676f7806bb2a50d5ae2533f9f59568645",
+  "overall_status": "pass",
+  "packages": [
+    {
+      "reviews": [
+        {
+          "criteria": [
+            {
+              "evidence": [
+                {
+                  "end_line": 3,
+                  "excerpt": "---\nname: review-duo\ndescription: Run `/code-review` in opt-in strict mode with one fixed scope, independent review axes, and evidence-based findings.",
+                  "path": "SKILL.md",
+                  "start_line": 1
+                },
+                {
+                  "end_line": 18,
+                  "excerpt": "## Review workflow\n\n1. Fix one review scope and pin its requirement and repository-standard sources. Resolve `/code-review` by the Dependencies rules below.\n2. Run `/code-review` once with two independent reviewers on the same frozen diff and sources: Standards and Quality, and Spec Conformance. If two reviewers cannot be started, use the availability gate below. That approved fallback is a separate single-agent degradation, not the strict dual-review path.\n3. Verify both reports cover the same inputs, synthesize their results, and present findings under their separate axes without merging or reordering them.",
+                  "path": "SKILL.md",
+                  "start_line": 14
+                },
+                {
+                  "end_line": 5,
+                  "excerpt": "interface:\n  display_name: \"Review Duo\"\n  short_description: \"Run /code-review with strict dual-agent guarantees\"\npolicy:\n  allow_implicit_invocation: false",
+                  "path": "agents/openai.yaml",
+                  "start_line": 1
+                }
+              ],
+              "findings": [],
+              "id": "entrypoint_and_format",
+              "status": "pass"
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 5,
+                  "excerpt": "  prerequisites: '{\"skills\":[{\"name\":\"code-review\",\"source\":\"mattpocock/skills\"}],\"mcps\":[],\"tools\":[{\"name\":\"Git CLI\",\"source\":\"https://git-scm.com/\",\"install\":\"Install Git from https://git-scm.com/downloads\",\"setup\":\"Make `git` available in a command shell at the intended repository.\",\"when\":\"When reviewing a Git range or capturing a repository worktree diff.\"},{\"name\":\"SkillRoute CLI\",\"source\":\"https://github.com/erichare/skillroute\",\"install\":\"uv tool install skillroute\",\"setup\":\"Prepare a local catalog using the SkillRoute documentation\",\"when\":\"When a prerequisite skill is absent from the available skill list or its exact source cannot be verified.\"}]}'",
+                  "path": "SKILL.md",
+                  "start_line": 5
+                },
+                {
+                  "end_line": 22,
+                  "excerpt": "Resolve `/code-review` by exact identity (declared name and source). If no exact name-and-source match appears in the available skill list because the skill is absent or a same-name candidate has a missing, ambiguous, or mismatched source, use the conditional SkillRoute CLI dependency in metadata to verify its identity and source, then read the full original `SKILL.md` from the active skill roots regardless of invocation metadata; reading is read-only and does not invoke it.",
+                  "path": "SKILL.md",
+                  "start_line": 22
+                },
+                {
+                  "end_line": 24,
+                  "excerpt": "Git CLI from `https://git-scm.com/` is required only for Git-range reviews and repository worktree diff snapshots. If unavailable, ask for explicit approval before installing it from `https://git-scm.com/downloads`; without approval, keep that review input unresolved and pause it. A supplied patch can be reviewed without Git.",
+                  "path": "SKILL.md",
+                  "start_line": 24
+                }
+              ],
+              "findings": [],
+              "id": "resource_closure",
+              "status": "pass"
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 18,
+                  "excerpt": "1. Fix one review scope and pin its requirement and repository-standard sources. Resolve `/code-review` by the Dependencies rules below.\n2. Run `/code-review` once with two independent reviewers on the same frozen diff and sources: Standards and Quality, and Spec Conformance. If two reviewers cannot be started, use the availability gate below. That approved fallback is a separate single-agent degradation, not the strict dual-review path.\n3. Verify both reports cover the same inputs, synthesize their results, and present findings under their separate axes without merging or reordering them.",
+                  "path": "SKILL.md",
+                  "start_line": 16
+                },
+                {
+                  "end_line": 22,
+                  "excerpt": "Resolve `/code-review` by exact identity (declared name and source).",
+                  "path": "SKILL.md",
+                  "start_line": 22
+                }
+              ],
+              "findings": [],
+              "id": "references_and_cycles",
+              "status": "pass"
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 3,
+                  "excerpt": "---\nname: review-duo\ndescription: Run `/code-review` in opt-in strict mode with one fixed scope, independent review axes, and evidence-based findings.",
+                  "path": "SKILL.md",
+                  "start_line": 1
+                },
+                {
+                  "end_line": 5,
+                  "excerpt": "interface:\n  display_name: \"Review Duo\"\n  short_description: \"Run /code-review with strict dual-agent guarantees\"\npolicy:\n  allow_implicit_invocation: false",
+                  "path": "agents/openai.yaml",
+                  "start_line": 1
+                }
+              ],
+              "findings": [],
+              "id": "all_files_classified",
+              "status": "pass"
+            }
+          ],
+          "file_coverage": [
+            {
+              "classification": "skill_entrypoint",
+              "disposition": "reviewed",
+              "evidence": [
+                {
+                  "end_line": 3,
+                  "excerpt": "---\nname: review-duo\ndescription: Run `/code-review` in opt-in strict mode with one fixed scope, independent review axes, and evidence-based findings.",
+                  "path": "SKILL.md",
+                  "start_line": 1
+                }
+              ],
+              "path": "SKILL.md"
+            },
+            {
+              "classification": "host_agent_configuration",
+              "disposition": "reviewed",
+              "evidence": [
+                {
+                  "end_line": 5,
+                  "excerpt": "interface:\n  display_name: \"Review Duo\"\n  short_description: \"Run /code-review with strict dual-agent guarantees\"\npolicy:\n  allow_implicit_invocation: false",
+                  "path": "agents/openai.yaml",
+                  "start_line": 1
+                }
+              ],
+              "path": "agents/openai.yaml"
+            }
+          ],
+          "fixture_id": "generic-agent-skills-host-v1",
+          "inventory_sha256": "73b34f584a80c5c5ea1061dbbdf05e7676f7806bb2a50d5ae2533f9f59568645",
+          "overall_status": "pass",
+          "required_capabilities": [
+            {
+              "evidence": [
+                {
+                  "end_line": 5,
+                  "excerpt": "{\"name\":\"code-review\",\"source\":\"mattpocock/skills\"}",
+                  "path": "SKILL.md",
+                  "start_line": 5
+                },
+                {
+                  "end_line": 22,
+                  "excerpt": "Resolve `/code-review` by exact identity (declared name and source).",
+                  "path": "SKILL.md",
+                  "start_line": 22
+                }
+              ],
+              "name": "Exact `/code-review` prerequisite",
+              "scope": "core",
+              "unavailable_behavior": "Resolve by exact declared name and source. If unresolved, report the dependency and block only work that requires it; preserve its invocation gates."
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 17,
+                  "excerpt": "If two reviewers cannot be started, use the availability gate below. That approved fallback is a separate single-agent degradation, not the strict dual-review path.",
+                  "path": "SKILL.md",
+                  "start_line": 17
+                },
+                {
+                  "end_line": 45,
+                  "excerpt": "Before review, if the host cannot start two independent agents or pass identical fixed inputs, set the overall status to blocked and pause before reviewing. If either agent cannot read or verify the shared scope, set the overall status to blocked, preserve any completed axis results, and pause. Ask the user to retry on a host that supports parallel agents or explicitly approve single-agent degradation. Never simulate a second reviewer. Proceed with one agent only after approval, label the mode single-agent degradation, keep axes separate, and disclose the loss of independence.",
+                  "path": "SKILL.md",
+                  "start_line": 45
+                }
+              ],
+              "name": "Two independent reviewers",
+              "scope": "core",
+              "unavailable_behavior": "Pause for explicit approval; after approval, use one reviewer, label single-agent degradation, keep axes separate, and disclose the loss of independence."
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 5,
+                  "excerpt": "{\"name\":\"Git CLI\",\"source\":\"https://git-scm.com/\",\"install\":\"Install Git from https://git-scm.com/downloads\",\"setup\":\"Make `git` available in a command shell at the intended repository.\",\"when\":\"When reviewing a Git range or capturing a repository worktree diff.\"}",
+                  "path": "SKILL.md",
+                  "start_line": 5
+                },
+                {
+                  "end_line": 24,
+                  "excerpt": "Git CLI from `https://git-scm.com/` is required only for Git-range reviews and repository worktree diff snapshots. If unavailable, ask for explicit approval before installing it from `https://git-scm.com/downloads`; without approval, keep that review input unresolved and pause it. A supplied patch can be reviewed without Git.",
+                  "path": "SKILL.md",
+                  "start_line": 24
+                }
+              ],
+              "name": "Git CLI",
+              "scope": "optional",
+              "unavailable_behavior": "Pause a Git-based review input; a supplied patch can use the documented Git-free path. Installation requires explicit approval."
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 5,
+                  "excerpt": "{\"name\":\"SkillRoute CLI\",\"source\":\"https://github.com/erichare/skillroute\",\"install\":\"uv tool install skillroute\",\"setup\":\"Prepare a local catalog using the SkillRoute documentation\",\"when\":\"When a prerequisite skill is absent from the available skill list or its exact source cannot be verified.\"}",
+                  "path": "SKILL.md",
+                  "start_line": 5
+                },
+                {
+                  "end_line": 22,
+                  "excerpt": "If SkillRoute CLI, its catalog, or a required lookup/read operation is unavailable, fails, or returns an unusable result, record the affected dependency as unresolved and report it; do not guess, substitute, or invoke it. Block only work that requires the affected source and continue only independent work.",
+                  "path": "SKILL.md",
+                  "start_line": 22
+                }
+              ],
+              "name": "SkillRoute CLI",
+              "scope": "optional",
+              "unavailable_behavior": "Needed only if the available skill list lacks an exact declared-name-and-source match; an exact match completes this resolution without SkillRoute. If fallback lookup is unavailable or fails, record the prerequisite as unresolved and block only dependent work without guessing or substituting."
+            }
+          ],
+          "reviewer_id": "r8-completeness",
+          "reviewer_role": "completeness",
+          "schema_version": 1,
+          "skill_name": "review-duo"
+        },
+        {
+          "criteria": [
+            {
+              "evidence": [
+                {
+                  "end_line": 18,
+                  "excerpt": "## Review workflow\n\n1. Fix one review scope and pin its requirement and repository-standard sources. Resolve `/code-review` by the Dependencies rules below.\n2. Run `/code-review` once with two independent reviewers on the same frozen diff and sources: Standards and Quality, and Spec Conformance. If two reviewers cannot be started, use the availability gate below. That approved fallback is a separate single-agent degradation, not the strict dual-review path.\n3. Verify both reports cover the same inputs, synthesize their results, and present findings under their separate axes without merging or reordering them.",
+                  "path": "SKILL.md",
+                  "start_line": 14
+                },
+                {
+                  "end_line": 33,
+                  "excerpt": "Use `/code-review`'s fixed-point flow for Git reviews. For a supplied patch or uncommitted work, replace the moving-ref input with one immutable patch snapshot and pass that exact diff to the same two agents. Give both agents the same pinned inputs:\n\n- For Git reviews, resolve and record the full base, merge-base, and head commit SHAs once. Capture one patch snapshot from that immutable range, and record its SHA-256, exact byte size, and included paths.\n- For a supplied patch or uncommitted work, capture one content-addressed patch snapshot, including the intended staged, unstaged, and new files.",
+                  "path": "SKILL.md",
+                  "start_line": 30
+                }
+              ],
+              "findings": [],
+              "id": "generic_workflow_primary",
+              "status": "pass"
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 12,
+                  "excerpt": "Use this skill only when the user explicitly requests `/review-duo` or strict `/code-review`. It adds a strict contract to the existing `/code-review` workflow; it is not a second review implementation.",
+                  "path": "SKILL.md",
+                  "start_line": 12
+                },
+                {
+                  "end_line": 26,
+                  "excerpt": "Keep the `/code-review` workflow and its two-agent topology. Pass the strict scope and axis instructions below to those two agents in that one run. Do not start another review pair or nest a second `/code-review` run.",
+                  "path": "SKILL.md",
+                  "start_line": 26
+                },
+                {
+                  "end_line": 5,
+                  "excerpt": "  short_description: \"Run /code-review with strict dual-agent guarantees\"\npolicy:\n  allow_implicit_invocation: false",
+                  "path": "agents/openai.yaml",
+                  "start_line": 3
+                }
+              ],
+              "findings": [],
+              "id": "harness_independence",
+              "status": "pass"
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 22,
+                  "excerpt": "Resolve `/code-review` by exact identity (declared name and source).",
+                  "path": "SKILL.md",
+                  "start_line": 22
+                },
+                {
+                  "end_line": 22,
+                  "excerpt": "If no exact name-and-source match appears in the available skill list because the skill is absent or a same-name candidate has a missing, ambiguous, or mismatched source, use the conditional SkillRoute CLI dependency in metadata to verify its identity and source",
+                  "path": "SKILL.md",
+                  "start_line": 22
+                },
+                {
+                  "end_line": 22,
+                  "excerpt": "Before invoking `/code-review`, follow its invocation metadata and preserve its user-confirmation, authorization, and clarification gates.",
+                  "path": "SKILL.md",
+                  "start_line": 22
+                },
+                {
+                  "end_line": 22,
+                  "excerpt": "If SkillRoute CLI, its catalog, or a required lookup/read operation is unavailable, fails, or returns an unusable result, record the affected dependency as unresolved and report it; do not guess, substitute, or invoke it.",
+                  "path": "SKILL.md",
+                  "start_line": 22
+                },
+                {
+                  "end_line": 24,
+                  "excerpt": "Git CLI from `https://git-scm.com/` is required only for Git-range reviews and repository worktree diff snapshots. If unavailable, ask for explicit approval before installing it from `https://git-scm.com/downloads`; without approval, keep that review input unresolved and pause it. A supplied patch can be reviewed without Git.",
+                  "path": "SKILL.md",
+                  "start_line": 24
+                },
+                {
+                  "end_line": 45,
+                  "excerpt": "Ask the user to retry on a host that supports parallel agents or explicitly approve single-agent degradation. Never simulate a second reviewer. Proceed with one agent only after approval, label the mode single-agent degradation, keep axes separate, and disclose the loss of independence.",
+                  "path": "SKILL.md",
+                  "start_line": 45
+                }
+              ],
+              "findings": [],
+              "id": "capabilities_and_unavailable_behavior",
+              "status": "pass"
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 5,
+                  "excerpt": "{\"name\":\"code-review\",\"source\":\"mattpocock/skills\"}",
+                  "path": "SKILL.md",
+                  "start_line": 5
+                },
+                {
+                  "end_line": 5,
+                  "excerpt": "{\"name\":\"Git CLI\",\"source\":\"https://git-scm.com/\",\"install\":\"Install Git from https://git-scm.com/downloads\",\"setup\":\"Make `git` available in a command shell at the intended repository.\",\"when\":\"When reviewing a Git range or capturing a repository worktree diff.\"}",
+                  "path": "SKILL.md",
+                  "start_line": 5
+                },
+                {
+                  "end_line": 5,
+                  "excerpt": "{\"name\":\"SkillRoute CLI\",\"source\":\"https://github.com/erichare/skillroute\",\"install\":\"uv tool install skillroute\",\"setup\":\"Prepare a local catalog using the SkillRoute documentation\",\"when\":\"When a prerequisite skill is absent from the available skill list or its exact source cannot be verified.\"}",
+                  "path": "SKILL.md",
+                  "start_line": 5
+                },
+                {
+                  "end_line": 12,
+                  "excerpt": "Use this skill only when the user explicitly requests `/review-duo` or strict `/code-review`.",
+                  "path": "SKILL.md",
+                  "start_line": 12
+                },
+                {
+                  "end_line": 22,
+                  "excerpt": "If no exact name-and-source match appears in the available skill list because the skill is absent or a same-name candidate has a missing, ambiguous, or mismatched source, use the conditional SkillRoute CLI dependency in metadata to verify its identity and source",
+                  "path": "SKILL.md",
+                  "start_line": 22
+                },
+                {
+                  "end_line": 24,
+                  "excerpt": "Git CLI from `https://git-scm.com/` is required only for Git-range reviews and repository worktree diff snapshots. If unavailable, ask for explicit approval before installing it from `https://git-scm.com/downloads`; without approval, keep that review input unresolved and pause it. A supplied patch can be reviewed without Git.",
+                  "path": "SKILL.md",
+                  "start_line": 24
+                }
+              ],
+              "findings": [],
+              "id": "external_requirements",
+              "status": "pass"
+            }
+          ],
+          "file_coverage": [
+            {
+              "classification": "skill instructions and prerequisite metadata",
+              "disposition": "reviewed",
+              "evidence": [
+                {
+                  "end_line": 18,
+                  "excerpt": "## Review workflow\n\n1. Fix one review scope and pin its requirement and repository-standard sources. Resolve `/code-review` by the Dependencies rules below.\n2. Run `/code-review` once with two independent reviewers on the same frozen diff and sources: Standards and Quality, and Spec Conformance. If two reviewers cannot be started, use the availability gate below. That approved fallback is a separate single-agent degradation, not the strict dual-review path.\n3. Verify both reports cover the same inputs, synthesize their results, and present findings under their separate axes without merging or reordering them.",
+                  "path": "SKILL.md",
+                  "start_line": 14
+                },
+                {
+                  "end_line": 5,
+                  "excerpt": "{\"name\":\"code-review\",\"source\":\"mattpocock/skills\"}",
+                  "path": "SKILL.md",
+                  "start_line": 5
+                },
+                {
+                  "end_line": 5,
+                  "excerpt": "{\"name\":\"Git CLI\",\"source\":\"https://git-scm.com/\",\"install\":\"Install Git from https://git-scm.com/downloads\",\"setup\":\"Make `git` available in a command shell at the intended repository.\",\"when\":\"When reviewing a Git range or capturing a repository worktree diff.\"}",
+                  "path": "SKILL.md",
+                  "start_line": 5
+                },
+                {
+                  "end_line": 5,
+                  "excerpt": "{\"name\":\"SkillRoute CLI\",\"source\":\"https://github.com/erichare/skillroute\",\"install\":\"uv tool install skillroute\",\"setup\":\"Prepare a local catalog using the SkillRoute documentation\",\"when\":\"When a prerequisite skill is absent from the available skill list or its exact source cannot be verified.\"}",
+                  "path": "SKILL.md",
+                  "start_line": 5
+                }
+              ],
+              "path": "SKILL.md"
+            },
+            {
+              "classification": "agent invocation metadata",
+              "disposition": "reviewed",
+              "evidence": [
+                {
+                  "end_line": 5,
+                  "excerpt": "interface:\n  display_name: \"Review Duo\"\n  short_description: \"Run /code-review with strict dual-agent guarantees\"\npolicy:\n  allow_implicit_invocation: false",
+                  "path": "agents/openai.yaml",
+                  "start_line": 1
+                }
+              ],
+              "path": "agents/openai.yaml"
+            }
+          ],
+          "fixture_id": "generic-agent-skills-host-v1",
+          "inventory_sha256": "73b34f584a80c5c5ea1061dbbdf05e7676f7806bb2a50d5ae2533f9f59568645",
+          "overall_status": "pass",
+          "required_capabilities": [
+            {
+              "evidence": [
+                {
+                  "end_line": 5,
+                  "excerpt": "{\"name\":\"code-review\",\"source\":\"mattpocock/skills\"}",
+                  "path": "SKILL.md",
+                  "start_line": 5
+                },
+                {
+                  "end_line": 22,
+                  "excerpt": "Resolve `/code-review` by exact identity (declared name and source).",
+                  "path": "SKILL.md",
+                  "start_line": 22
+                }
+              ],
+              "name": "/code-review skill from mattpocock/skills",
+              "scope": "core",
+              "unavailable_behavior": "Resolve exact name and source and preserve invocation gates. If unresolved, report the dependency and block dependent work; stop if confirmed absent, invalid, or permission-denied. Do not substitute or vendor a fallback."
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 5,
+                  "excerpt": "{\"name\":\"SkillRoute CLI\",\"source\":\"https://github.com/erichare/skillroute\",\"install\":\"uv tool install skillroute\",\"setup\":\"Prepare a local catalog using the SkillRoute documentation\",\"when\":\"When a prerequisite skill is absent from the available skill list or its exact source cannot be verified.\"}",
+                  "path": "SKILL.md",
+                  "start_line": 5
+                },
+                {
+                  "end_line": 22,
+                  "excerpt": "If SkillRoute CLI, its catalog, or a required lookup/read operation is unavailable, fails, or returns an unusable result, record the affected dependency as unresolved and report it; do not guess, substitute, or invoke it.",
+                  "path": "SKILL.md",
+                  "start_line": 22
+                }
+              ],
+              "name": "SkillRoute CLI for prerequisite source resolution",
+              "scope": "optional",
+              "unavailable_behavior": "If an exact declared name-and-source match is available, resolve /code-review without SkillRoute CLI. Only when no exact match or source verification is unavailable is the resolver condition triggered; if the CLI, catalog, or lookup/read then fails or is unusable, report the prerequisite unresolved and block dependent work. Do not guess or substitute."
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 5,
+                  "excerpt": "{\"name\":\"Git CLI\",\"source\":\"https://git-scm.com/\",\"install\":\"Install Git from https://git-scm.com/downloads\",\"setup\":\"Make `git` available in a command shell at the intended repository.\",\"when\":\"When reviewing a Git range or capturing a repository worktree diff.\"}",
+                  "path": "SKILL.md",
+                  "start_line": 5
+                },
+                {
+                  "end_line": 24,
+                  "excerpt": "Git CLI from `https://git-scm.com/` is required only for Git-range reviews and repository worktree diff snapshots. If unavailable, ask for explicit approval before installing it from `https://git-scm.com/downloads`; without approval, keep that review input unresolved and pause it. A supplied patch can be reviewed without Git.",
+                  "path": "SKILL.md",
+                  "start_line": 24
+                }
+              ],
+              "name": "Git CLI for Git-range and worktree-diff inputs",
+              "scope": "optional",
+              "unavailable_behavior": "For Git-range reviews or worktree diff snapshots, request explicit approval before installation; without approval leave that input unresolved and pause. A supplied patch can be reviewed without Git."
+            },
+            {
+              "evidence": [
+                {
+                  "end_line": 45,
+                  "excerpt": "Before review, if the host cannot start two independent agents or pass identical fixed inputs, set the overall status to blocked and pause before reviewing. If either agent cannot read or verify the shared scope, set the overall status to blocked, preserve any completed axis results, and pause. Ask the user to retry on a host that supports parallel agents or explicitly approve single-agent degradation. Never simulate a second reviewer. Proceed with one agent only after approval, label the mode single-agent degradation, keep axes separate, and disclose the loss of independence.",
+                  "path": "SKILL.md",
+                  "start_line": 45
+                }
+              ],
+              "name": "Host support for two independent reviewers with identical fixed inputs",
+              "scope": "core",
+              "unavailable_behavior": "For the strict dual-review outcome, block and pause when two independent reviewers or identical fixed inputs are unavailable. A single-agent run is a different, degraded outcome; proceed only after explicit user approval, label it single-agent degradation, keep axes separate, and disclose the loss of independence."
+            }
+          ],
+          "reviewer_id": "workflow_portability_r8",
+          "reviewer_role": "workflow_portability",
+          "schema_version": 1,
+          "skill_name": "review-duo"
+        }
+      ],
+      "skill_name": "review-duo",
+      "status": "pass"
+    }
+  ],
+  "schema_version": 1
+}
