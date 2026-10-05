@@ -19,7 +19,7 @@ No skill prerequisites are declared. General-host discovery uses the skill inven
 
 - Start with an installed-skill inventory exposed by the host or supplied by the caller.
 - Treat an inventory as complete only when its source identifies it as covering all installed skills. A partial inventory never proves a skill is absent.
-- If exhaustive discovery is needed but the inventory is partial, return `Unavailable` and request a complete inventory or the user's choice to use SkillRoute local-catalog mode.
+- If exhaustive discovery is needed but neither the host nor caller provides a complete inventory, return `Unavailable` and request a complete inventory or the user's choice to use SkillRoute local-catalog mode. Treat skill absence as unknown.
 - Use only the inventory provided for this mode. Do not scan the filesystem, search the web, or use a copied skill body to fill gaps.
 
 ## SkillRoute local-catalog mode
@@ -64,7 +64,7 @@ When no skill is named:
 2. Search or route each step against the selected inventory using its purpose, trigger, and repository context. Use SkillRoute `route` only in local-catalog mode.
 3. Select a candidate only when exactly one result clearly fits and is available. A ranked list with multiple plausible matches is not unique.
 4. If prerequisite metadata is missing from the inventory, read the selected skill's exact source. Resolve each declared prerequisite by exact name and source; deduplicate selections and preserve prerequisite-before-consumer order.
-5. Return `Unavailable` when a partial inventory prevents exhaustive routing. If routing needs clarification, has competing candidates, or finds no candidate in a complete inventory, ask rather than guess.
+5. If routing needs clarification, has competing candidates, or finds no candidate in a complete inventory, ask rather than guess.
 6. Return the plan before crossing a user-confirmation or external-write gate.
 
 Invocation metadata controls who may invoke a skill; it does not block read-only access to its `SKILL.md`. When a workflow needs a prerequisite's source, read the original file regardless of its model-invocation metadata. Preserve that skill's user-only invocation, confirmation, and authorization gates before invoking it or taking action. If a selected workflow adds an unapproved side effect or needs additional permission, return `User decision required`. `/skill-scout` reports a plan; it does not invoke selected workflows or perform their actions.

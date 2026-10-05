@@ -1,0 +1,28 @@
+{
+  "file_count": 2,
+  "inventory_sha256": "5c6c737ad0f03934d0ab6420530c3904aa79a37f312038ea226e232a9c420aa2",
+  "package_count": 1,
+  "packages": [
+    {
+      "entrypoint_present": true,
+      "files": [
+        {
+          "kind": "file",
+          "line_count": 91,
+          "path": "SKILL.md",
+          "sha256": "0a3582200591b5a802b8933b50115af998b3e26bf521fdbabc53f8b440ba8ee5",
+          "size_bytes": 7705
+        },
+        {
+          "kind": "file",
+          "line_count": 6,
+          "path": "agents/openai.yaml",
+          "sha256": "1577c20622f2520b8c748220742725c14ac11b15f3cc65f80a4bd9534e61932e",
+          "size_bytes": 249
+        }
+      ],
+      "name": "skill-scout"
+    }
+  ],
+  "schema_version": 1
+}
