@@ -42,6 +42,8 @@ If the CLI, local backend, or catalog is unavailable, return `Unavailable` and n
 
 ## Source and selection safety
 
+After a candidate is selected, if the host cannot read its exact required source or a declared prerequisite source, the read fails, or source evidence does not establish the selected skill or prerequisite identity, return `Unresolved prerequisite`. Identify the exact source and failed read or evidence check, and state what must become available or be verified to resume. Do not infer absence, silently substitute another source or fallback, or report discovery as complete.
+
 ### Resolve an explicitly named skill
 
 When the user or calling skill names a skill:
@@ -52,7 +54,7 @@ When the user or calling skill names a skill:
 
 Treat a supplied source as part of the identity; a same-name entry from another source is not a match. If no source is supplied, select by exact name only when one inventory entry matches. If multiple entries match, return `User decision required`, show each candidate and its declared or undeclared source, and ask which to use. Do not choose by inventory order or rank.
 
-Never silently replace an explicitly named skill. If a complete inventory does not contain it, return `Missing prerequisite`, show the evidence and any source hint, and list alternatives only as suggestions. If the inventory is partial, return `Unavailable`; absence cannot be confirmed. A source hint alone does not prove absence. If reading a required source fails temporarily or evidence is inconclusive, return `Unresolved prerequisite` with the failed check and recovery condition. If the skill exists but does not fit, return `User decision required` and explain the mismatch. Replacing or combining it requires the user's decision.
+Never silently replace an explicitly named skill. If a complete inventory does not contain it, return `Missing prerequisite`, show the evidence and any source hint, and list alternatives only as suggestions. If the inventory is partial, return `Unavailable`; absence cannot be confirmed. A source hint alone does not prove absence. If the skill exists but does not fit, return `User decision required` and explain the mismatch. Replacing or combining it requires the user's decision.
 
 ### Resolve an unstated skill
 
