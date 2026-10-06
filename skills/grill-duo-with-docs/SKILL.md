@@ -2,12 +2,14 @@
 name: grill-duo-with-docs
 description: "Use when the user explicitly requests two-agent grilling that must maintain confirmed domain language or project decisions. Use `/grill-duo` alone when project-document maintenance is not needed."
 metadata:
-  prerequisites: '{"skills":[{"name":"grill-duo","source":"EltonZhang777/AggregateSkills"},{"name":"domain-modeling","source":"mattpocock/skills"}],"mcps":[],"tools":[{"name":"SkillRoute CLI","source":"https://github.com/erichare/skillroute","install":"uv tool install skillroute","setup":"Prepare a local catalog using the SkillRoute documentation","when":"When a prerequisite skill is absent from the available skill list or its exact source cannot be verified."}]}'
+  prerequisites: '{"skills":[{"name":"grill-duo","source":"EltonZhang777/AggregateSkills","source_url":"https://github.com/EltonZhang777/AggregateSkills/tree/9fff1921337c513baefe67a938320f2a1a2b5b98/skills/grill-duo","install":"npx skills@latest add https://github.com/EltonZhang777/AggregateSkills/tree/9fff1921337c513baefe67a938320f2a1a2b5b98/skills/grill-duo"},{"name":"domain-modeling","source":"mattpocock/skills","source_url":"https://github.com/mattpocock/skills/tree/4588b32ecab9ecc9fc8cc6b6c5e7d675b6004b0d/skills/engineering/domain-modeling","install":"npx skills@latest add https://github.com/mattpocock/skills/tree/4588b32ecab9ecc9fc8cc6b6c5e7d675b6004b0d/skills/engineering/domain-modeling"}],"mcps":[],"tools":[{"name":"SkillRoute CLI","source":"https://github.com/erichare/skillroute","install":"uv tool install skillroute","setup":"Prepare a local catalog using the SkillRoute documentation","when":"When a prerequisite skill is absent from the available skill list or its exact source cannot be verified."}]}'
 ---
 
 # /grill-duo-with-docs
 
 Use the portable `/grill-duo` protocol with repository-aware documentation maintenance. The host remains the only user-facing agent and the only project-document writer.
+
+Ordinary flow: the host and independent reviewer work through `/grill-duo` rounds with the user; as terms and decisions are confirmed, the host updates the target repository's routed documents and presents the shared understanding for final confirmation.
 
 ## Activation Criteria & Objective
 
@@ -15,7 +17,9 @@ Use this entrypoint when the user explicitly wants a grilling session that recor
 
 ## Host capability
 
-Use the host's independent subagent capability to run the reviewer required by `/grill-duo`. If the host cannot start or recover that reviewer, follow `/grill-duo`'s solo fallback: disclose unavailability, continue the grilling protocol without claiming independent review, and preserve the user's review gates.
+The ordinary two-agent outcome requires an independent reviewer to assess each round. Use the host's independent subagent capability to run that reviewer.
+
+If the host cannot start or recover the reviewer, follow `/grill-duo`'s solo fallback: disclose unavailability, continue the grilling protocol without claiming independent review, and preserve the user's review gates.
 
 ## Dependencies
 
