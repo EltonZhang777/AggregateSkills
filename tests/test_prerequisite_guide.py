@@ -47,9 +47,12 @@ PINNED_SOURCE_REVISIONS = {
     "EltonZhang777/AggregateSkills": "2f1fac4afa920c71bcf15866dbb9fd8704e7371a",
 }
 PINNED_CODEBASE_DESIGN_URL = "https://github.com/mattpocock/skills/tree/6fd947921b935b7e1e69293a200400f0fdd5c15f/skills/engineering/codebase-design"
+PINNED_SKILL_SCOUT_URL = "https://github.com/EltonZhang777/AggregateSkills/tree/2f1fac4afa920c71bcf15866dbb9fd8704e7371a/skills/skill-scout"
 PINNED_SOURCE_URL_OVERRIDES = {("codebase-design", "mattpocock/skills"): PINNED_CODEBASE_DESIGN_URL}
 PINNED_SOURCE_REVISION_OVERRIDES = {
     ("grill-duo", "EltonZhang777/AggregateSkills"): "9fff1921337c513baefe67a938320f2a1a2b5b98",
+    ("conventional-git-messages", "EltonZhang777/AggregateSkills"): "9fff1921337c513baefe67a938320f2a1a2b5b98",
+    ("grill-duo-with-docs", "EltonZhang777/AggregateSkills"): "1970ebd7b628ddc883b9e63c6256d2814c68206d",
 }
 PINNED_SOURCE_PATHS = {
     ("grilling", "mattpocock/skills"): "skills/productivity/grilling",
@@ -454,6 +457,32 @@ class PrerequisiteGuideTests(unittest.TestCase):
                     seen.add(identity)
         self.assertEqual(seen, set(PINNED_SOURCE_PATHS))
 
+    def test_audited_local_prerequisite_closure_is_pinned_and_acyclic(self):
+        aggregate = "EltonZhang777/AggregateSkills"
+        visiting, visited = [], set()
+
+        def visit(skill_name):
+            if skill_name in visiting:
+                self.fail("Local prerequisite cycle: " + " -> ".join([*visiting, skill_name]))
+            if skill_name in visited:
+                return
+            visiting.append(skill_name)
+            _, prerequisites = read_prerequisites(ROOT / "skills" / skill_name / "SKILL.md")
+            for entry in prerequisites["skills"]:
+                for member in dependency_members(entry):
+                    identity = prerequisite_identity(member)
+                    if identity[1] != aggregate:
+                        continue
+                    expected = PINNED_SKILL_SCOUT_URL if identity[0] == "skill-scout" else pinned_source_url(identity)
+                    self.assertEqual(member.get("source_url"), expected, (skill_name, identity))
+                    self.assertEqual(member.get("install"), f"npx skills@latest add {expected}", (skill_name, identity))
+                    visit(identity[0])
+            visiting.pop()
+            visited.add(skill_name)
+
+        for skill_name in AUDITED_PACKAGES:
+            visit(skill_name)
+
     def test_spec_implement_loop_pins_conditional_codebase_design_reference(self):
         _, prerequisites = read_prerequisites(ROOT / "skills/spec-implement-loop/SKILL.md")
         references = [
@@ -757,15 +786,14 @@ class PrerequisiteGuideTests(unittest.TestCase):
     def test_conventional_git_messages_declares_conditional_skill_scout(self):
         path = ROOT / "skills" / "conventional-git-messages" / "SKILL.md"
         _, prerequisites = read_prerequisites(path)
-        skill_scout_url = "https://github.com/EltonZhang777/AggregateSkills/tree/2f1fac4afa920c71bcf15866dbb9fd8704e7371a/skills/skill-scout"
         self.assertEqual(
             prerequisites["skills"],
             [{
                 "name": "skill-scout",
                 "source": "EltonZhang777/AggregateSkills",
                 "when": "When a requested diagram requires skill discovery.",
-                "source_url": skill_scout_url,
-                "install": f"npx skills@latest add {skill_scout_url}",
+                "source_url": PINNED_SKILL_SCOUT_URL,
+                "install": f"npx skills@latest add {PINNED_SKILL_SCOUT_URL}",
             }],
         )
         _, scout_prerequisites = read_prerequisites(ROOT / "skills/skill-scout/SKILL.md")
