@@ -572,6 +572,31 @@ class PrerequisiteGuideTests(unittest.TestCase):
         self.assertIn("the pinned `/domain-modeling` package reached through `/grill-duo-with-docs`", skill_text)
         self.assertIn("do not copy or paraphrase them into this package", skill_text)
 
+    def test_grill_duo_with_docs_maps_pinned_transitive_resources(self):
+        skill_text = (ROOT / "skills/grill-duo-with-docs/SKILL.md").read_text(encoding="utf-8").lower()
+        resource_text = (
+            ROOT / "skills/grill-duo-with-docs/references/pinned-resource-closure.md"
+        ).read_text(encoding="utf-8").lower()
+        self.assertIn("[`pinned-resource-closure.md`](references/pinned-resource-closure.md)", skill_text)
+        self.assertIn("this fallback applies only to reviewer unavailability", skill_text)
+        self.assertIn("the final stop condition in dependencies applies only to confirmed required-skill source failures", skill_text)
+
+        references = (
+            (("grill-duo", "EltonZhang777/AggregateSkills"), "/grill-duo", "SKILL.md", "read to follow the direct `/grill-duo` protocol."),
+            (("grilling", "mattpocock/skills"), "/grilling", "SKILL.md", "read through `/grill-duo`; this pinned file links to no additional support files."),
+            (("domain-modeling", "mattpocock/skills"), "/domain-modeling", "SKILL.md", "read for the target repository's documentation workflow."),
+            (("domain-modeling", "mattpocock/skills"), "GLOSSARY-FORMAT.md", "GLOSSARY-FORMAT.md", "read when writing or updating a glossary after a term is resolved."),
+            (("domain-modeling", "mattpocock/skills"), "ADR-FORMAT.md", "ADR-FORMAT.md", "read only when all three adr conditions in `/domain-modeling` apply and a decision will be recorded."),
+        )
+        for identity, label, path, condition in references:
+            package_url = pinned_source_url(identity).replace("/tree/", "/blob/", 1)
+            with self.subTest(identity=identity, path=path):
+                link_label = f"`{label}` {path}" if path == "SKILL.md" else f"`{path}`"
+                link = f"[{link_label}]({package_url}/{path}) — {condition}"
+                self.assertIn(link.lower(), resource_text)
+
+        self.assertIn("the listed graph is acyclic", resource_text)
+
     def test_spec_implement_loop_pins_conditional_codebase_design_reference(self):
         _, prerequisites = read_prerequisites(ROOT / "skills/spec-implement-loop/SKILL.md")
         references = [

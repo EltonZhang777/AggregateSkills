@@ -19,13 +19,21 @@ Use this entrypoint when the user explicitly wants a grilling session that recor
 
 The ordinary two-agent outcome requires an independent reviewer to assess each round. Use the host's independent subagent capability to run that reviewer.
 
-If the host cannot start or recover the reviewer, follow `/grill-duo`'s solo fallback: disclose unavailability, continue the grilling protocol without claiming independent review, and preserve the user's review gates.
+If the host cannot start or recover the reviewer, follow `/grill-duo`'s solo fallback: disclose unavailability, continue the grilling protocol without claiming independent review, and preserve the user's review gates. This fallback applies only to reviewer unavailability; it never substitutes for a missing or unresolved prerequisite source.
 
 ## Dependencies
 
 Resolve `/grill-duo` and `/domain-modeling` by exact identity (declared name and source). If no exact name-and-source match appears in the available skill list because the skill is absent or a same-name candidate has a missing, ambiguous, or mismatched source, use the conditional SkillRoute CLI dependency in metadata to verify its identity and source, then read the full original `SKILL.md` from the active skill roots. Read each file regardless of invocation metadata; reading permits source access only. Before invoking a dependency, follow its invocation metadata and preserve all user-confirmation, authorization, and clarification gates; if direct invocation is required, pause at that gate. Record inaccessible sources. If SkillRoute CLI, its catalog, or a required lookup/read operation is unavailable, fails, or returns an unusable result, record the affected dependency as unresolved and report it; do not guess, substitute, or invoke it. Block only work that requires the affected source and continue only independent work. Do not retry in a loop; retry only when the resolver, catalog, or source becomes available or new evidence changes the result. If no independent work remains, pause and report the exact dependency, blocked step, and recovery condition; this pause does not classify the source as missing. Stop the workflow only when a required source is confirmed absent, invalid, or permission-denied, and report its exact identity and source; do not infer or install a replacement.
 
 Follow `/grill-duo` for activation, reviewer continuity and boundaries, round IDs, frontier handling, current-request correlation, solo fallback, and final shared-understanding confirmation. Follow `/domain-modeling` and its referenced materials for glossary and decision discipline. Do not copy either skill's body into this entrypoint.
+
+## Pinned support resources
+
+For exact pinned paths and triggers for the transitive `/grill-duo`, `/grilling`, and `/domain-modeling` resources, consult [`pinned-resource-closure.md`](references/pinned-resource-closure.md) when following those resources. Read only files whose listed branch applies.
+
+## Availability boundaries
+
+The final stop condition in Dependencies applies only to confirmed required-skill source failures. The repository-document read and write gates below apply to their specific documentation steps: pause an affected step when its source or write access is unavailable, and continue only independent grilling work.
 
 ## Read the repository's documentation map
 
