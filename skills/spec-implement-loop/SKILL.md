@@ -41,6 +41,14 @@ The pinned `/implement` source references `/tdd` and `/code-review`; both are de
 
 The pinned `/code-review` source points to `/setup-matt-pocock-skills` when `docs/agents/issue-tracker.md` is missing. The pinned `/to-spec` and `/to-tickets` sources point to that skill when issue-tracker or triage-label instructions are unavailable. The exact setup pin is also declared directly in this package and conditionally in `/review-duo`.
 
+### Conditional support resources
+
+For exact pinned paths and triggers for `/setup-matt-pocock-skills`, `/archify`, and `/codebase-design` support files, consult [`pinned-resource-closure.md`](references/pinned-resource-closure.md) when following those resources. Read only files whose listed branch applies.
+
+Use the exact reference files as consulted inputs, not as copies of their contents. Never copy or paraphrase an external skill body as a substitute for reading its pinned source.
+
+The pinned /code-review source requires two independent parallel reviewers. If the host cannot start both reviewers or provide them identical immutable inputs, block that review, record the missing capability, and resume on a host that supports the required topology. Do not simulate a second reviewer or claim the review passed. Continue only independent ready tickets.
+
 Git CLI from `https://git-scm.com/` is required for every run to inspect the task branch and worktree and to create commits and pushes. If it is unavailable, ask for explicit approval before installing it from `https://git-scm.com/downloads`; without approval, keep the prerequisite unresolved and pause before implementation.
 
 GitHub CLI (`gh`) from `https://cli.github.com/` is required only when using GitHub issue tracking. If it is unavailable or unauthenticated, ask the user for explicit approval before installing it or authenticating with `gh auth login`. If approval is not given, do not install or authenticate; keep the CLI prerequisite unresolved, pause only work that needs it, and report the recovery condition. For GitHub Enterprise, authenticate with `gh auth login --hostname <host>` only after approval.
