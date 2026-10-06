@@ -77,9 +77,10 @@ PINNED_SOURCE_PATHS = {
 PINNED_BODY_SKILL_REFERENCES = (
     (("implement", "mattpocock/skills"), ("tdd", "mattpocock/skills"), "always"),
     (("implement", "mattpocock/skills"), ("code-review", "mattpocock/skills"), "always"),
-    (("code-review", "mattpocock/skills"), ("setup-matt-pocock-skills", "mattpocock/skills"), "issue-tracker file missing"),
-    (("to-spec", "mattpocock/skills"), ("setup-matt-pocock-skills", "mattpocock/skills"), "issue-tracker and triage-label instructions unavailable"),
-    (("to-tickets", "mattpocock/skills"), ("setup-matt-pocock-skills", "mattpocock/skills"), "issue-tracker and triage-label instructions unavailable"),
+    (("code-review", "mattpocock/skills"), ("setup-matt-pocock-skills", "mattpocock/skills"), "when `docs/agents/issue-tracker.md` is missing"),
+    (("to-spec", "mattpocock/skills"), ("setup-matt-pocock-skills", "mattpocock/skills"), "when issue-tracker or triage-label instructions are unavailable"),
+    (("to-tickets", "mattpocock/skills"), ("setup-matt-pocock-skills", "mattpocock/skills"), "when issue-tracker or triage-label instructions are unavailable"),
+    (("tdd", "mattpocock/skills"), ("codebase-design", "mattpocock/skills"), "when the shape of the test interface itself is in question"),
 )
 
 
@@ -534,6 +535,7 @@ class PrerequisiteGuideTests(unittest.TestCase):
             ("code-review", "mattpocock/skills"): ("review-duo", "spec-implement-loop"),
             ("to-spec", "mattpocock/skills"): ("requirements-to-spec-tickets", "spec-implement-loop"),
             ("to-tickets", "mattpocock/skills"): ("requirements-to-spec-tickets", "spec-implement-loop"),
+            ("tdd", "mattpocock/skills"): ("spec-implement-loop",),
         }
         graph = {}
         for source, target, condition in PINNED_BODY_SKILL_REFERENCES:
@@ -548,6 +550,9 @@ class PrerequisiteGuideTests(unittest.TestCase):
             self.assertTrue(condition)
 
         spec_text = (ROOT / "skills/spec-implement-loop/SKILL.md").read_text(encoding="utf-8").lower()
+        for _, _, condition in PINNED_BODY_SKILL_REFERENCES:
+            if condition != "always":
+                self.assertIn(condition, spec_text)
         review_text = (ROOT / "skills/review-duo/SKILL.md").read_text(encoding="utf-8").lower()
         self.assertIn("when `docs/agents/issue-tracker.md` is missing", spec_text)
         self.assertIn("when issue-tracker or triage-label instructions are unavailable", spec_text)
