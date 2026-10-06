@@ -11,6 +11,16 @@ metadata:
 
 Run an explicitly approved root spec or ticket tree to verified delivery in the current branch or worktree. Keep the scope to the supplied roots and stop at approval, ambiguity, security, permission, or external-state gates.
 
+## General workflow
+
+Use this map for each approved root, keeping independent roots in separate queues:
+
+`preflight and root acceptance` → `explicitly linked child discovery` → `queue-ordered non-deferred ready ticket` → `scoped implementation and acceptance checks` → `ticket review and approval-gated remediation` → `focused commit and task-branch push` → `ticket checkpoint` → `individually authorized status sync` → `next ready ticket` → `final verification and root review when no outstanding non-deferred ticket remains` → `root checkpoint` → `individually authorized root status sync` → `completion`.
+
+A ticket is ready only when its explicit blockers are satisfied, its acceptance criteria are clear, and its required permissions and environment are available; it is not marked deferred. If a check fails, preserve its evidence and safe resume point, then pause affected work.
+
+The detailed sections below control each phase; checkpoint confirmation alone does not authorize a tracker/status write.
+
 ## Dependencies
 
 Required skills:
@@ -59,7 +69,7 @@ The coordinator tracks the active root, ticket, lifecycle state, and resume poin
 | State | Meaning and permitted transition |
 | --- | --- |
 | intake | Validate the approved input, complete preflight, and read its explicit issue graph. Move to ready only when at least one ticket meets the ready guard; unclear or oversized scope enters blocked. |
-| ready | Select one ticket whose explicit blockers are satisfied, acceptance criteria are clear, and required permissions and environment are available. For GitHub, every blocking Issue must be closed. Move to implement. |
+| ready | Select one non-deferred ticket whose explicit blockers are satisfied, acceptance criteria are clear, and required permissions and environment are available. For GitHub, every blocking Issue must be closed. Move to implement. |
 | implement | Change only the selected ticket's scope. Move to verify when the implementation is ready; a technical failure or scope decision enters blocked. |
 | verify | Run the ticket's acceptance checks. Pass moves to review; failure enters blocked with the failing evidence and a safe resume point. |
 | review | For a ticket, a passing review moves to commit; findings move to remediate only through the review approval gates. For the final root review, no findings moves to `root_checkpoint`. |
@@ -67,7 +77,7 @@ The coordinator tracks the active root, ticket, lifecycle state, and resume poin
 | commit | After ticket checks and review pass, create exactly one focused commit under the task-scoped authorization. Reconcile Git first if the commit result is uncertain. Move to push only after the commit is confirmed. |
 | push | Push the confirmed commit to the exact task branch under the task-scoped authorization. Follow the bounded retry rules in Issue loop; reconcile an uncertain result before retrying. Confirmed success moves to `ticket_checkpoint`; exhausted retries or an unreconciled result enters blocked. Never amend or rewrite history. |
 | ticket_checkpoint | Present the ticket's acceptance, review, commit, and push evidence; pause for user review before declaring the ticket complete. After explicit confirmation, move to status_sync. Each issue/status write still needs its own explicit approval. |
-| status_sync | After the ticket checkpoint, perform approved issue/status writes. Follow the bounded retries in Issue loop and reconcile uncertain results using the recovery rules above. Confirmed sync moves to ready for the next queue-ordered ticket that passes the ready guard, including a newly unblocked ticket, or to final review when the queue is drained. Exhausted retries or an unreconciled result enters blocked; never roll back pushed code. |
+| status_sync | After the ticket checkpoint, perform approved issue/status writes. Follow the bounded retries in Issue loop and reconcile uncertain results using the recovery rules above. Confirmed sync moves to ready for the next queue-ordered ticket that passes the ready guard, including a newly unblocked ticket, or to final review when no outstanding non-deferred ticket remains. Exhausted retries or an unreconciled result enters blocked; never roll back pushed code. |
 | root_checkpoint | After final verification and root review pass, present the evidence and pause for explicit user approval before declaring the root complete. Root issue/status writes still need their own explicit approval. Move to completed only after the checkpoint and required status sync are approved and confirmed. |
 | blocked | Stop the affected dependency chain and record the reason class, evidence, recovery condition, and safe resume state. Resume only when the condition is met and relevant source and Git state have been reconciled. |
 | completed | Every non-deferred ticket and approved review repair is complete; acceptance checks and the full suite pass; final review passes; required pushes and status syncs are confirmed; the root checkpoint is approved. |
@@ -90,7 +100,7 @@ Discover descendants only from explicit parent/child links, checklists, issue li
 - If a root is clearly too large for one implementation round, pause and ask for approval to load and run `/to-tickets`.
 - If a root is only planning material and has no clear acceptance criteria, pause and report; do not create tickets automatically.
 
-Use the source-specific ready guard above. Process one ready ticket at a time, preferring dependency order and then the root's order or issue number. Exclude tickets generated and marked `deferred` during the current run.
+Use the source-specific ready guard above. Process one ready ticket at a time, preferring dependency order and then the root's order or issue number. Exclude all tickets marked `deferred`, including tickets deferred in earlier runs.
 
 ## Issue loop
 
@@ -104,11 +114,11 @@ For each ready ticket:
 4. After acceptance checks and ticket-level review pass, create exactly one focused commit under the task-scoped authorization. The outer loop owns this commit boundary; treat `/implement`'s commit instruction as satisfied by this commit and never create a duplicate commit.
 5. Push the confirmed commit to the task branch under the task-scoped authorization. For a confirmed transient failure, choose a retry count based on the error, capped at three total attempts for the same ref and commit including the first; do not retry permanent or unsafe-to-repeat errors. Before retrying an uncertain result, reconcile the local commit and exact remote branch state. Never repeat a confirmed successful push, amend, or rewrite history. After retries fail, stop and report the local commit and error.
 6. After the ticket checkpoint and a confirmed push, update the completed ticket and root progress, with explicit approval for each tracker/status write. Any new or materially rewritten issue text must follow the target repository's root language rule; preserve untouched text and report resulting language mixtures. Retry only transient update failures, up to three total attempts including the first; reconcile uncertain results before retrying. If retries fail, stop and report that code is pushed but status is unsynchronised; do not roll back the code.
-7. After status sync succeeds, continue with the next ticket that passes the ready guard, including newly unblocked tickets; enter final verification and root review when no non-deferred ready ticket remains. After the final root review passes, present the root checkpoint and wait before declaring completion. If a decision, user preference, permission, security concern, or scope boundary is unclear, stop and load the original `SKILL.md` for `/grill-duo-with-docs`. A purely local, objective blocker may be recorded and skipped while independent ready tickets continue; do not bypass a user decision.
+7. After status sync succeeds, continue with the next ticket that passes the ready guard, including newly unblocked tickets; enter final verification and root review when no outstanding non-deferred ticket remains. After the final root review passes, present the root checkpoint and wait before declaring completion. If a decision, user preference, permission, security concern, or scope boundary is unclear, stop and load the original `SKILL.md` for `/grill-duo-with-docs`. A purely local, objective blocker may be recorded and skipped while independent ready tickets continue; do not bypass a user decision.
 
 ## Final review and remediation
 
-When no non-deferred ready ticket remains, review the complete target diff from the recorded starting `HEAD` with the original `SKILL.md` for `/code-review` and `/ponytail-review`.
+When no outstanding non-deferred ticket remains, review the complete target diff from the recorded starting `HEAD` with the original `SKILL.md` for `/code-review` and `/ponytail-review`.
 
 If the reports contain no findings, finish the review phase without creating empty remediation artifacts. Otherwise, for each review round:
 
