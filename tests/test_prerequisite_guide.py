@@ -448,8 +448,7 @@ class PrerequisiteGuideTests(unittest.TestCase):
             for entry in prerequisites["skills"]:
                 for member in dependency_members(entry):
                     identity = prerequisite_identity(member)
-                    if identity not in PINNED_SOURCE_PATHS:
-                        continue
+                    self.assertIn(identity, PINNED_SOURCE_PATHS, (skill_name, identity))
                     source_url = pinned_source_url(identity)
                     self.assertEqual(member.get("source_url"), source_url, (skill_name, identity))
                     install = f"npx skills@latest add {source_url}"
@@ -500,6 +499,24 @@ class PrerequisiteGuideTests(unittest.TestCase):
         skill_text = (ROOT / "skills/spec-implement-loop/SKILL.md").read_text(encoding="utf-8")
         self.assertIn("do not depend on a tool named Skill", skill_text)
         self.assertIn("block that review", skill_text)
+
+    def test_pinned_external_skill_references_have_exact_source_paths(self):
+        skill_text = (ROOT / "skills/spec-implement-loop/SKILL.md").read_text(encoding="utf-8").lower()
+        self.assertIn("the pinned `/implement` source references `/tdd` and `/code-review`", skill_text)
+        self.assertIn("both are declared and pinned above", skill_text)
+
+        resources = {
+            ("tdd", "mattpocock/skills"): ("tests.md", "mocking.md"),
+            ("domain-modeling", "mattpocock/skills"): ("GLOSSARY-FORMAT.md", "ADR-FORMAT.md"),
+        }
+        for identity, paths in resources.items():
+            package_url = pinned_source_url(identity).replace("/tree/", "/blob/", 1)
+            for path in paths:
+                with self.subTest(identity=identity, path=path):
+                    self.assertIn(f"[`{path}`]({package_url}/{path})".lower(), skill_text)
+
+        self.assertIn("the pinned `/domain-modeling` package reached through `/grill-duo-with-docs`", skill_text)
+        self.assertIn("do not copy or paraphrase them into this package", skill_text)
 
     def test_installed_skills_do_not_reference_the_prerequisite_guide(self):
         references = [
@@ -867,10 +884,11 @@ class PrerequisiteGuideTests(unittest.TestCase):
         sources = {item["name"]: item["source"] for item in prerequisites["skills"] if "name" in item}
         self.assertEqual(sources["grill-duo-with-docs"], "EltonZhang777/AggregateSkills")
         dependencies = path.read_text(encoding="utf-8").split("## Dependencies", 1)[1].split("\n## ", 1)[0]
-        self.assertIn("`EltonZhang777/AggregateSkills`: `/grill-duo-with-docs`", dependencies)
-        self.assertNotIn("`mattpocock/skills`: `/grill-duo-with-docs`", dependencies)
-        self.assertNotIn("`/grilling`", dependencies)
-        self.assertNotIn("`/domain-modeling`", dependencies)
+        direct_skill_list = dependencies.split("Resolve each required skill", 1)[0]
+        self.assertIn("`EltonZhang777/AggregateSkills`: `/grill-duo-with-docs`", direct_skill_list)
+        self.assertNotIn("`mattpocock/skills`: `/grill-duo-with-docs`", direct_skill_list)
+        self.assertNotIn("`/grilling`", direct_skill_list)
+        self.assertNotIn("`/domain-modeling`", direct_skill_list)
         text = path.read_text(encoding="utf-8")
         self.assertIn("Pass the target rule to `/grill-duo-with-docs`", text)
         self.assertNotIn("`/grill-with-docs`", text)
