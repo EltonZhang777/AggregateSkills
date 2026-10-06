@@ -15,7 +15,7 @@ Run an explicitly approved root spec or ticket tree to verified delivery in the 
 
 Use this map for each approved root, keeping independent roots in separate queues:
 
-`preflight and root acceptance` → `explicitly linked child discovery` → `queue-ordered non-deferred ready ticket` → `scoped implementation and acceptance checks` → `ticket review and approval-gated remediation` → `focused commit and task-branch push` → `ticket checkpoint` → `individually authorized status sync` → `next ready ticket` → `final verification and root review when no outstanding non-deferred ticket remains` → `root checkpoint` → `individually authorized root status sync` → `completion`.
+`root intake (inline spec, local spec/ticket path, or GitHub issue)` → `preflight and root acceptance` → `explicitly linked child discovery` → `queue-ordered non-deferred ready-ticket selection` → `scoped implementation and acceptance checks` → `ticket review and approval-gated remediation` → `focused commit and task-branch push` → `ticket checkpoint` → `individually authorized status sync` → `next ready ticket` → `final verification and root review when no outstanding non-deferred ticket remains` → `root checkpoint` → `individually authorized root status sync` → `completion`.
 
 A ticket is ready only when its explicit blockers are satisfied, its acceptance criteria are clear, and its required permissions and environment are available; it is not marked deferred. If a check fails, preserve its evidence and safe resume point, then pause affected work.
 
