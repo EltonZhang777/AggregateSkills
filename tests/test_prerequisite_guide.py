@@ -82,6 +82,52 @@ PINNED_BODY_SKILL_REFERENCES = (
     (("to-tickets", "mattpocock/skills"), ("setup-matt-pocock-skills", "mattpocock/skills"), "when issue-tracker or triage-label instructions are unavailable"),
     (("tdd", "mattpocock/skills"), ("codebase-design", "mattpocock/skills"), "when the shape of the test interface itself is in question"),
 )
+PINNED_BODY_RESOURCE_GROUPS = {
+    ("setup-matt-pocock-skills", "mattpocock/skills"): {
+        "consumers": ("requirements-to-spec-tickets", "review-duo", "spec-implement-loop"),
+        "references": (
+            (("issue-tracker-github.md",), "Use only when GitHub is selected as the issue tracker."),
+            (("issue-tracker-gitlab.md",), "Use only when GitLab is selected as the issue tracker."),
+            (("issue-tracker-local.md",), "Use only when local Markdown is selected as the issue tracker."),
+            (("triage-labels.md",), "Use only when `triage` is installed and Section B runs."),
+            (("domain.md",), "Use for the selected domain-doc layout."),
+        ),
+    },
+    ("archify", "tt-a1i/archify"): {
+        "consumers": ("spec-implement-loop",),
+        "references": (
+            (("references/repository-authoring.md",), "Read when tracing a real codebase."),
+            (("references/authoring-defaults.md",), "Read for ordinary generation."),
+            (("references/brand-marks.md",), "Read only for an explicitly requested unknown mark with a user-provided URL."),
+            (("schemas/architecture.schema.json",), "Read for Architecture mode."),
+            (("examples/web-app.architecture.json",), "Read for a system-description Architecture example."),
+            (("examples/production-deployment.architecture.json",), "Read for a deployment-repository Architecture example."),
+            (("schemas/workflow.schema.json", "examples/agent-tool-call.workflow.json"), "Read for Workflow mode."),
+            (("schemas/sequence.schema.json", "schemas/common.schema.json", "examples/cache-miss-request.sequence.json"), "Read for Sequence mode."),
+            (("schemas/dataflow.schema.json", "schemas/common.schema.json", "examples/product-analytics.dataflow.json"), "Read for Dataflow mode."),
+            (("schemas/lifecycle.schema.json", "schemas/common.schema.json", "examples/deployment-release.lifecycle.json"), "Read for Lifecycle mode."),
+            (("references/delivery-contract.md#failed-finalize-and-candidate-repair",), "Read after a non-zero `finalize` exit."),
+            (("references/architecture-layout-repair.md",), "Read for several tangled Architecture routes."),
+            (("references/authoring-contract.md",), "Read for measured field or geometry failures."),
+            (("references/update-awareness.md",), "Read when `update.noticeRequired` is true."),
+            (("references/authoring-contract.md#node-icons",), "Read for an everyday subject."),
+            (("references/delivery-contract.md#sequence-width-review",), "Read when `layoutReviewRecommendation.action` is `inspect-sequence-width`."),
+            (("references/delivery-contract.md#optional-capture-evidence",), "Read for a requested visual review, a development audit, or a concrete route/browser concern."),
+            (("references/delivery-contract.md",), "Read for failed gates, standalone commands, provenance or recovery, repeated delivery, exports, or opening."),
+            (("references/authoring-contract.md#workflow-viewport-repair",), "Read before the next layout edit when workflow viewport overflow occurs."),
+            (("references/delivery-contract.md#optional-opening",), "Read for an explicitly requested immediate preview or active desktop loop."),
+            (("references/viewer-runtime.md",), "Read only for explicitly requested reader-facing viewer features."),
+            (("assets/template.html", "references/delivery-contract.md"), "Use when shell access is unavailable."),
+        ),
+    },
+    ("codebase-design", "mattpocock/skills"): {
+        "consumers": ("spec-implement-loop",),
+        "references": (
+            (("DEEPENING.md",), "Read when deepening a cluster given its dependencies."),
+            (("DESIGN-IT-TWICE.md",), "Read when exploring alternative interfaces for a chosen deepening candidate."),
+        ),
+    },
+}
 
 
 def pinned_source_url(identity):
@@ -515,6 +561,10 @@ class PrerequisiteGuideTests(unittest.TestCase):
         skill_text = (ROOT / "skills/spec-implement-loop/SKILL.md").read_text(encoding="utf-8").lower()
         self.assertIn("the pinned `/implement` source references `/tdd` and `/code-review`", skill_text)
         self.assertIn("both are declared and pinned above", skill_text)
+        resource_text = (
+            ROOT / "skills/spec-implement-loop/references/pinned-resource-closure.md"
+        ).read_text(encoding="utf-8").lower()
+        self.assertIn("[`pinned-resource-closure.md`](references/pinned-resource-closure.md)", skill_text)
 
         resources = {
             ("tdd", "mattpocock/skills"): ("tests.md", "mocking.md"),
@@ -525,6 +575,21 @@ class PrerequisiteGuideTests(unittest.TestCase):
             for path in paths:
                 with self.subTest(identity=identity, path=path):
                     self.assertIn(f"[`{path}`]({package_url}/{path})".lower(), skill_text)
+
+        for identity, source in PINNED_BODY_RESOURCE_GROUPS.items():
+            package_url = pinned_source_url(identity).replace("/tree/", "/blob/", 1)
+            for consumer in source["consumers"]:
+                with self.subTest(identity=identity, consumer=consumer):
+                    self.assertIn(identity, AUDITED_PACKAGES[consumer])
+            for paths, condition in source["references"]:
+                links = ", ".join(f"[`{path}`]({package_url}/{path})" for path in paths)
+                with self.subTest(identity=identity, paths=paths):
+                    self.assertIn(f"{links} — {condition}".lower(), resource_text)
+
+        self.assertIn(
+            "both link back to the pinned `skill.md`; `design-it-twice.md` also links to `deepening.md`",
+            resource_text,
+        )
 
         self.assertIn("the pinned `/domain-modeling` package reached through `/grill-duo-with-docs`", skill_text)
         self.assertIn("do not copy or paraphrase them into this package", skill_text)
@@ -554,6 +619,18 @@ class PrerequisiteGuideTests(unittest.TestCase):
             if condition != "always":
                 self.assertIn(condition, spec_text)
         review_text = (ROOT / "skills/review-duo/SKILL.md").read_text(encoding="utf-8").lower()
+        _, review_prerequisites = read_prerequisites(ROOT / "skills/review-duo/SKILL.md")
+        review_setup = [
+            member
+            for entry in review_prerequisites["skills"]
+            for member in dependency_members(entry)
+            if prerequisite_identity(member) == ("setup-matt-pocock-skills", "mattpocock/skills")
+        ]
+        self.assertEqual(len(review_setup), 1)
+        self.assertEqual(
+            review_setup[0]["when"],
+            "When docs/agents/issue-tracker.md is missing, as required by the pinned code-review source.",
+        )
         self.assertIn("when `docs/agents/issue-tracker.md` is missing", spec_text)
         self.assertIn("when issue-tracker or triage-label instructions are unavailable", spec_text)
         self.assertIn("tells the user to run `/setup-matt-pocock-skills`", review_text)
