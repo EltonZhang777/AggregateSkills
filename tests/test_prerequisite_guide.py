@@ -48,6 +48,9 @@ PINNED_SOURCE_REVISIONS = {
 }
 PINNED_CODEBASE_DESIGN_URL = "https://github.com/mattpocock/skills/tree/6fd947921b935b7e1e69293a200400f0fdd5c15f/skills/engineering/codebase-design"
 PINNED_SOURCE_URL_OVERRIDES = {("codebase-design", "mattpocock/skills"): PINNED_CODEBASE_DESIGN_URL}
+PINNED_SOURCE_REVISION_OVERRIDES = {
+    ("grill-duo", "EltonZhang777/AggregateSkills"): "9fff1921337c513baefe67a938320f2a1a2b5b98",
+}
 PINNED_SOURCE_PATHS = {
     ("grilling", "mattpocock/skills"): "skills/productivity/grilling",
     ("domain-modeling", "mattpocock/skills"): "skills/engineering/domain-modeling",
@@ -76,7 +79,7 @@ def pinned_source_url(identity):
             "https://github.com",
             source,
             "tree",
-            PINNED_SOURCE_REVISIONS[source],
+            PINNED_SOURCE_REVISION_OVERRIDES.get(identity, PINNED_SOURCE_REVISIONS[source]),
             PINNED_SOURCE_PATHS[identity],
         )
     )
