@@ -23,7 +23,10 @@ AUDITED_PACKAGES = {
         ("to-tickets", "mattpocock/skills"),
         ("setup-matt-pocock-skills", "mattpocock/skills"),
     },
-    "review-duo": {("code-review", "mattpocock/skills")},
+    "review-duo": {
+        ("code-review", "mattpocock/skills"),
+        ("setup-matt-pocock-skills", "mattpocock/skills"),
+    },
     "spec-implement-loop": {
         ("implement", "mattpocock/skills"),
         ("tdd", "mattpocock/skills"),
@@ -71,6 +74,13 @@ PINNED_SOURCE_PATHS = {
     ("grill-duo-with-docs", "EltonZhang777/AggregateSkills"): "skills/grill-duo-with-docs",
     ("conventional-git-messages", "EltonZhang777/AggregateSkills"): "skills/conventional-git-messages",
 }
+PINNED_BODY_SKILL_REFERENCES = (
+    (("implement", "mattpocock/skills"), ("tdd", "mattpocock/skills"), "always"),
+    (("implement", "mattpocock/skills"), ("code-review", "mattpocock/skills"), "always"),
+    (("code-review", "mattpocock/skills"), ("setup-matt-pocock-skills", "mattpocock/skills"), "issue-tracker file missing"),
+    (("to-spec", "mattpocock/skills"), ("setup-matt-pocock-skills", "mattpocock/skills"), "issue-tracker and triage-label instructions unavailable"),
+    (("to-tickets", "mattpocock/skills"), ("setup-matt-pocock-skills", "mattpocock/skills"), "issue-tracker and triage-label instructions unavailable"),
+)
 
 
 def pinned_source_url(identity):
@@ -518,6 +528,48 @@ class PrerequisiteGuideTests(unittest.TestCase):
         self.assertIn("the pinned `/domain-modeling` package reached through `/grill-duo-with-docs`", skill_text)
         self.assertIn("do not copy or paraphrase them into this package", skill_text)
 
+    def test_pinned_external_body_skill_edges_are_closed_and_acyclic(self):
+        roots = {
+            ("implement", "mattpocock/skills"): ("spec-implement-loop",),
+            ("code-review", "mattpocock/skills"): ("review-duo", "spec-implement-loop"),
+            ("to-spec", "mattpocock/skills"): ("requirements-to-spec-tickets", "spec-implement-loop"),
+            ("to-tickets", "mattpocock/skills"): ("requirements-to-spec-tickets", "spec-implement-loop"),
+        }
+        graph = {}
+        for source, target, condition in PINNED_BODY_SKILL_REFERENCES:
+            self.assertIn(source, PINNED_SOURCE_PATHS)
+            self.assertIn(target, PINNED_SOURCE_PATHS)
+            self.assertIn(source, roots)
+            graph.setdefault(source, []).append(target)
+            for root in roots[source]:
+                with self.subTest(root=root, source=source, target=target):
+                    self.assertIn(source, AUDITED_PACKAGES[root])
+                    self.assertIn(target, AUDITED_PACKAGES[root])
+            self.assertTrue(condition)
+
+        spec_text = (ROOT / "skills/spec-implement-loop/SKILL.md").read_text(encoding="utf-8").lower()
+        review_text = (ROOT / "skills/review-duo/SKILL.md").read_text(encoding="utf-8").lower()
+        self.assertIn("when `docs/agents/issue-tracker.md` is missing", spec_text)
+        self.assertIn("when issue-tracker or triage-label instructions are unavailable", spec_text)
+        self.assertIn("tells the user to run `/setup-matt-pocock-skills`", review_text)
+        self.assertIn("do not run setup automatically", review_text)
+
+        visiting, visited = set(), set()
+
+        def visit(identity):
+            if identity in visiting:
+                self.fail(f"Pinned external body-reference cycle includes {identity}")
+            if identity in visited:
+                return
+            visiting.add(identity)
+            for child in graph.get(identity, ()):
+                visit(child)
+            visiting.remove(identity)
+            visited.add(identity)
+
+        for identity in graph:
+            visit(identity)
+
     def test_installed_skills_do_not_reference_the_prerequisite_guide(self):
         references = [
             str(path.relative_to(ROOT))
@@ -688,6 +740,13 @@ class PrerequisiteGuideTests(unittest.TestCase):
         self.assertEqual(
             skills["conventional-git-messages"].get("when"),
             "When drafting or materially updating a pull request title or body.",
+        )
+        conventional_identity = ("conventional-git-messages", "EltonZhang777/AggregateSkills")
+        conventional_url = pinned_source_url(conventional_identity)
+        self.assertEqual(skills["conventional-git-messages"].get("source_url"), conventional_url)
+        self.assertEqual(
+            skills["conventional-git-messages"].get("install"),
+            f"npx skills@latest add {conventional_url}",
         )
         self.assertEqual(
             skills["resolving-merge-conflicts"].get("when"),
