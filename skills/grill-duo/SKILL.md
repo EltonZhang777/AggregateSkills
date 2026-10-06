@@ -2,7 +2,7 @@
 name: grill-duo
 description: "Use only when the user explicitly asks for independent subagent review during a multi-round grilling session without project-document maintenance."
 metadata:
-  prerequisites: '{"skills":[{"name":"grilling","source":"mattpocock/skills"}],"mcps":[],"tools":[{"name":"SkillRoute CLI","source":"https://github.com/erichare/skillroute","install":"uv tool install skillroute","setup":"Prepare a local catalog using the SkillRoute documentation","when":"When a prerequisite skill is absent from the available skill list or its exact source cannot be verified."}]}'
+  prerequisites: '{"skills":[{"name":"grilling","source":"mattpocock/skills","source_url":"https://github.com/mattpocock/skills/tree/4588b32ecab9ecc9fc8cc6b6c5e7d675b6004b0d/skills/productivity/grilling","install":"npx skills@latest add https://github.com/mattpocock/skills/tree/4588b32ecab9ecc9fc8cc6b6c5e7d675b6004b0d/skills/productivity/grilling"}],"mcps":[],"tools":[{"name":"SkillRoute CLI","source":"https://github.com/erichare/skillroute","install":"uv tool install skillroute","setup":"Prepare a local catalog using the SkillRoute documentation","when":"When a prerequisite skill is absent from the available skill list or its exact source cannot be verified."}]}'
 ---
 
 # /grill-duo

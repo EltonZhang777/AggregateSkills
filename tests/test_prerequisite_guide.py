@@ -11,6 +11,75 @@ ROOT = Path(__file__).resolve().parents[1]
 MARKDOWN_TICK = chr(96)
 START = "<!-- prerequisite-list:start -->"
 END = "<!-- prerequisite-list:end -->"
+AUDITED_PACKAGES = {
+    "grill-duo": {("grilling", "mattpocock/skills")},
+    "grill-duo-with-docs": {
+        ("grill-duo", "EltonZhang777/AggregateSkills"),
+        ("domain-modeling", "mattpocock/skills"),
+    },
+    "requirements-to-spec-tickets": {
+        ("grill-duo-with-docs", "EltonZhang777/AggregateSkills"),
+        ("to-spec", "mattpocock/skills"),
+        ("to-tickets", "mattpocock/skills"),
+        ("setup-matt-pocock-skills", "mattpocock/skills"),
+    },
+    "review-duo": {("code-review", "mattpocock/skills")},
+    "spec-implement-loop": {
+        ("implement", "mattpocock/skills"),
+        ("tdd", "mattpocock/skills"),
+        ("code-review", "mattpocock/skills"),
+        ("grill-duo-with-docs", "EltonZhang777/AggregateSkills"),
+        ("to-spec", "mattpocock/skills"),
+        ("to-tickets", "mattpocock/skills"),
+        ("setup-matt-pocock-skills", "mattpocock/skills"),
+        ("codebase-design", "mattpocock/skills"),
+        ("ponytail-review", "DietrichGebert/ponytail"),
+        ("conventional-git-messages", "EltonZhang777/AggregateSkills"),
+        ("show-me", "humanlayer/skills"),
+        ("archify", "tt-a1i/archify"),
+    },
+}
+PINNED_SOURCE_REVISIONS = {
+    "mattpocock/skills": "4588b32ecab9ecc9fc8cc6b6c5e7d675b6004b0d",
+    "DietrichGebert/ponytail": "552acd5efd0aeae2583a12efe39373d2f076f25e",
+    "humanlayer/skills": "ca7c8088db69e315a8b2deea43820270457f8f3c",
+    "tt-a1i/archify": "73aaa0696e8f72c232ea710e6fa94fd953f3e773",
+    "EltonZhang777/AggregateSkills": "2f1fac4afa920c71bcf15866dbb9fd8704e7371a",
+}
+PINNED_CODEBASE_DESIGN_URL = "https://github.com/mattpocock/skills/tree/6fd947921b935b7e1e69293a200400f0fdd5c15f/skills/engineering/codebase-design"
+PINNED_SOURCE_URL_OVERRIDES = {("codebase-design", "mattpocock/skills"): PINNED_CODEBASE_DESIGN_URL}
+PINNED_SOURCE_PATHS = {
+    ("grilling", "mattpocock/skills"): "skills/productivity/grilling",
+    ("domain-modeling", "mattpocock/skills"): "skills/engineering/domain-modeling",
+    ("code-review", "mattpocock/skills"): "skills/engineering/code-review",
+    ("codebase-design", "mattpocock/skills"): "skills/engineering/codebase-design",
+    ("implement", "mattpocock/skills"): "skills/engineering/implement",
+    ("setup-matt-pocock-skills", "mattpocock/skills"): "skills/engineering/setup-matt-pocock-skills",
+    ("tdd", "mattpocock/skills"): "skills/engineering/tdd",
+    ("to-spec", "mattpocock/skills"): "skills/engineering/to-spec",
+    ("to-tickets", "mattpocock/skills"): "skills/engineering/to-tickets",
+    ("ponytail-review", "DietrichGebert/ponytail"): "skills/ponytail-review",
+    ("show-me", "humanlayer/skills"): "plugins/show-me/skills/show-me",
+    ("archify", "tt-a1i/archify"): "archify",
+    ("grill-duo", "EltonZhang777/AggregateSkills"): "skills/grill-duo",
+    ("grill-duo-with-docs", "EltonZhang777/AggregateSkills"): "skills/grill-duo-with-docs",
+    ("conventional-git-messages", "EltonZhang777/AggregateSkills"): "skills/conventional-git-messages",
+}
+
+
+def pinned_source_url(identity):
+    if identity in PINNED_SOURCE_URL_OVERRIDES:
+        return PINNED_SOURCE_URL_OVERRIDES[identity]
+    source = identity[1]
+    return "/".join(
+        (
+            "https://github.com",
+            source,
+            "tree",
+            PINNED_SOURCE_REVISIONS[source],
+            PINNED_SOURCE_PATHS[identity],
+        )
+    )
 
 
 def dependency_members(entry):
@@ -338,18 +407,67 @@ class PrerequisiteGuideTests(unittest.TestCase):
         self.assertIn("A skill entry may include `source_url` to link directly to an HTTPS path in the declared GitHub repository", guide)
         self.assertIn("When using GitHub issue tracking.", guide)
         self.assertIn(
-            "[humanlayer/skills](https://github.com/humanlayer/skills/blob/main/plugins/show-me/skills/show-me/SKILL.md)",
+            f"[humanlayer/skills]({pinned_source_url(('show-me', 'humanlayer/skills'))})",
             guide,
         )
-        self.assertIn("[tt-a1i/archify](https://github.com/tt-a1i/archify/blob/main/archify/SKILL.md)", guide)
         self.assertIn(
-            "npx skills@latest add https://github.com/humanlayer/skills/tree/main/plugins/show-me/skills/show-me",
+            f"[tt-a1i/archify]({pinned_source_url(('archify', 'tt-a1i/archify'))})",
             guide,
         )
-        self.assertIn("npx skills@latest add tt-a1i/archify --skill=archify", guide)
+        self.assertIn(
+            f"npx skills@latest add {pinned_source_url(('show-me', 'humanlayer/skills'))}",
+            guide,
+        )
+        self.assertIn(
+            f"npx skills@latest add {pinned_source_url(('archify', 'tt-a1i/archify'))}",
+            guide,
+        )
         self.assertIn("check skill prerequisites against the host inventory", guide.lower())
         self.assertIn("check whether command-line tools are available and authenticated", guide.lower())
         self.assertIn("Always | " + MARKDOWN_TICK + "/pr-and-merge" + MARKDOWN_TICK, guide)
+        self.assertIn("A full commit in the source link pins the audited package snapshot", guide)
+
+    def test_audited_skill_prerequisites_use_matching_pinned_sources(self):
+        seen = set()
+        for path in sorted((ROOT / "skills").glob("*/SKILL.md")):
+            skill_name, prerequisites = read_prerequisites(path)
+            declared = {
+                prerequisite_identity(member)
+                for entry in prerequisites["skills"]
+                for member in dependency_members(entry)
+            }
+            if skill_name not in AUDITED_PACKAGES:
+                continue
+            self.assertEqual(declared, AUDITED_PACKAGES[skill_name], skill_name)
+            for entry in prerequisites["skills"]:
+                for member in dependency_members(entry):
+                    identity = prerequisite_identity(member)
+                    if identity not in PINNED_SOURCE_PATHS:
+                        continue
+                    source_url = pinned_source_url(identity)
+                    self.assertEqual(member.get("source_url"), source_url, (skill_name, identity))
+                    install = f"npx skills@latest add {source_url}"
+                    self.assertEqual(member.get("install"), install, (skill_name, identity))
+                    seen.add(identity)
+        self.assertEqual(seen, set(PINNED_SOURCE_PATHS))
+
+    def test_spec_implement_loop_pins_conditional_codebase_design_reference(self):
+        _, prerequisites = read_prerequisites(ROOT / "skills/spec-implement-loop/SKILL.md")
+        references = [
+            member
+            for entry in prerequisites["skills"]
+            for member in dependency_members(entry)
+            if prerequisite_identity(member) == ("codebase-design", "mattpocock/skills")
+        ]
+        self.assertEqual(len(references), 1)
+        reference = references[0]
+        self.assertEqual(pinned_source_url(("codebase-design", "mattpocock/skills")), PINNED_CODEBASE_DESIGN_URL)
+        self.assertEqual(reference["source_url"], PINNED_CODEBASE_DESIGN_URL)
+        self.assertEqual(reference["install"], f"npx skills@latest add {PINNED_CODEBASE_DESIGN_URL}")
+        self.assertIn("shape of the test interface", reference["when"])
+        skill_text = (ROOT / "skills/spec-implement-loop/SKILL.md").read_text(encoding="utf-8")
+        self.assertIn("do not depend on a tool named Skill", skill_text)
+        self.assertIn("block that review", skill_text)
 
     def test_installed_skills_do_not_reference_the_prerequisite_guide(self):
         references = [
@@ -575,11 +693,11 @@ class PrerequisiteGuideTests(unittest.TestCase):
         )
         self.assertEqual(
             next(item["source_url"] for item in alternatives if item["name"] == "show-me"),
-            "https://github.com/humanlayer/skills/blob/main/plugins/show-me/skills/show-me/SKILL.md",
+            pinned_source_url(("show-me", "humanlayer/skills")),
         )
         self.assertEqual(
             next(item["source_url"] for item in alternatives if item["name"] == "archify"),
-            "https://github.com/tt-a1i/archify/blob/main/archify/SKILL.md",
+            pinned_source_url(("archify", "tt-a1i/archify")),
         )
         visual_requirement = next(entry for entry in prerequisites["skills"] if "one_of" in entry)
         self.assertEqual(
@@ -588,11 +706,11 @@ class PrerequisiteGuideTests(unittest.TestCase):
         )
         self.assertEqual(
             next(item["install"] for item in alternatives if item["name"] == "show-me"),
-            "npx skills@latest add https://github.com/humanlayer/skills/tree/main/plugins/show-me/skills/show-me",
+            f"npx skills@latest add {pinned_source_url(('show-me', 'humanlayer/skills'))}",
         )
         self.assertEqual(
             next(item["install"] for item in alternatives if item["name"] == "archify"),
-            "npx skills@latest add tt-a1i/archify --skill=archify",
+            f"npx skills@latest add {pinned_source_url(('archify', 'tt-a1i/archify'))}",
         )
         text = path.read_text(encoding="utf-8").lower()
         self.assertIn("skillroute to confirm the exact declared name, local skill path, and content hash", text)
@@ -636,14 +754,19 @@ class PrerequisiteGuideTests(unittest.TestCase):
     def test_conventional_git_messages_declares_conditional_skill_scout(self):
         path = ROOT / "skills" / "conventional-git-messages" / "SKILL.md"
         _, prerequisites = read_prerequisites(path)
+        skill_scout_url = "https://github.com/EltonZhang777/AggregateSkills/tree/2f1fac4afa920c71bcf15866dbb9fd8704e7371a/skills/skill-scout"
         self.assertEqual(
             prerequisites["skills"],
             [{
                 "name": "skill-scout",
                 "source": "EltonZhang777/AggregateSkills",
                 "when": "When a requested diagram requires skill discovery.",
+                "source_url": skill_scout_url,
+                "install": f"npx skills@latest add {skill_scout_url}",
             }],
         )
+        _, scout_prerequisites = read_prerequisites(ROOT / "skills/skill-scout/SKILL.md")
+        self.assertEqual(scout_prerequisites["skills"], [])
         skillroute = next(item for item in prerequisites["tools"] if item["name"] == "SkillRoute CLI")
         self.assertEqual(
             skillroute["when"],
@@ -700,6 +823,7 @@ class PrerequisiteGuideTests(unittest.TestCase):
             {
                 "implement",
                 "tdd",
+                "codebase-design",
                 "code-review",
                 "grill-duo-with-docs",
                 "to-spec",

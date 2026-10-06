@@ -2,7 +2,7 @@
 name: conventional-git-messages
 description: Draft concise commit, pull request, and issue text without Git or GitHub operations.
 metadata:
-  prerequisites: '{"skills":[{"name":"skill-scout","source":"EltonZhang777/AggregateSkills","when":"When a requested diagram requires skill discovery."}],"mcps":[],"tools":[{"name":"SkillRoute CLI","source":"https://github.com/erichare/skillroute","install":"uv tool install skillroute","setup":"Prepare a local catalog using the SkillRoute documentation","when":"When a prerequisite skill is absent from the available skill list or its exact source cannot be verified."}]}'
+  prerequisites: '{"skills":[{"name":"skill-scout","source":"EltonZhang777/AggregateSkills","when":"When a requested diagram requires skill discovery.","source_url":"https://github.com/EltonZhang777/AggregateSkills/tree/2f1fac4afa920c71bcf15866dbb9fd8704e7371a/skills/skill-scout","install":"npx skills@latest add https://github.com/EltonZhang777/AggregateSkills/tree/2f1fac4afa920c71bcf15866dbb9fd8704e7371a/skills/skill-scout"}],"mcps":[],"tools":[{"name":"SkillRoute CLI","source":"https://github.com/erichare/skillroute","install":"uv tool install skillroute","setup":"Prepare a local catalog using the SkillRoute documentation","when":"When a prerequisite skill is absent from the available skill list or its exact source cannot be verified."}]}'
 ---
 
 # /conventional-git-messages
