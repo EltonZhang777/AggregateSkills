@@ -63,7 +63,7 @@ def validate_dependency(category, item, path, allow_group=True):
     elif category == "mcps":
         required.add("install")
     else:
-        optional.add("install")
+        optional.update({"install", "source_url"})
     if not required.issubset(item) or set(item) - required - optional:
         raise ValueError(f"Invalid {category} prerequisite fields in {path}")
     if not isinstance(item["name"], str) or not item["name"].strip():
@@ -90,6 +90,23 @@ def validate_dependency(category, item, path, allow_group=True):
                 raise ValueError(f"Invalid {category} prerequisite source format in {path}")
     if source is None and (category != "skills" or not item.get("install")):
         raise ValueError(f"Missing source status for {category} prerequisite in {path}")
+    if "source_url" in item:
+        source_url = item["source_url"]
+        try:
+            parsed_source_url = urlsplit(source_url)
+            parsed_source_url.port
+        except (TypeError, ValueError):
+            parsed_source_url = None
+        if (
+            category != "skills"
+            or source is None
+            or parsed_source_url is None
+            or parsed_source_url.scheme != "https"
+            or parsed_source_url.netloc.lower() != "github.com"
+            or not parsed_source_url.path.startswith(f"/{source}/")
+            or re.search(r"\s", source_url)
+        ):
+            raise ValueError(f"Invalid {category} prerequisite source URL in {path}")
     if "when" in item and (not isinstance(item["when"], str) or not item["when"].strip()):
         raise ValueError(f"Invalid {category} prerequisite condition in {path}")
     for field in ("install", "setup"):
@@ -135,7 +152,7 @@ def source_cell(category, item):
     source = item["source"]
     if source is None:
         return "Publisher source not declared"
-    url = source if "://" in source else f"https://github.com/{source}"
+    url = item.get("source_url") or (source if "://" in source else f"https://github.com/{source}")
     label = source if category == "skills" else f"{item['name']} project"
     return f"[{label}]({url})"
 
@@ -159,7 +176,12 @@ def dependency_rows(category):
             when = dependency_condition(entry)
             members = dependency_members(entry)
             for member in members:
-                details = (member["source"], install_cell(category, member), member.get("setup", ""))
+                details = (
+                    member["source"],
+                    member.get("source_url", ""),
+                    install_cell(category, member),
+                    member.get("setup", ""),
+                )
                 identity = prerequisite_identity(member)
                 previous = dependencies_by_identity.setdefault(identity, details)
                 if previous != details:
@@ -295,6 +317,12 @@ class PrerequisiteGuideTests(unittest.TestCase):
             validate_dependency("skills", {"name": "upstream", "source": "publisher"}, path)
         with self.assertRaises(ValueError):
             validate_dependency(
+                "skills",
+                {"name": "upstream", "source": "publisher/project", "source_url": "javascript:alert(1)"},
+                path,
+            )
+        with self.assertRaises(ValueError):
+            validate_dependency(
                 "mcps", {"name": "MCP", "source": "publisher/project", "install": "Install it"}, path
             )
         with self.assertRaises(ValueError):
@@ -307,8 +335,18 @@ class PrerequisiteGuideTests(unittest.TestCase):
         self.assertIn("| When |", guide)
         alternatives = "One of: " + MARKDOWN_TICK + "/show-me" + MARKDOWN_TICK + " or " + MARKDOWN_TICK + "/archify" + MARKDOWN_TICK
         self.assertIn(alternatives, guide)
+        self.assertIn("A skill entry may include `source_url` to link directly to an HTTPS path in the declared GitHub repository", guide)
         self.assertIn("When using GitHub issue tracking.", guide)
-        self.assertIn("Publisher source not declared", guide)
+        self.assertIn(
+            "[humanlayer/skills](https://github.com/humanlayer/skills/blob/main/plugins/show-me/skills/show-me/SKILL.md)",
+            guide,
+        )
+        self.assertIn("[tt-a1i/archify](https://github.com/tt-a1i/archify/blob/main/archify/SKILL.md)", guide)
+        self.assertIn(
+            "npx skills@latest add https://github.com/humanlayer/skills/tree/main/plugins/show-me/skills/show-me",
+            guide,
+        )
+        self.assertIn("npx skills@latest add tt-a1i/archify --skill=archify", guide)
         self.assertIn("check skill prerequisites against the host inventory", guide.lower())
         self.assertIn("check whether command-line tools are available and authenticated", guide.lower())
         self.assertIn("Always | " + MARKDOWN_TICK + "/pr-and-merge" + MARKDOWN_TICK, guide)
@@ -380,6 +418,13 @@ class PrerequisiteGuideTests(unittest.TestCase):
                     self.assertIn("`one_of` declaration", dependency_text.lower())
                     self.assertIn("exactly one selected alternative", dependency_text.lower())
                     self.assertIn("unselected alternatives are not required", dependency_text.lower())
+            if any(
+                alternative.get("source") is None
+                for entry in prerequisites["skills"]
+                if "one_of" in entry
+                for alternative in entry["one_of"]
+            ):
+                with self.subTest(skill=name, prerequisite="source-null one_of"):
                     self.assertIn("only on this installation", dependency_text.lower())
 
     def test_dependency_resolution_rules_keep_their_shared_meaning(self):
@@ -520,11 +565,35 @@ class PrerequisiteGuideTests(unittest.TestCase):
         )
         self.assertIn("do not classify the branch as safe to clean", dependencies)
 
-    def test_source_null_skill_options_report_local_and_portable_status(self):
+    def test_spec_implement_visual_prerequisites_declare_portable_sources(self):
         path = ROOT / "skills" / "spec-implement-loop" / "SKILL.md"
         _, prerequisites = read_prerequisites(path)
         alternatives = next(entry["one_of"] for entry in prerequisites["skills"] if "one_of" in entry)
-        self.assertTrue(all(item["source"] is None for item in alternatives))
+        self.assertEqual(
+            {item["name"]: item["source"] for item in alternatives},
+            {"show-me": "humanlayer/skills", "archify": "tt-a1i/archify"},
+        )
+        self.assertEqual(
+            next(item["source_url"] for item in alternatives if item["name"] == "show-me"),
+            "https://github.com/humanlayer/skills/blob/main/plugins/show-me/skills/show-me/SKILL.md",
+        )
+        self.assertEqual(
+            next(item["source_url"] for item in alternatives if item["name"] == "archify"),
+            "https://github.com/tt-a1i/archify/blob/main/archify/SKILL.md",
+        )
+        visual_requirement = next(entry for entry in prerequisites["skills"] if "one_of" in entry)
+        self.assertEqual(
+            visual_requirement["when"],
+            "When either exact-source visual skill is available; if neither is available, use the concise plain-text fallback.",
+        )
+        self.assertEqual(
+            next(item["install"] for item in alternatives if item["name"] == "show-me"),
+            "npx skills@latest add https://github.com/humanlayer/skills/tree/main/plugins/show-me/skills/show-me",
+        )
+        self.assertEqual(
+            next(item["install"] for item in alternatives if item["name"] == "archify"),
+            "npx skills@latest add tt-a1i/archify --skill=archify",
+        )
         text = path.read_text(encoding="utf-8").lower()
         self.assertIn("skillroute to confirm the exact declared name, local skill path, and content hash", text)
         self.assertIn("record its publisher source as undeclared", text)
