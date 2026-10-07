@@ -89,15 +89,22 @@ class GrillDuoWithDocsBehaviorTests(unittest.TestCase):
 
 
 class RequirementsToSpecTicketsBehaviorTests(unittest.TestCase):
-    def test_documentation_phase_requires_explicit_opt_in(self):
+    def test_complete_group_approval_starts_documentation_phase(self):
         text = skill("requirements-to-spec-tickets").lower().replace(chr(96), "")
         grouping = section(text, "## 2. turn the request into groups")
         protocol = section(text, "## 4. child-session protocol")
-        self.assertIn("explicit opt-in to the canonical /grill-duo-with-docs", grouping)
-        self.assertIn("a generic grouping approval does not authorize it", grouping)
-        self.assertIn("do not create a child session for a group whose opt-in is declined or unresolved", grouping)
-        self.assertIn("only a group whose approved grouping explicitly includes the opt-in may invoke /grill-duo-with-docs", protocol)
-        self.assertIn("for a group with explicit opt-in, run /grill-duo-with-docs first", protocol)
+        git = section(text, "## 5. task branches and git publication")
+        documents = section(text, "## 6. shared workspace and document writes")
+        self.assertIn("wait for explicit approval of that complete grouping", grouping)
+        self.assertIn("approval starts every approved group in the /grill-duo-with-docs", grouping)
+        self.assertNotIn("explicit opt-in", grouping)
+        self.assertIn("for every approved group, invoke /grill-duo-with-docs", protocol)
+        self.assertIn("if the frontier is empty, use its shared-understanding summary and wait for confirmation", protocol)
+        self.assertIn("for every approved group, run /grill-duo-with-docs first", protocol)
+        self.assertIn("approval of the complete grouping grants the main agent standing authorization for routine, focused local commits", git)
+        self.assertIn("group approval does not authorize pushes, issue creation, status changes, sub-issue links, or other github writes", git)
+        self.assertIn("obtain explicit approval before a push or any other github write", git)
+        self.assertIn("record only user-confirmed content in project documents", documents)
 
 
 class SpecImplementLoopBehaviorTests(unittest.TestCase):

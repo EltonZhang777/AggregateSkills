@@ -36,13 +36,13 @@ Read the user's current conversation as the source of the requirements. For each
 - one independent user outcome;
 - scope and non-goals;
 - acceptance intent;
-- explicit opt-in to the canonical `/grill-duo-with-docs` two-agent grilling and confirmed project-document updates;
+- the default post-approval workflow: `/grill-duo-with-docs` and confirmed project-document updates, followed by `/to-spec` and `/to-tickets`;
 - local repository artifacts included in the approved output, if any;
 - dependencies on other groups, if any.
 
 For several requests, make one group per independently implementable, single-target behavior. Shared implementation details do not justify merging groups. A single request is one group, but still follows the approval gate.
 
-Show the complete proposed grouping with each group's opt-in clearly identified. Wait for explicit approval that names or clearly includes the `/grill-duo-with-docs` two-agent grilling and document-maintenance phase; a generic grouping approval does not authorize it. Do not create a child session for a group whose opt-in is declined or unresolved. If the user objects but the requested change is unclear, seek opt-in before using `/grill-duo-with-docs` for clarification; without opt-in, ask a direct clarification question and do not invoke it. Then present the revised grouping and wait again.
+Show the complete proposed grouping and wait for explicit approval of that complete grouping. Approval starts every approved group in the `/grill-duo-with-docs` and confirmed-content document-maintenance workflow; no per-group opt-in is required. If the user objects but the requested change is unclear, ask a direct clarification question, then present the revised grouping and wait again.
 
 The grouping step is complete only when the user has explicitly approved the current complete grouping.
 
@@ -70,9 +70,9 @@ Child-session creation is complete only when every approved group has a real int
 
 ## 4. Child-session protocol
 
-In every child session, re-read each current dependency file immediately before its phase. If a source is unavailable, follow the Dependencies recovery rule and pause only the phase that needs that source. The first response must briefly restate the group's outcome, scope, non-goals, and key workflow constraints. Only a group whose approved grouping explicitly includes the opt-in may invoke `/grill-duo-with-docs` to present the current answerable frontier and wait for the user's response. If the frontier is empty, use its shared-understanding summary and wait for confirmation. The child prompt alone does not establish readiness.
+In every child session, re-read each current dependency file immediately before its phase. If a source is unavailable, follow the Dependencies recovery rule and pause only the phase that needs that source. The first response must briefly restate the group's outcome, scope, non-goals, and key workflow constraints. For every approved group, invoke `/grill-duo-with-docs` to present the current answerable frontier and wait for the user's response. If the frontier is empty, use its shared-understanding summary and wait for confirmation. The complete-grouping approval includes this workflow; no further opt-in is required. The child prompt alone does not establish readiness.
 
-For a group with explicit opt-in, run `/grill-duo-with-docs` first, then `/to-spec` and `/to-tickets` in that order. Advance only after the current skill's confirmation gate passes, including `/to-spec`'s seam confirmation and `/to-tickets`' ticket-granularity, blocking-edge, and publication gates.
+For every approved group, run `/grill-duo-with-docs` first, then `/to-spec` and `/to-tickets` in that order. Advance only after the current skill's confirmation gate passes, including `/to-spec`'s seam confirmation and `/to-tickets`' ticket-granularity, blocking-edge, and publication gates.
 
 After `/to-tickets` publishes every planned ticket, the child session for that spec links those issues as native sub-issues of its spec; the parent does not create or retry these links. Approval of the planned ticket set authorizes these routine associations without a separate prompt and does not authorize issue creation or any other GitHub write. Keep this phase outside the `/to-tickets` run so its existing parent-issue boundary stays intact:
 
@@ -93,8 +93,8 @@ Decide from the approved group whether it changes files inside this repository:
 - For an issue-only group, do not create or switch branches, create worktrees, commit, or push. Keep issue creation, status changes, and sub-issue linking under their existing approval gates.
 - For a group with local repository artifacts, use one dedicated task branch for that group. Reuse the current branch only when it is dedicated to the same group and clean; otherwise create a branch from the current clean `HEAD` before the first local file write. Follow repository and active agent framework naming conventions as guidance; do not require a fixed prefix.
 - If the user explicitly requests a worktree, its branch must differ from its source branch. Configure the task remote (normally `origin`) and confirm the matching remote ref. The first normal push may create that ref; verify the exact ref after the push. Reconcile a divergent or uncertain remote state before continuing, and never force-push.
-- Approval of the complete grouping grants the main agent standing authorization for routine, focused commits and normal pushes of that group's local artifacts, including its task branch, any explicitly requested worktree, and the initial push. This authorization ends when the assigned group is complete, does not carry to unrelated groups or later tasks, and resumes after interruption only after reconciling the approved group, worktree, branch, local commits, upstream, and exact remote state.
-- This Git authorization does not cover issue creation, status changes, or sub-issue relationships. Preserve their existing approval gates, along with the seam, ticket-granularity, blocking-edge, and publication confirmations. This workflow does not open pull requests or merge branches.
+- Approval of the complete grouping grants the main agent standing authorization for routine, focused local commits of that group's repository artifacts. This authorization ends when the assigned group is complete, does not carry to unrelated groups or later tasks, and resumes after interruption only after reconciling the approved group, worktree, branch, and local commits.
+- Group approval does not authorize pushes, issue creation, status changes, sub-issue links, or other GitHub writes. Obtain explicit approval before a push or any other GitHub write; preserve the existing issue, status, and sub-issue approval gates, along with the seam, ticket-granularity, blocking-edge, and publication confirmations. This workflow does not open pull requests or merge branches.
 - After the group's local artifacts pass their agreed checks, create one focused commit for them and push the confirmed commit to the exact task branch. Retry only a clearly transient push failure after reconciliation, with at most three total attempts for the same ref and commit. Block uncertain outcomes; never repeat a confirmed commit or push. Preserve local artifacts, commits, remote branches, and created issues after later failures; do not delete branches, roll back, amend, or rewrite history.
 
 An issue-only group completes without any Git operation. A local-artifact group is not complete until its approved artifacts are committed and pushed and the group's existing issue-publication steps finish. Do not use a successful push as approval for any issue or status write.
@@ -103,7 +103,7 @@ An issue-only group completes without any Git operation. A local-artifact group 
 
 All child sessions use the current shared working directory. Keep spec-specific documents and ticket files uniquely named by feature slug. Follow existing repository conventions and the live dependency skills for document locations and tracker publication.
 
-For shared glossary and decision documents, follow `/grill-duo-with-docs` for repository routing, latest-content checks, additive edits, and semantic-conflict handling. Serialize writes across child sessions. If conclusions conflict, show both and wait for the user's decision.
+Record only user-confirmed content in project documents. For shared glossary and decision documents, follow `/grill-duo-with-docs` for repository routing, latest-content checks, additive edits, and semantic-conflict handling. Serialize writes across child sessions. If conclusions conflict, show both and wait for the user's decision.
 
 ## 7. Child readiness, handoff, and resumption
 
