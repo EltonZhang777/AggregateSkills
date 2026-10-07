@@ -33,6 +33,9 @@ _Avoid_: 操作失败（容易被理解为源文件未改变）
 **Skill prerequisite**:
 A skill, MCP, or runtime tool that another skill requires to complete its documented workflow.
 
+**Skill dependency**:
+An alias for Skill prerequisite.
+
 **Prerequisite identity**:
 The stable name and publishing source that distinguish the intended prerequisite independently of its local installation path.
 
