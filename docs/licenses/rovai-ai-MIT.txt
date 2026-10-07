@@ -1,12 +1,5 @@
-This portable rewrite is informed by:
-- murray17/rovai-ai, skills/grill-duo/SKILL.md and skills/grill-duo-with-docs/SKILL.md (https://github.com/murray17/rovai-ai/tree/main/skills)
-- mattpocock/skills at revision 84fdeffd12f2ee307994d1eb6feb48173b6e0502: skills/engineering/grill-with-docs/SKILL.md, skills/engineering/domain-modeling/SKILL.md, skills/productivity/grilling/SKILL.md, and skills/productivity/grill-me/SKILL.md
-
-The Matt Pocock and Rovai AI material adapted here is licensed under MIT. Preserve these copyright and permission notices when copying substantial portions.
-
 MIT License
 
-Copyright (c) 2026 Matt Pocock
 Copyright (c) 2026 rovai-ai contributors
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
