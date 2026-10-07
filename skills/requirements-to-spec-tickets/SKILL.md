@@ -2,8 +2,6 @@
 name: requirements-to-spec-tickets
 description: Turn one or more codebase ideas into approved, independently scoped specs and tracer-bullet tickets through interactive child sessions.
 disable-model-invocation: true
-metadata:
-  prerequisites: '{"skills":[{"name":"grill-duo-with-docs","source":"EltonZhang777/AggregateSkills"},{"name":"to-spec","source":"mattpocock/skills"},{"name":"to-tickets","source":"mattpocock/skills"},{"name":"setup-matt-pocock-skills","source":"mattpocock/skills"}],"mcps":[],"tools":[{"name":"Git CLI","source":"https://git-scm.com/","install":"Install Git from https://git-scm.com/downloads","setup":"Make `git` available in a command shell at the intended repository.","when":"When publishing a group with local repository artifacts."},{"name":"GitHub CLI (gh)","source":"https://cli.github.com/","install":"Install from https://cli.github.com/","setup":"Authenticate with `gh auth login`; for GitHub Enterprise, use `gh auth login --hostname <host>`.","when":"When using GitHub issue tracking."},{"name":"SkillRoute CLI","source":"https://github.com/erichare/skillroute","install":"uv tool install skillroute","setup":"Prepare a local catalog using the SkillRoute documentation","when":"When a prerequisite skill is absent from the available skill list or its exact source cannot be verified."}]}'
 ---
 
 # /requirements-to-spec-tickets
@@ -14,25 +12,21 @@ Use this skill when the user wants to turn one or more codebase ideas into clari
 
 ## Dependencies
 
-Resolve and read the original `SKILL.md` for each direct skill declared in this file's `metadata.prerequisites.skills` array by exact identity (declared name and source). If no exact name-and-source match appears in the available skill list because the skill is absent or a same-name candidate has a missing, ambiguous, or mismatched source, use the conditional SkillRoute CLI dependency in metadata to verify its identity and source, then read the full original file from the active skill roots. Read it regardless of invocation metadata; reading permits source access only. Before invoking a dependency, follow its invocation metadata and preserve all user-confirmation, authorization, and clarification gates. Record inaccessible sources. If SkillRoute CLI, its catalog, or a required lookup/read operation is unavailable, fails, or returns an unusable result, record the affected dependency as unresolved and report it; do not guess, substitute, or invoke it. Block only work that requires the affected source and continue only independent work. Do not retry in a loop; retry only when the resolver, catalog, or source becomes available or new evidence changes the result. If no independent work remains, pause and report the exact dependency, blocked step, and recovery condition; this pause does not classify the source as missing. Stop the workflow only when a required source is confirmed absent, invalid, or permission-denied, and report its exact identity and source; do not infer or install a replacement.
+If any dependency is missing, report all missing dependencies, tell the user to install them, and stop the entire workflow. Do not install dependencies automatically.
 
-The workflow dependencies are:
-
-- `/grill-duo-with-docs`
-- `/to-spec`
-- `/to-tickets`
-
-Treat the live files as the source of truth, not as text to copy into this skill. When a dependency points to another skill, resolve and read that skill's current `SKILL.md` at the point of use; that skill resolves its own declared dependencies. Do not expand this skill's metadata with transitive dependencies or replace a referenced skill with a copied summary.
-
-GitHub CLI (`gh`) from `https://cli.github.com/` is required only when using GitHub issue tracking. If it is unavailable or unauthenticated, ask the user for explicit approval before installing it or authenticating with `gh auth login`. If approval is not given, do not install or authenticate; keep the CLI prerequisite unresolved, pause only work that needs it, and report the recovery condition. For GitHub Enterprise, authenticate with `gh auth login --hostname <host>` only after approval.
-
-Git CLI from `https://git-scm.com/` is required only for groups that publish local repository artifacts. If unavailable, ask for explicit approval before installing it from `https://git-scm.com/downloads`; without approval, keep the prerequisite unresolved and pause that group's branch and publication steps. Issue-only groups do not require Git.
+| Name | Type | Source |
+| --- | --- | --- |
+| /grill-duo-with-docs | Skill | https://github.com/EltonZhang777/AggregateSkills |
+| /to-spec | Skill | https://github.com/mattpocock/skills |
+| /to-tickets | Skill | https://github.com/mattpocock/skills |
+| /setup-matt-pocock-skills | Skill | https://github.com/mattpocock/skills |
+| SkillRoute CLI | Tool | https://github.com/erichare/skillroute |
 
 ## 1. Preflight
 
-Confirm the declared skill identities and sources according to Dependencies above. Read each direct skill's current `SKILL.md` immediately before the phase that uses it; later-phase sources do not block independent earlier work. Verify that `/setup-matt-pocock-skills` has supplied the issue tracker and triage-label configuration required by `/to-spec` and `/to-tickets`. If the setup or tracker configuration is absent, stop and tell the user to run `/setup-matt-pocock-skills`; do not run setup automatically or create child sessions.
+Confirm that every dependency in the table is available before starting the workflow. Read each direct skill's current `SKILL.md` before using it; treat the live file as the source of truth, and do not copy its body or expand transitive dependencies. Verify that `/setup-matt-pocock-skills` has supplied the issue tracker and triage-label configuration required by `/to-spec` and `/to-tickets`. If the setup or tracker configuration is absent, stop and tell the user to run `/setup-matt-pocock-skills`; do not run setup automatically or create child sessions.
 
-Preflight is complete when the tracker configuration is available and the sources needed for the first active phase are verified. A temporary lookup/read failure blocks only the phase that needs that source; continue independent preflight or work. If no independent work remains, pause and report the exact dependency and recovery condition. Do not retry in a loop; retry only when the resolver, catalog, or source becomes available or new evidence changes the result. Do not report a source as missing until it is confirmed absent, invalid, or permission-denied.
+Preflight is complete when all listed dependencies and the tracker configuration are available.
 
 ## 2. Turn the request into groups
 

@@ -1,8 +1,6 @@
 ---
 name: conventional-git-messages
 description: Draft concise commit, pull request, and issue text without Git or GitHub operations.
-metadata:
-  prerequisites: '{"skills":[{"name":"skill-scout","source":"EltonZhang777/AggregateSkills","when":"When a requested diagram requires skill discovery."}],"mcps":[],"tools":[{"name":"SkillRoute CLI","source":"https://github.com/erichare/skillroute","install":"uv tool install skillroute","setup":"Prepare a local catalog using the SkillRoute documentation","when":"When a prerequisite skill is absent from the available skill list or its exact source cannot be verified."}]}'
 ---
 
 # /conventional-git-messages
@@ -15,9 +13,12 @@ For GitHub issue and pull request titles, bodies, and comments, use only the nor
 
 ## Dependencies
 
-Resolve and read the original `SKILL.md` for each direct skill declared in this file's `metadata.prerequisites.skills` array by exact identity (declared name and source). If no exact name-and-source match appears in the available skill list because the skill is absent or a same-name candidate has a missing, ambiguous, or mismatched source, use the conditional SkillRoute CLI dependency in metadata to verify its identity and source, then read the full original file from the active skill roots. Read it regardless of invocation metadata; reading permits source access only. Before invoking the dependency, follow its invocation metadata and preserve all user-confirmation, authorization, and clarification gates; if direct invocation is required, pause at that gate. Record inaccessible sources. If SkillRoute CLI, its catalog, or a required lookup/read operation is unavailable, fails, or returns an unusable result, record the affected dependency as unresolved and report it; do not guess, substitute, or invoke it. Block only work that requires the affected source and continue only independent work. Do not retry in a loop; retry only when the resolver, catalog, or source becomes available or new evidence changes the result. If no independent work remains, pause and report the exact dependency, blocked step, and recovery condition; this pause does not classify the source as missing. Stop the workflow only when the required source is confirmed absent, invalid, or permission-denied, and report its exact identity and source; do not infer or substitute another skill.
+If any dependency is missing, report all missing dependencies, tell the user to install them, and stop the entire workflow. Do not install dependencies automatically.
 
-The /skill-scout prerequisite is needed only when a requested diagram requires skill discovery. The conditional SkillRoute CLI tool is only for verifying that prerequisite's identity and source.
+| Name | Type | Source |
+| --- | --- | --- |
+| /skill-scout | Skill | https://github.com/EltonZhang777/AggregateSkills |
+| SkillRoute CLI | Tool | https://github.com/erichare/skillroute |
 
 ## Commit subject
 

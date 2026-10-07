@@ -1,8 +1,6 @@
 ---
 name: skill-scout
 description: Find skills from the host or caller inventory, with an optional local SkillRoute catalog, for discovery, comparison, and step-by-step routing.
-metadata:
-  prerequisites: '{"skills":[],"mcps":[],"tools":[{"name":"SkillRoute CLI","source":"https://github.com/erichare/skillroute","install":"uv tool install skillroute","setup":"Prepare a local catalog using the SkillRoute documentation","when":"When the user selects SkillRoute local-catalog mode for discovery or routing."}]}'
 ---
 
 # /skill-scout
@@ -13,7 +11,11 @@ Use `/skill-scout` when a workflow needs to find an installed skill, resolve a s
 
 ## Dependencies
 
-No skill prerequisites are declared. General-host discovery uses the skill inventory exposed by the host or supplied by the caller and does not require SkillRoute. SkillRoute is optional, for a user-selected local-catalog mode. Do not install the CLI or prepare/index a catalog automatically.
+If any dependency is missing, report all missing dependencies, tell the user to install them, and stop the entire workflow. Do not install dependencies automatically.
+
+| Name | Type | Source |
+| --- | --- | --- |
+| SkillRoute CLI | Tool | https://github.com/erichare/skillroute |
 
 ## General-host discovery
 
