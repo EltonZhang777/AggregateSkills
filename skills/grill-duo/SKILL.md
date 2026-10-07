@@ -49,6 +49,7 @@ Before presenting a round, send one bounded request to the same reviewer. Includ
 - which questions the reviewer should assess now.
 
 For each requested question ID, ask the reviewer to assess:
+
 - whether the question is worth asking;
 - whether the supplied context supports its premise, flagging assumptions, uncertainty, or evidence the host should verify;
 - whether its wording is ambiguous or leading;
