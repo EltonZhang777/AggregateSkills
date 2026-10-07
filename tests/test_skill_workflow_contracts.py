@@ -11,6 +11,12 @@ def skill(name):
     return (ROOT / "skills" / name / "SKILL.md").read_text(encoding="utf-8")
 
 
+def skill_reference(name, filename):
+    return (
+        ROOT / "skills" / name / "references" / filename
+    ).read_text(encoding="utf-8")
+
+
 def section(text, heading):
     start = text.index(heading) + len(heading)
     end = text.find("\n## ", start)
@@ -108,11 +114,55 @@ class SpecImplementLoopBehaviorTests(unittest.TestCase):
 
 
 class ConventionalGitMessagesBehaviorTests(unittest.TestCase):
-    def test_optional_diagrams_use_user_selected_skill_scout_flow(self):
+    def test_each_output_type_routes_to_an_existing_reference(self):
+        text = skill("conventional-git-messages").lower()
+        routes = section(text, "## guidance routes")
+        self.assertIn("follow its links only for rules", routes)
+        self.assertIn("it reuses.", routes)
+        references = (
+            ("commit message", "commit-messages.md", ("## commit subject", "## commit body")),
+            (
+                "pull request title, description, or comment",
+                "pull-request-text.md",
+                (
+                    "## pull request titles",
+                    "## pull request descriptions",
+                    "## pull request comments",
+                    "## optional diagrams",
+                ),
+            ),
+            (
+                "issue title, description, or comment",
+                "issue-text.md",
+                ("## issue titles", "## issue descriptions", "## issue comments"),
+            ),
+        )
+        for trigger, filename, headings in references:
+            with self.subTest(trigger=trigger):
+                self.assertIn(trigger, routes)
+                self.assertIn(f"(references/{filename})", routes)
+                reference_path = (
+                    ROOT / "skills" / "conventional-git-messages" / "references" / filename
+                )
+                self.assertTrue(reference_path.is_file())
+                reference_text = reference_path.read_text(encoding="utf-8").lower()
+                for heading in headings:
+                    self.assertIn(heading, reference_text)
+
+    def test_shared_operation_boundary_stays_in_the_entrypoint(self):
         text = skill("conventional-git-messages").lower().replace(chr(96), "")
+        activation = section(text, "## activation criteria & objective")
+        self.assertIn("never perform a git operation", activation)
+        self.assertIn("create or modify an issue", activation)
+        self.assertIn("open or edit a pull request", activation)
+        self.assertIn("post a comment", activation)
+
+    def test_optional_diagrams_use_user_selected_skill_scout_flow(self):
+        text = skill_reference("conventional-git-messages", "pull-request-text.md").lower().replace(chr(96), "")
         diagrams = section(text, "## optional diagrams")
         self.assertIn("follow /skill-scout's general-host flow", diagrams)
         self.assertIn("use its skillroute local-catalog mode only when the user selects it", diagrams)
+        self.assertIn("do not install, index, copy, or silently substitute a skill", diagrams)
 
 
 class ReadmeBehaviorTests(unittest.TestCase):
