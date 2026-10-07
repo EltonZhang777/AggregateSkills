@@ -9,7 +9,7 @@
 ## 准备
 
 1. 本次 #42 按用户指示在当前 AggregateSkills 仓库执行；将 `codex/issue-40-pr-and-merge` 作为专用测试目标，只创建可丢弃的 codex 测试分支，不操作默认分支。记录这是非隔离仓库测试。
-2. Use the [`/pr-and-merge` dependency declaration](../../skills/pr-and-merge/SKILL.md#dependencies) to install `/conventional-git-messages` and `/resolving-merge-conflicts`. Check `gh` separately with `gh auth status` and confirm the expected account.
+2. Install every dependency listed in the [`/pr-and-merge` dependency declaration](../../skills/pr-and-merge/SKILL.md#dependencies), including SkillRoute CLI. Check `gh` separately with `gh auth status` and confirm the expected account.
 3. 核对测试目标分支的保护规则、必需状态检查和仓库合并策略。需要测试“未知”或“冲突”策略时，单独准备相应配置。
 4. 为批次中的每个源分支准备独立 worktree，并明确标出堆叠依赖。除复用 PR 场景外，每个场景使用新分支；不要让多个测试共享尚未处理的本地改动。脏分支隔离测试要保留一个未提交改动以确认该项和其依赖被阻断。
 
