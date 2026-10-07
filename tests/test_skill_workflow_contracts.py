@@ -98,6 +98,24 @@ class PruneWorktreesBehaviorTests(unittest.TestCase):
         self.assertIn("if a required github check is unavailable, do not mark the affected branch safe to clean", text)
         self.assertIn("unknown, failed, incomplete, or out-of-date evidence must never produce safe to clean", text)
 
+    def test_cleanup_references_follow_their_separate_approval_gates(self):
+        text = skill("prune-worktrees-and-branches").lower().replace("*", "")
+        local_gate = section(text, "## apply approved local cleanup")
+        remote_gate = section(text, "## apply separately approved remote cleanup")
+        local = skill_reference("prune-worktrees-and-branches", "approved-local-cleanup.md").lower().replace("*", "").replace(chr(96), "")
+        remote = skill_reference("prune-worktrees-and-branches", "approved-remote-branch-deletion.md").lower().replace("*", "").replace(chr(96), "")
+        self.assertIn("ask for explicit approval of that local set", local_gate)
+        self.assertIn("after approval of the exact local cleanup set", local_gate)
+        self.assertIn("references/approved-local-cleanup.md", local_gate)
+        self.assertIn("require an explicit pass for every item", remote_gate)
+        self.assertIn("ask for explicit remote-deletion approval in a separate question", remote_gate)
+        self.assertIn("after approval for exactly the reviewed remote, branch names, and oids", remote_gate)
+        self.assertIn("references/approved-remote-branch-deletion.md", remote_gate)
+        self.assertIn("git worktree remove <path>", local)
+        self.assertIn("git branch -d -- <branch>", local)
+        self.assertIn("git push <remote> --delete refs/heads/<branch>", remote)
+        self.assertIn("never use --force", remote)
+
 
 class GrillDuoBehaviorTests(unittest.TestCase):
     def test_summary_fields_and_reviewer_fallback_remain(self):
