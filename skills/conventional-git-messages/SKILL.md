@@ -20,6 +20,8 @@ If any dependency is missing, report all missing dependencies, tell the user to 
 | /skill-scout | Skill | https://github.com/EltonZhang777/AggregateSkills |
 | SkillRoute CLI | Tool | https://github.com/erichare/skillroute |
 
+The `/pr` skill from https://github.com/mattpocock/skills is a route-specific prerequisite for PR-body drafting and an exception to the whole-workflow dependency rule above. If it is unavailable, report it and stop only PR-body drafting.
+
 ## Commit subject
 
 - Use `<type>(<scope>): <imperative summary>`; omit the scope when it adds no useful context.
@@ -40,6 +42,11 @@ If any dependency is missing, report all missing dependencies, tell the user to 
 - If the user requests co-author credit, use a `Co-authored-by:` trailer instead of prose such as `As requested by...`. Do not invent author details.
 - Do not add emoji or AI attribution unless the user or repository rules require it; if required, use the specified trailer.
 
+## Pull request drafting
+
+- Use the current diff, target repository's PR title and description guidance, supplied change facts, and recent same-type PR examples when drafting or revising PR titles and bodies. Ask when required facts or prefix conventions are unclear.
+- Update existing PR text only when it is inaccurate, materially incomplete, or clearly inconsistent with current repository guidance.
+
 ## Pull request titles
 
 - Use `<type>(<scope>): <imperative summary>` with a supported type listed above; add `!` before the colon for a breaking change, such as `feat(api)!:`. Omit a scope that adds no useful context.
@@ -51,10 +58,11 @@ If any dependency is missing, report all missing dependencies, tell the user to 
 
 ## Pull request descriptions
 
-- Use the shortest useful structure. Add sections only when they clarify the change or the user requests them; do not use a fixed template.
+- Invoke `/pr` before drafting any PR body and follow its Summary, Evidence, and Merge Danger template.
 - Do not apply commit-specific title-length or body-wrapping limits.
 - In a full description, explain the impact of breaking changes, security fixes, data migrations, and reverts, including supplied migration or mitigation steps. Ask for missing facts instead of inventing them.
 - If the user asks for a title only, return only the title.
+- Consider a diagram only when it materially improves clarity. Use an accessible `/show-me` or `/archify` skill; if no suitable skill is accessible, follow the shared Optional diagrams guidance to discover one when its gates permit, and omit the diagram if none is accessible. Include only artifacts readers can access directly from the PR description; omit inaccessible artifacts and never upload or publish them.
 
 ## Pull request comments
 
@@ -82,9 +90,8 @@ If any dependency is missing, report all missing dependencies, tell the user to 
 
 ## Optional diagrams
 
-- Consider a diagram only when it materially improves both clarity and concision; diagrams are optional.
-- When a needed diagram requires skill discovery, follow `/skill-scout`'s general-host flow with host/caller inventory. Use its SkillRoute local-catalog mode only when the user selects it. Preserve its user-only invocation, confirmation, clarification, and missing-prerequisite gates. Do not install, index, copy, or silently substitute a skill.
-- Include only artifacts readers can access directly from the pull request description. Omit inaccessible artifacts; never upload or publish them.
+- For issue and commit text, consider a diagram only when it materially improves both clarity and concision; diagrams are optional.
+- For any route, when a needed diagram requires skill discovery, follow `/skill-scout`'s general-host flow with host/caller inventory. Use its SkillRoute local-catalog mode only when the user selects it. Preserve its user-only invocation, confirmation, clarification, and missing-prerequisite gates. Do not install, index, copy, or silently substitute a skill.
 
 ## Output
 
