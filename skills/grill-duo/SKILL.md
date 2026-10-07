@@ -1,8 +1,6 @@
 ---
 name: grill-duo
 description: "Use only when the user explicitly asks for a fixed independent subagent to review a multi-round grilling session. Use `/grill-duo-with-docs` when maintaining project documents; do not use for solo grilling or unrelated requests."
-metadata:
-  prerequisites: '{"skills":[{"name":"grilling","source":"mattpocock/skills"}],"mcps":[],"tools":[{"name":"SkillRoute CLI","source":"https://github.com/erichare/skillroute","install":"uv tool install skillroute","setup":"Prepare a local catalog using the SkillRoute documentation","when":"When a prerequisite skill is absent from the available skill list or its exact source cannot be verified."}]}'
 ---
 
 # /grill-duo
@@ -15,11 +13,16 @@ Use this entrypoint only when the user explicitly requests independent two-agent
 
 ## Dependencies
 
-Resolve `/grilling` by exact identity (declared name and source). If no exact name-and-source match appears in the available skill list because the skill is absent or a same-name candidate has a missing, ambiguous, or mismatched source, use the conditional SkillRoute CLI dependency in metadata to verify its identity and source, then read the full original `SKILL.md` from the active skill roots. Read it regardless of invocation metadata; reading permits source access only. Before invoking the dependency, follow its invocation metadata and preserve all user-confirmation, authorization, and clarification gates; if direct invocation is required, pause at that gate. Record inaccessible sources. If SkillRoute CLI, its catalog, or a required lookup/read operation is unavailable, fails, or returns an unusable result, record the affected dependency as unresolved and report it; do not guess, substitute, or invoke it. Block only work that requires the affected source and continue only independent work. Do not retry in a loop; retry only when the resolver, catalog, or source becomes available or new evidence changes the result. If no independent work remains, pause and report the exact dependency, blocked step, and recovery condition; this pause does not classify the source as missing. Stop the workflow only when the required source is confirmed absent, invalid, or permission-denied, and report its exact identity and source; do not infer or substitute another skill.
+If any dependency is missing, report all missing dependencies, tell the user to install them, and stop the entire workflow. Do not install dependencies automatically.
 
-An unavailable reviewer is different from a missing dependency: only reviewer unavailability uses solo mode.
+| Name | Type | Source |
+| --- | --- | --- |
+| /grilling | Skill | https://github.com/mattpocock/skills |
+| SkillRoute CLI | Tool | https://github.com/erichare/skillroute |
 
 ## Roles and continuity
+
+An unavailable reviewer is different from a missing dependency: only reviewer unavailability uses solo mode.
 
 - The host is the only agent that speaks to the user, owns the decision tree, researches facts, and presents each round.
 - Use the host runtime's independent subagent mechanism for one reviewer. Keep and reuse the same reviewer handle for the whole session. Do not assume a named-agent roster or choose or replace reviewers based on subjective topic fit.

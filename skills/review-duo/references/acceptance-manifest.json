@@ -92,10 +92,10 @@
     },
     {
       "included": false,
-      "path": "tests/test_prerequisite_guide.py",
+      "path": "tests/test_skill_workflow_contracts.py",
       "reason": "Unrelated to the synthetic pricing patch.",
       "role": "repository test source",
-      "sha256": "fe6cdde71846608b2c6da8556b1c1631ca8a98d5d478e023cd2114b16da05dcc"
+      "sha256": "711fa005c92fadc067b6abf9806967f4f2b94724b4977a2f738db65763a27d82"
     }
   ]
 }
