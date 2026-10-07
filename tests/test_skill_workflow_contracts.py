@@ -80,9 +80,15 @@ class PrAndMergeBehaviorTests(unittest.TestCase):
         text = skill("pr-and-merge").lower().replace(chr(96), "")
         activation = section(text, "## activation criteria & objective")
         reuse = section(text, "## reuse or prepare the pr")
-        merge = section(text, "## merge after approval")
+        merge_route = section(text, "## merge after approval")
+        merge = skill_reference("pr-and-merge", "merge-after-approval.md").lower().replace(chr(96), "")
         self.assertIn("it handles github only", activation)
         self.assertIn("immediately before drafting or materially updating a pr title or body, read and follow /conventional-git-messages", reuse)
+        self.assertIn("only when the user requests a merge", merge_route)
+        self.assertIn("explicitly approves that exact pr", merge_route)
+        self.assertIn("references/merge-after-approval.md", merge_route)
+        self.assertIn("merge each pr only after the user explicitly approves that exact pr", merge)
+        self.assertIn("immediately before each merge, recheck that pr's head and base", merge)
         self.assertIn("when an approved merge encounters a conflict, use /resolving-merge-conflicts", merge)
 
 
