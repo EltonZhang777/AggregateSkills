@@ -9,14 +9,6 @@ description: Find skills from the host or caller inventory, with an optional loc
 
 Use `/skill-scout` when a workflow needs to find an installed skill, resolve a skill's prerequisites, compare similar skills, or choose skills for a task. Return a selection plan to the caller. Do not install, download, or copy a skill body.
 
-## Dependencies
-
-If any dependency is missing, report all missing dependencies, tell the user to install them, and stop the entire workflow. Do not install dependencies automatically.
-
-| Name | Type | Source |
-| --- | --- | --- |
-| SkillRoute CLI | Tool | https://github.com/erichare/skillroute |
-
 ## General-host discovery
 
 - Start with an installed-skill inventory exposed by the host or supplied by the caller.
@@ -24,23 +16,11 @@ If any dependency is missing, report all missing dependencies, tell the user to 
 - If exhaustive discovery is needed but the inventory is partial, return `Unavailable` and request a complete inventory or the user's choice to use SkillRoute local-catalog mode.
 - Use only the inventory provided for this mode. Do not scan the filesystem, search the web, or use a copied skill body to fill gaps.
 
-## SkillRoute local-catalog mode
+## SkillRoute local-catalog fallback
 
-This optional local-catalog mode runs only when the user selects SkillRoute. It reads the local catalog only; it does not use a network backend.
-
-Run the CLI and backend checks before routing:
-
-```text
-skillroute --version
-skillroute backend status --backend local-token --json
-skillroute inspect --json <skill-id>
-skillroute search --backend local-token --json <query>
-skillroute route --backend local-token --json --repo <repo> <request>
-```
-
-Accept JSON only when it parses and has the expected type and required fields: backend status is `ready` with a positive skill count; inspect identifies the requested skill; search returns a list of skill records; route returns candidates and a boolean clarification flag. Missing fields, wrong types, mismatched identity, or malformed output are unusable.
-
-If the CLI, local backend, or catalog is unavailable, return `Unavailable`; do not present the result as evidence that a skill is absent. Give the relevant install or catalog-preparation step, but do not perform it. For temporary resolver or backend errors or unusable output, return an `Unresolved prerequisite` result, identify the exact failed check and recovery condition, and stop. Do not fall back to another discovery source.
+Only after general-host discovery cannot retrieve a result, and only when the user selects the
+local-catalog mode, read [the SkillRoute local-catalog procedure](references/skillroute-local-catalog.md).
+Never switch modes automatically.
 
 ## Source and selection safety
 
