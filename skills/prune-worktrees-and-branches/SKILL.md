@@ -86,17 +86,7 @@ Do not collapse several targets into one row. Do not call a candidate safe based
 
 If the preview prune dry run failed or its targets could not be parsed exactly, do not perform any cleanup in this run. Only offer executable targets classified **safe to clean**. Present the exact worktree paths and checked-out branches, local branch refs, and stale metadata targets from the successful dry run. Ask for explicit approval of that local set. The user may approve all or name an exact subset; ambiguous approval means no action. If any worktree removal is approved, the approval must also include every stale-metadata target from the preview, because actual prune is repository-wide and cannot be restricted to a subset. If that exact set is not approved, do not remove worktrees in this run. Do not combine this question with remote deletion approval. Approval applies only to this repository and these exact targets in this run.
 
-Before each destructive local action, re-resolve the supplied base and require the same full ref and commit OID as the preview; for a remote-tracking base, also require the live remote OID to match. If the base changed or is unavailable, skip the affected action and report why.
-
-For each approved worktree, immediately before removal:
-
-1. Re-read `git worktree list --porcelain`; require the same registered path, branch, and HEAD as the preview. Confirm it is not the current worktree, is not locked, and still exists.
-2. Re-run `git -C <path> status --porcelain=v1 --untracked-files=all --ignored=matching`; require empty output. Recheck that its branch is still safe against the resolved base and that required upstream, remote, PR, default-branch, and protection evidence is still known and safe.
-3. If any target identity or required evidence changed, or any command fails, skip that item and report why. Otherwise run `git worktree remove <path>` without `--force` or `-f`. Never remove the directory with a filesystem command. On failure, report the error (including Windows lock errors), retain the associated branch, and continue with independent approved worktrees.
-
-After the worktree-removal attempts, run actual worktree pruning exactly once if the user approved any worktree or stale-metadata cleanup target. Immediately beforehand, run `git worktree prune --dry-run --verbose` and preserve its exit code and output. Because actual prune is repository-wide, proceed only when this dry run succeeds and its exact target set equals the approved stale-metadata set; if targets changed, are unreadable, or include anything unapproved, skip actual prune and report why. Otherwise run `git worktree prune --verbose` once. Do not retry it. Do not run actual prune for branch-only cleanup.
-
-Only after worktree removal attempts, handle approved local branches, one at a time. Immediately before each deletion, require the exact branch ref and tip OID from the preview, recheck that it is not current, base, default, protected, or checked out in any remaining worktree, and recheck merged ancestry, pushed state, and PR state. Skip it if any check changed or became unknown, or if its associated worktree removal failed. Otherwise run `git branch -d -- <branch>` with the exact branch name. Never use `-D`, `--force`, or `-f`. A failed deletion is reported; continue with independent approved branches.
+Only after approval of the exact local cleanup set, read the [local cleanup procedure](references/approved-local-cleanup.md).
 
 ## Apply separately approved remote cleanup
 
@@ -106,7 +96,7 @@ Before asking the user to approve remote deletion, send the exact proposed `remo
 
 After a full pass, show the exact reviewed branch set and ask for explicit remote-deletion approval in a separate question from local approval. Approval applies only to the reviewed remote, branch names, and OIDs in this run. If the user asks to add or substitute a target, obtain a new independent review before asking for approval.
 
-For each approved remote branch, immediately before deletion, require the resolved base ref and commit OID to equal the preview; then recheck host-specific authentication, the exact live branch OID with `git ls-remote --heads`, ancestry against the resolved base, the current repository default branch, all PR states in the source and every known possible base repository, protection/ruleset state, and whether a local branch tracking this ref has any ahead or unknown commits. Require the live OID to equal the reviewed and approved OID. If any evidence changes or becomes unknown, skip that branch and report why. Otherwise run `git push <remote> --delete refs/heads/<branch>` with the exact remote and full branch ref as separate quoted arguments. Never use `--force`, `-f`, or a force refspec. Continue only with other individually revalidated, approved branches.
+After approval for exactly the reviewed remote, branch names, and OIDs, read the [remote branch-deletion procedure](references/approved-remote-branch-deletion.md).
 
 ## Shell handling
 
