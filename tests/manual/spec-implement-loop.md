@@ -1,8 +1,9 @@
 # `/spec-implement-loop` manual scenarios
 
 Run these through the user-visible skill invocation in a disposable repository
-with test issues and branches. Do not use a production repository or approve
-issue/status writes during scenarios that check their approval gates.
+with test issues and branches. Do not use a production repository. In scenarios
+checking non-status write gates, withhold approval for issue creation, comments,
+labels, pull requests, and merges.
 
 ## Reuse or prepare a task branch
 
@@ -31,10 +32,11 @@ ticket gets one focused commit after its acceptance checks and review, and its
 confirmed commit is pushed without a separate commit or push prompt. Confirm
 the same authorization covers a task worktree and its initial branch push.
 
-Ask the workflow to update or close a ticket, change root status, create a PR,
-or merge a PR. Confirm each action retains its own approval gate. Finish the
-root, then start an unrelated root and confirm the prior Git authorization
-does not carry over.
+After approving the ticket checkpoint, confirm the workflow automatically
+syncs ticket and root progress status without another prompt. Request issue
+creation, comments, labels, a PR, or a merge; confirm each keeps its existing
+approval gate. Finish the root, then start an unrelated root and confirm the
+prior Git authorization does not carry over.
 
 ## Interruption and reconciliation
 
@@ -58,7 +60,11 @@ rolling back, or rewriting them.
 
 After a ticket passes acceptance checks and review and its commit is pushed,
 confirm the workflow presents the evidence and pauses before declaring the
-ticket complete or writing issue/status. After all tickets, confirm it runs
-final verification and root review, presents their evidence, and pauses before
-declaring the root complete. Issue/status writes still require explicit
-approval at both checkpoints.
+ticket complete. After that checkpoint is approved, confirm it syncs the
+ticket and root progress status without another approval pause. After all
+tickets, confirm it runs final verification and root review, syncs the root
+status, then presents the evidence and pauses at the separate root completion
+checkpoint. If root completion is not approved, confirm the synced status stays
+in place; if work resumes later, confirm the next status sync reopens the root
+issue. Issue creation, comments, labels, pull requests, and other non-status
+writes still require their existing approval.

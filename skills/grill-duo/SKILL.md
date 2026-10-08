@@ -48,7 +48,19 @@ Before presenting a round, send one bounded request to the same reviewer. Includ
 - the complete open frontier, with each question ID, options, dependencies, and relevant constraints;
 - which questions the reviewer should assess now.
 
-Ask for advice, rationale, risks, and relevant factual findings for each requested question ID. The reviewer must not add questions, choose for the user, start implementation, contact the user, delegate, or write project documents. Validate the response against these bounds; do not act on out-of-scope suggestions or forward them as reviewer advice. If noncompliant content cannot be separated from valid feedback, treat the output as invalid, discard it, and recover using the same request and current frontier.
+For each requested question ID, ask the reviewer to assess:
+
+- whether the question is worth asking;
+- whether the supplied context supports its premise, flagging assumptions, uncertainty, or evidence the host should verify;
+- whether its wording is ambiguous or leading;
+- whether differences in option length or detail may bias the choice; and
+- which relevant perspectives are missing.
+
+Ask for advice, rationale, risks, and relevant factual findings for each requested question ID, plus a recommendation to keep, revise, or drop the question. The reviewer may offer draft wording or answer choices; these are non-binding suggestions for the host. The host alone decides whether to keep, revise, or drop a listed question.
+
+If the reviewer identifies a distinct decision missing from the current frontier, it may offer a clearly marked **Candidate follow-up** with draft wording. The candidate remains outside the formal frontier, with no official question ID, until the host chooses to adopt it in a later round.
+
+The reviewer must not decide for the user, edit the formal frontier, contact the user, start implementation, delegate, or write project documents. Validate the response against these bounds; do not act on out-of-scope suggestions or forward them as reviewer advice. If noncompliant content cannot be separated from valid feedback, treat the output as invalid, discard it, and recover using the same request and current frontier.
 
 Accept a result only when it belongs to the active invocation and matches the current `review_request_id`. Reject late or superseded results; they cannot reopen, close, or advance a question. When a semantic change affects a review—including the user's goal or confirmed decisions, a question, its options or constraints, the current frontier, or which questions are assessed—invalidate the affected review and assign it a new `review_request_id`. Keep each question's ID and unaffected questions' reviews.
 
@@ -65,5 +77,7 @@ Use visible history for host continuity, but build the replacement request from 
 ## Present and continue
 
 After a valid review arrives, combine it with the host's independent analysis and present the current frontier together in ordinary text; do not use a harness or an agent question component. For each stable ID, show meaningful options, the host's recommendation, and the reviewer's advice, rationale, risks, and relevant factual findings. Separate facts from value judgments and describe disagreements accurately.
+
+Present any **Candidate follow-up** separately from the formal frontier, and make clear it remains a suggestion until the host chooses to adopt it in a later round.
 
 After the user responds, close only answered, cancelled, or invalidated questions; keep unanswered IDs open. Follow `/grilling` for round closure and frontier refresh. When no decision remains, summarize the goal, confirmed decisions, constraints, and material risks, then ask for the user's final shared-understanding confirmation. Treat only the user's response as a decision. Do not begin the underlying implementation before the user confirms.
