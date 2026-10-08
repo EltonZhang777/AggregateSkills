@@ -2,6 +2,8 @@
 
 For each review round:
 
+Immediately before `/to-spec` or `/to-tickets` drafts each remediation Issue title or body, invoke `/conventional-git-messages` with the review reports, supplied facts, and the target repository's root `AGENTS.md` language rule, and use its draft. Apply its general Issue-title and concise, factual prose guidance where compatible with the required formats. Preserve `/to-spec`'s required body headings and order and `/to-tickets`' required body structure and short, descriptive titles; use Conventional syntax or prefixes for `/to-tickets` titles only when compatible with that constraint. Keep each skill's existing confirmation and Issue-write approval gates.
+
 1. Read and follow the original `SKILL.md` for `/to-spec` using all review reports as input. Preserve its seam-confirmation gate before publication.
 2. Read and follow the original `SKILL.md` for `/to-tickets`. Preserve its granularity, blocking-edge, and publication approval gates.
 3. Classify findings while preserving the original report and rationale:
