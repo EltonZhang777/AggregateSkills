@@ -83,7 +83,7 @@ The only push command is:
 git push REMOTE HEAD:refs/heads/HEAD_BRANCH
 ```
 
-Immediately before drafting or materially updating a PR title or body, read and follow `/conventional-git-messages`. Read the current diff and the repository's PR title and description guidance. Delegate title and body drafting to `/conventional-git-messages`, supplying those sources, the change facts, and recent same-type PR examples. Follow that skill's rules; ask when required facts or prefix conventions are unclear. Update an existing PR's text only when it is inaccurate, materially incomplete, or clearly inconsistent with current repository guidance. Consider `/show-me` or `/archify` only when a diagram materially improves clarity and an accessible skill is available; otherwise omit it.
+Delegate PR title and body drafting to `/conventional-git-messages`, supplying the current diff, target repository's PR title and description guidance, supplied change facts, and recent same-type PR examples. Follow its `/pr` prerequisite before drafting any body.
 
 After synchronizing the source branch as above, create a new PR with the resolved head, base, title, and body:
 

@@ -17,6 +17,7 @@ If any dependency is missing, report all missing dependencies, tell the user to 
 
 | Name | Type | Source |
 | --- | --- | --- |
+| /pr | Skill | https://github.com/mattpocock/skills |
 | /skill-scout | Skill | https://github.com/EltonZhang777/AggregateSkills |
 | SkillRoute CLI | Tool | https://github.com/erichare/skillroute |
 

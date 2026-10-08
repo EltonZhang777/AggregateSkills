@@ -1,5 +1,10 @@
 # Pull request text
 
+## Pull request drafting
+
+- Use the current diff, target repository's PR title and description guidance, supplied change facts, and recent same-type PR examples when drafting or revising PR titles and bodies. Ask when required facts or prefix conventions are unclear.
+- Update existing PR text only when it is inaccurate, materially incomplete, or clearly inconsistent with current repository guidance.
+
 ## Pull request titles
 
 - Use `<type>(<scope>): <imperative summary>` with a supported type listed in [Commit subject](commit-messages.md#commit-subject); add `!` before the colon for a breaking change, such as `feat(api)!:`. Omit a scope that adds no useful context.
@@ -11,7 +16,7 @@
 
 ## Pull request descriptions
 
-- Use the shortest useful structure. Add sections only when they clarify the change or the user requests them; do not use a fixed template.
+- Invoke `/pr` before drafting any PR body and follow its Summary, Evidence, and Merge Danger template.
 - Do not apply commit-specific title-length or body-wrapping limits.
 - In a full description, explain the impact of breaking changes, security fixes, data migrations, and reverts, including supplied migration or mitigation steps. Ask for missing facts instead of inventing them.
 - If the user asks for a title only, return only the title.
@@ -24,6 +29,6 @@
 
 ## Optional diagrams
 
-- Consider a diagram only when it materially improves both clarity and concision; diagrams are optional.
-- When a needed diagram requires skill discovery, follow `/skill-scout`'s general-host flow with host/caller inventory. Use its SkillRoute local-catalog mode only when the user selects it. Preserve its user-only invocation, confirmation, clarification, and missing-prerequisite gates. Do not install, index, copy, or silently substitute a skill.
-- Include only artifacts readers can access directly from the pull request description. Omit inaccessible artifacts; never upload or publish them.
+- Consider a diagram only when it materially improves clarity. Use an accessible `/show-me` or `/archify` skill; if no suitable skill is accessible, follow the shared Optional diagrams guidance to discover one when its gates permit, and omit the diagram if none is accessible.
+- When discovery is needed, follow `/skill-scout`'s general-host flow with host/caller inventory. Use its SkillRoute local-catalog mode only when the user selects it. Preserve its user-only invocation, confirmation, clarification, and missing-prerequisite gates. Do not install, index, copy, or silently substitute a skill.
+- Include only artifacts readers can access directly from the PR description; omit inaccessible artifacts and never upload or publish them.
