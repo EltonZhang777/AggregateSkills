@@ -11,6 +11,12 @@ def skill(name):
     return (ROOT / "skills" / name / "SKILL.md").read_text(encoding="utf-8")
 
 
+def skill_reference(name, filename):
+    return (
+        ROOT / "skills" / name / "references" / filename
+    ).read_text(encoding="utf-8")
+
+
 def section(text, heading):
     start = text.index(heading) + len(heading)
     end = text.find("\n## ", start)
@@ -25,19 +31,35 @@ class SkillScoutBehaviorTests(unittest.TestCase):
     def test_general_inventory_and_selected_catalog_flow(self):
         text = skill("skill-scout").lower().replace(chr(96), "")
         general = section(text, "## general-host discovery")
-        local = section(text, "## skillroute local-catalog mode")
+        fallback = " ".join(section(text, "## skillroute local-catalog fallback").split())
+        local_reference = skill_reference("skill-scout", "skillroute-local-catalog.md").lower().replace(chr(96), "")
+        dependencies = section(local_reference, "## dependencies")
+        local = section(local_reference, "## skillroute local-catalog mode")
         explicit = section(text, "### resolve an explicitly named skill")
         report = section(text, "## report")
+        self.assertLess(text.index("## general-host discovery"), text.index("## skillroute local-catalog fallback"))
+        self.assertIn("only after general-host discovery cannot retrieve a result", fallback)
+        self.assertIn("only when the user selects the local-catalog mode", fallback)
+        self.assertIn("skillroute-local-catalog.md", fallback)
+        self.assertNotIn("## skillroute local-catalog mode", text)
         self.assertIn("start with an installed-skill inventory exposed by the host or supplied by the caller", general)
         self.assertIn("treat an inventory as complete only when its source identifies it as covering all installed skills", general)
         self.assertIn("a partial inventory never proves a skill is absent", general)
+        self.assertIn("request a complete inventory or the user's choice to use skillroute local-catalog mode", general)
         self.assertIn("return unavailable", general)
+        self.assertIn("if any dependency is missing, report all missing dependencies", dependencies)
+        self.assertIn("skillroute cli", dependencies)
         self.assertIn("optional local-catalog mode", local)
+        self.assertIn("reads the local catalog only", local)
+        self.assertIn("does not use a network backend", local)
+        self.assertIn("run the cli and backend checks before routing", local)
         self.assertIn("if the cli, local backend, or catalog is unavailable, return unavailable", local)
         self.assertIn("do not present the result as evidence that a skill is absent", local)
         self.assertIn("temporary resolver or backend errors", local)
         self.assertIn("return an unresolved prerequisite result", local)
         self.assertIn("exact failed check and recovery condition", local)
+        self.assertIn("and stop", local)
+        self.assertIn("do not fall back to another discovery source", local)
         self.assertIn("if a complete inventory does not contain it, return missing prerequisite", explicit)
         self.assertIn("if the inventory is partial, return unavailable", explicit)
         self.assertIn("unresolved prerequisite", report)
@@ -58,9 +80,15 @@ class PrAndMergeBehaviorTests(unittest.TestCase):
         text = skill("pr-and-merge").lower().replace(chr(96), "")
         activation = section(text, "## activation criteria & objective")
         reuse = section(text, "## reuse or prepare the pr")
-        merge = section(text, "## merge after approval")
+        merge_route = section(text, "## merge after approval")
+        merge = skill_reference("pr-and-merge", "merge-after-approval.md").lower().replace(chr(96), "")
         self.assertIn("it handles github only", activation)
         self.assertIn("immediately before drafting or materially updating a pr title or body, read and follow /conventional-git-messages", reuse)
+        self.assertIn("only when the user requests a merge", merge_route)
+        self.assertIn("explicitly approves that exact pr", merge_route)
+        self.assertIn("references/merge-after-approval.md", merge_route)
+        self.assertIn("merge each pr only after the user explicitly approves that exact pr", merge)
+        self.assertIn("immediately before each merge, recheck that pr's head and base", merge)
         self.assertIn("when an approved merge encounters a conflict, use /resolving-merge-conflicts", merge)
 
 
@@ -69,6 +97,24 @@ class PruneWorktreesBehaviorTests(unittest.TestCase):
         text = skill("prune-worktrees-and-branches").lower().replace("*", "")
         self.assertIn("if a required github check is unavailable, do not mark the affected branch safe to clean", text)
         self.assertIn("unknown, failed, incomplete, or out-of-date evidence must never produce safe to clean", text)
+
+    def test_cleanup_references_follow_their_separate_approval_gates(self):
+        text = skill("prune-worktrees-and-branches").lower().replace("*", "")
+        local_gate = section(text, "## apply approved local cleanup")
+        remote_gate = section(text, "## apply separately approved remote cleanup")
+        local = skill_reference("prune-worktrees-and-branches", "approved-local-cleanup.md").lower().replace("*", "").replace(chr(96), "")
+        remote = skill_reference("prune-worktrees-and-branches", "approved-remote-branch-deletion.md").lower().replace("*", "").replace(chr(96), "")
+        self.assertIn("ask for explicit approval of that local set", local_gate)
+        self.assertIn("after approval of the exact local cleanup set", local_gate)
+        self.assertIn("references/approved-local-cleanup.md", local_gate)
+        self.assertIn("require an explicit pass for every item", remote_gate)
+        self.assertIn("ask for explicit remote-deletion approval in a separate question", remote_gate)
+        self.assertIn("after approval for exactly the reviewed remote, branch names, and oids", remote_gate)
+        self.assertIn("references/approved-remote-branch-deletion.md", remote_gate)
+        self.assertIn("git worktree remove <path>", local)
+        self.assertIn("git branch -d -- <branch>", local)
+        self.assertIn("git push <remote> --delete refs/heads/<branch>", remote)
+        self.assertIn("never use --force", remote)
 
 
 class GrillDuoBehaviorTests(unittest.TestCase):
@@ -113,13 +159,72 @@ class SpecImplementLoopBehaviorTests(unittest.TestCase):
         self.assertIn("Pass the target rule to /grill-duo-with-docs", text)
         self.assertNotIn("/grill-with-docs", text)
 
+    def test_remediation_routes_only_when_final_review_finds_issues(self):
+        text = skill("spec-implement-loop").lower()
+        final_review = section(text, "## final review")
+        remediation = skill_reference("spec-implement-loop", "final-review-remediation.md").lower().replace(chr(96), "")
+        self.assertIn("when no non-deferred ready ticket remains, review the complete target diff", final_review)
+        self.assertIn("if the reports contain no findings", final_review)
+        self.assertIn("if findings exist", final_review)
+        self.assertIn("references/final-review-remediation.md", final_review)
+        self.assertNotIn("## final review and remediation", text)
+        self.assertIn("preserve its seam-confirmation gate before publication", remediation)
+        self.assertIn("preserve its granularity, blocking-edge, and publication approval gates", remediation)
+        self.assertIn("**deferred:** yes", remediation)
+        self.assertIn("show the complete p0/p1 batch and ask the user for approval", remediation)
+        self.assertIn("allow at most three rounds", remediation)
+
 
 class ConventionalGitMessagesBehaviorTests(unittest.TestCase):
-    def test_optional_diagrams_use_user_selected_skill_scout_flow(self):
+    def test_each_output_type_routes_to_an_existing_reference(self):
+        text = skill("conventional-git-messages").lower()
+        routes = section(text, "## guidance routes")
+        self.assertIn("follow its links only for rules", routes)
+        self.assertIn("it reuses.", routes)
+        references = (
+            ("commit message", "commit-messages.md", ("## commit subject", "## commit body")),
+            (
+                "pull request title, description, or comment",
+                "pull-request-text.md",
+                (
+                    "## pull request titles",
+                    "## pull request descriptions",
+                    "## pull request comments",
+                    "## optional diagrams",
+                ),
+            ),
+            (
+                "issue title, description, or comment",
+                "issue-text.md",
+                ("## issue titles", "## issue descriptions", "## issue comments"),
+            ),
+        )
+        for trigger, filename, headings in references:
+            with self.subTest(trigger=trigger):
+                self.assertIn(trigger, routes)
+                self.assertIn(f"(references/{filename})", routes)
+                reference_path = (
+                    ROOT / "skills" / "conventional-git-messages" / "references" / filename
+                )
+                self.assertTrue(reference_path.is_file())
+                reference_text = reference_path.read_text(encoding="utf-8").lower()
+                for heading in headings:
+                    self.assertIn(heading, reference_text)
+
+    def test_shared_operation_boundary_stays_in_the_entrypoint(self):
         text = skill("conventional-git-messages").lower().replace(chr(96), "")
+        activation = section(text, "## activation criteria & objective")
+        self.assertIn("never perform a git operation", activation)
+        self.assertIn("create or modify an issue", activation)
+        self.assertIn("open or edit a pull request", activation)
+        self.assertIn("post a comment", activation)
+
+    def test_optional_diagrams_use_user_selected_skill_scout_flow(self):
+        text = skill_reference("conventional-git-messages", "pull-request-text.md").lower().replace(chr(96), "")
         diagrams = section(text, "## optional diagrams")
         self.assertIn("follow /skill-scout's general-host flow", diagrams)
         self.assertIn("use its skillroute local-catalog mode only when the user selects it", diagrams)
+        self.assertIn("do not install, index, copy, or silently substitute a skill", diagrams)
 
 
 class ReadmeBehaviorTests(unittest.TestCase):

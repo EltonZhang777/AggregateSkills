@@ -107,30 +107,11 @@ For each ready ticket:
 6. After the ticket checkpoint and a confirmed push, follow `status_sync` for issue status updates, including the final root update and reopening behavior. Any new or materially rewritten issue text must follow the target repository's root language rule; preserve untouched text and report resulting language mixtures. Retry only transient update failures, up to three total attempts including the first; reconcile uncertain results before retrying. If retries fail, stop and report that code is pushed but status is unsynchronised; do not roll back the code.
 7. After status sync succeeds, continue with the next ticket that passes the ready guard, including newly unblocked tickets; enter final verification and root review when no non-deferred ready ticket remains. After the final root status sync, present the root checkpoint and wait before declaring completion. If a decision, user preference, permission, security concern, or scope boundary is unclear, stop and load the original `SKILL.md` for `/grill-duo-with-docs`. A purely local, objective blocker may be recorded and skipped while independent ready tickets continue; do not bypass a user decision.
 
-## Final review and remediation
+## Final review
 
 When no non-deferred ready ticket remains, review the complete target diff from the recorded starting `HEAD` with the original `SKILL.md` for `/code-review` and `/ponytail-review`.
 
-If the reports contain no findings, finish the review phase without creating empty remediation artifacts. Otherwise, for each review round:
-
-1. Read and follow the original `SKILL.md` for `/to-spec` using all review reports as input. Preserve its seam-confirmation gate before publication.
-2. Read and follow the original `SKILL.md` for `/to-tickets`. Preserve its granularity, blocking-edge, and publication approval gates.
-3. Classify findings while preserving the original report and rationale:
-   - P0: data loss, severe security issue, unusable core flow, or inability to start/deploy.
-   - P1: correctness, security, data-loss risk, explicit spec violation, or a blocker for the main acceptance path.
-   - P2 or lower: all other findings, including pure over-engineering findings from `/ponytail-review`.
-4. Publish low-priority tickets in the original `/to-tickets` format with `ready-for-agent` unchanged and add:
-
-   ```markdown
-   **Deferred:** yes — <UTC ISO-8601 timestamp to seconds>; excluded from the current `/spec-implement-loop` run
-   ```
-
-5. Show the complete P0/P1 batch and ask the user for approval. Execute only approved tickets. If approval is partial or absent, stop with a waiting-approval status.
-6. Implement every approved P0/P1 ticket in the normal issue loop. Do not re-review a partial batch. Re-review only after the current batch is complete.
-
-Count `review -> /to-spec -> /to-tickets -> fix -> commit -> repeat` rounds from 1. Allow at most three rounds. If round three still produces P0/P1 findings, create the final review spec, stop before another `/to-tickets` or fix pass, and report the current state for user approval.
-
-Do not close or modify a parent issue inside `/to-tickets`; the outer loop updates root progress only after the approved work is verified.
+If the reports contain no findings, finish the review phase without creating empty remediation artifacts. If findings exist, read and follow the [final-review remediation procedure](references/final-review-remediation.md).
 
 ## Completion and report
 
