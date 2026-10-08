@@ -17,10 +17,9 @@ If any dependency is missing, report all missing dependencies, tell the user to 
 
 | Name | Type | Source |
 | --- | --- | --- |
+| /pr | Skill | https://github.com/mattpocock/skills |
 | /skill-scout | Skill | https://github.com/EltonZhang777/AggregateSkills |
 | SkillRoute CLI | Tool | https://github.com/erichare/skillroute |
-
-The `/pr` skill from https://github.com/mattpocock/skills is a route-specific prerequisite for PR-body drafting and an exception to the whole-workflow dependency rule above. If it is unavailable, report it and stop only PR-body drafting.
 
 ## Commit subject
 
