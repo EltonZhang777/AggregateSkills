@@ -1,6 +1,6 @@
 # `/spec-implement-loop` manual scenarios
 
-Run these through the user-visible skill invocation in a disposable repository with test issues and branches. Do not use a production repository. Scenarios checking approval gates must not approve non-status writes.
+Run these through the user-visible skill invocation in a disposable repository with test issues and branches. Do not use a production repository. In scenarios checking non-status write gates, withhold approval for issue creation, comments, labels, pull requests, and merges. The graph comment may proceed only under the approved root-spec scenario.
 
 ## Graph planning and reusable worktree pool
 
@@ -26,7 +26,7 @@ Create a ticket whose explicit blockers are closed but whose acceptance criteria
 
 Approve one root and run two small tickets. Confirm each ticket gets one focused integration commit after acceptance and review, and its confirmed commit is pushed without a separate commit or push prompt. Confirm the same authorization covers the integration worktree and its initial branch push.
 
-Confirm ticket and root status synchronization follows issue #143 without an extra status-approval pause. Ask the workflow to create a comment, change labels, create a PR, or merge a PR; confirm each non-status action retains its approval gate. Finish the root, then start an unrelated root and confirm the prior Git authorization does not carry over.
+Confirm ticket and root status synchronization follows issue #143 without an extra status-approval pause. Ask the workflow to create an issue, add a comment other than the authorized graph comment, change labels, create a PR, or merge a PR; confirm each non-status action retains its approval gate. Finish the root, then start an unrelated root and confirm the prior Git authorization does not carry over.
 
 ## Interruption and reconciliation
 
@@ -38,9 +38,9 @@ In separate runs for the same ref and commit, inject a clearly transient push fa
 
 ## Ticket and root checkpoints
 
-After a ticket passes acceptance and review, is integrated, and its commit is pushed, confirm the existing ticket review checkpoint remains. After that checkpoint is approved, confirm ticket status sync runs without another pause or approval.
+After a ticket passes acceptance and review, is integrated, and its commit is pushed, confirm the existing ticket review checkpoint remains. After that checkpoint is approved, confirm ticket and root progress status sync runs without another pause or approval.
 
-After all tickets, confirm the workflow runs final verification and root review, syncs the root issue status before the separate root completion checkpoint, then presents the evidence and waits for explicit completion approval. If the root is already synced as complete while approval is pending, confirm it remains complete; if work resumes, confirm the next status sync reopens it. Confirm issue creation, comments other than the authorized graph comment, labels, and PR operations retain their approval gates.
+After all tickets, confirm the workflow runs final verification and root review, syncs the root issue status before the separate root completion checkpoint, then presents the evidence and waits for explicit completion approval. If the root is already synced as complete while approval is pending, confirm it remains complete; if work resumes, confirm the next status sync reopens it. Confirm issue creation, comments other than the authorized graph comment, labels, PR operations, and other non-status writes retain their approval gates.
 
 ## Self-contained behavior
 

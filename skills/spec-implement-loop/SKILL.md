@@ -53,7 +53,7 @@ Before implementation starts:
 6. Schedule only tickets whose explicit blockers are closed and whose acceptance criteria, required approvals, permissions, and environment are ready. Assign each ticket a fresh local, ticket-specific branch from the latest integration tip in an available stable slot. Apply the repository's upstream mapping rule without pushing worker branches. Workers edit and verify their assigned scope; only the coordinator changes branches, commits, integrates, or pushes.
 7. After acceptance and review, the coordinator captures the complete worker diff and applies it to the latest integration tip; mark new files intent-to-add before capture so they are included. Resolve only in-scope conflicts, rerun relevant checks, and create one focused commit on the integration branch. Push only that branch. After the push is confirmed, complete the ticket checkpoint and status sync. Reuse the slot only when another ticket enters the current ready frontier, the worker has no post-review or unrelated changes, and the captured ticket changes are confirmed in the latest integration history. Use path-scoped `git restore --source=<latest-tip> --staged --worktree -- <captured-paths>` in the worker slot; never reset or clean the whole worktree. Then create the next ticket's fresh branch from that tip using a normal branch switch and verify the slot is clean. If any unreviewed change remains, the slot stays dirty, or patch application/integration is uncertain, preserve the slot and reconcile.
 
-Starting an explicitly approved root grants the main agent standing authorization for focused ticket commits and normal pushes to that root's integration branch, including its initial push. Worker branches remain unpublished. Keep one focused integration commit per ticket and publish only confirmed task commits to the exact integration ref. This authorization ends when the root is complete; it does not authorize issue writes, branch deletion, rollbacks, force-pushes, or history rewrites. A narrower instruction takes precedence.
+Starting an explicitly approved root grants the main agent standing authorization for focused ticket commits and normal pushes to that root's integration branch, including its initial push. Worker branches remain unpublished. Keep one focused integration commit per ticket and publish only confirmed task commits to the exact integration ref. This authorization also covers ticket and root status synchronization at the documented checkpoints under issue #143. It does not authorize issue creation, comments other than the graph comment authorized in the graph plan, labels, pull requests or merges, branch deletion, rollbacks, force-pushes, or history rewrites. A narrower instruction takes precedence.
 
 After an interruption, re-read the root and ticket graph, then reconcile the integration and worker worktrees, branches, local commits and changes, upstream mappings, and exact remote integration ref. Never repeat a commit, push, or issue write until evidence proves whether it succeeded.
 
@@ -78,11 +78,11 @@ Track the active root, ticket, lifecycle state, and resume point in the current 
 | blocked | Stop the affected dependency chain and record the reason class, evidence, recovery condition, and safe resume state. Resume only after the condition is met and issue and Git state are reconciled. |
 | completed | Every non-deferred ticket and approved repair is complete; acceptance checks and the required full suite pass; final review passes; pushes and status syncs are confirmed; and the root checkpoint is approved. |
 
-Classify dependency when a required blocker remains unsatisfied; technical for an implementation or verification failure; external-service for a known service or network failure; operator-decision for missing approval or an unresolved user choice; decomposition when scope needs further ticketing; and needs-reconcile when a side-effect result is uncertain. A blocker pauses only its dependent work; continue another independent root queue when it has a ready ticket.
+Classify dependency when a required blocker remains unsatisfied; technical for an implementation or verification failure; external-service for a known service or network failure; operator-decision when a required user decision is unresolved, such as approval for a non-status issue write or pull request; decomposition when scope needs further ticketing; and needs-reconcile when a side-effect result is uncertain. A review repair uses remediate, not a generic blocked state. A blocker pauses only its dependent work; continue another independent root queue when it has a ready ticket.
 
-Issue #143 authorizes ticket and root status synchronization without a separate approval checkpoint. Keep the ticket review checkpoint and the separate root completion checkpoint. Issue creation, non-status comments other than the explicitly authorized graph comment, labels, pull requests, and other writes retain their approval requirements. Status synchronization must not be used as approval to declare the root complete.
+Issue #143 authorizes ticket and root status synchronization without a separate approval checkpoint. Keep the ticket review checkpoint and the separate root completion checkpoint. Issue creation, comments other than the authorized graph comment, labels, pull requests, merges, and other non-status writes retain their existing approval requirements. Status synchronization must not be used as approval to declare the root complete.
 
-For GitHub inputs, the Issue task contract and native dependency edges are authoritative. Read comments and labels as relevant evidence. Never overwrite an Issue body as a progress log or add status labels. For inline and local-file inputs, the supplied source remains authoritative. Session lifecycle state is temporary execution state, not a second source of truth.
+For GitHub inputs, the Issue task contract and native dependency edges are authoritative; use the ready guard above when checking dependency completion. Read comments and labels as relevant evidence. Keep durable decisions, blocker evidence, and handoffs in the repository-approved Issue record; never overwrite an Issue body as a progress log or add status labels. For inline and local-file inputs, the supplied source remains authoritative. Session lifecycle state is temporary execution state, not a second source of truth.
 
 After a restart or interruption, re-read the authoritative input and relevant issue comments, labels, child links, and dependency edges. Inspect the current integration and worker worktrees, branches, local commits and changes, upstream mappings, and exact remote ref before resuming. Before retrying an operation whose result is uncertain, reconcile its authoritative evidence. If confirmed successful, continue without repeating it; if confirmed not applied, retry only a clearly transient operation within its bound; if unresolved, stop with needs-reconcile. Never repeat a commit, push, or issue write until reconciliation proves it did not succeed.
 
@@ -112,30 +112,11 @@ For each ready ticket:
 6. After the existing ticket review checkpoint and confirmed push, sync the completed ticket's status without a separate approval. Retry only transient status-write failures, up to three total attempts including the first; reconcile uncertain results before retrying. Do not roll back pushed code.
 7. Return to the ready frontier after status sync and follow the slot-reuse procedure in the graph plan. When no non-deferred eligible ticket remains, run final verification and root review, then sync the root status before the separate root completion checkpoint. If a decision, preference, permission, security concern, or scope boundary is unclear, stop and load the original `SKILL.md` for `/grill-duo-with-docs`. A purely local, objective blocker may be recorded and skipped while independent ready tickets continue; do not bypass a user decision.
 
-## Final review and remediation
+## Final review
 
 When no non-deferred ready ticket remains, review the complete target diff from the recorded starting `HEAD` with the original `SKILL.md` for `/code-review` and `/ponytail-review`.
 
-If the reports contain no findings, finish the review phase without creating empty remediation artifacts. Otherwise, for each review round:
-
-1. Read and follow the original `SKILL.md` for `/to-spec` using all review reports as input. Preserve its seam-confirmation gate before publication.
-2. Read and follow the original `SKILL.md` for `/to-tickets`. Preserve its granularity, blocking-edge, and publication approval gates.
-3. Classify findings while preserving the original report and rationale:
-   - P0: data loss, severe security issue, unusable core flow, or inability to start/deploy.
-   - P1: correctness, security, data-loss risk, explicit spec violation, or a blocker for the main acceptance path.
-   - P2 or lower: all other findings, including pure over-engineering findings from `/ponytail-review`.
-4. Publish low-priority tickets in the original `/to-tickets` format with `ready-for-agent` unchanged and add:
-
-   ```markdown
-   **Deferred:** yes — <UTC ISO-8601 timestamp to seconds>; excluded from the current `/spec-implement-loop` run
-   ```
-
-5. Show the complete P0/P1 batch and ask the user for approval. Execute only approved tickets. If approval is partial or absent, stop with a waiting-approval status.
-6. Implement every approved P0/P1 ticket in the normal issue loop. Do not re-review a partial batch. Re-review only after the current batch is complete.
-
-Count `review -> /to-spec -> /to-tickets -> fix -> commit -> repeat` rounds from 1. Allow at most three rounds. If round three still produces P0/P1 findings, create the final review spec, stop before another `/to-tickets` or fix pass, and report the current state for user approval.
-
-Do not close or modify a parent issue inside `/to-tickets`; the outer loop updates root progress only after the approved work is verified.
+If the reports contain no findings, finish the review phase without creating empty remediation artifacts. If findings exist, read and follow the [final-review remediation procedure](references/final-review-remediation.md).
 
 ## Completion and report
 
