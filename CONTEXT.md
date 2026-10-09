@@ -42,3 +42,11 @@ The stable name and publishing source that distinguish the intended prerequisite
 **Prerequisite resolution**:
 Finding the skill package or tool that matches a prerequisite identity in the current runtime.
 
+### Skill packaging
+
+**Package resource**:
+A supporting document, fixed reference target, or manifest input that ships inside its skill package.
+
+**Target-repository context document**:
+A document read from the repository receiving a task at runtime; it remains external input and is not a package resource.
+
