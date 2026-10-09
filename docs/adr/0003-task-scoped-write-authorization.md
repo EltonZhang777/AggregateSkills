@@ -1,0 +1,3 @@
+# ADR 0003: Task-Scoped Write Authorization
+
+General-use skills may commit and make ordinary (non-force) pushes only on a branch dedicated to the currently authorized task; force pushes, remote-ref deletion, writes to other branches, pull-request actions, and other GitHub writes require separate authorization. This removes repeated approval for routine task publication while preventing authority from crossing tasks, branches, or operation types; repository-local `AGENTS.md` remains caller preference rather than a universal skill rule. Any status-sync authorization is separate and applies only to the target repository and the status-sync operation.

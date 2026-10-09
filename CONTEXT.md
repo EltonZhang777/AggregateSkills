@@ -42,3 +42,8 @@ The stable name and publishing source that distinguish the intended prerequisite
 **Prerequisite resolution**:
 Finding the skill package or tool that matches a prerequisite identity in the current runtime.
 
+### Write authorization
+
+**Task-scoped write authorization**:
+The user's authorization to perform a named class of writes for one approved task, limited to that operation's target; it does not authorize other operations, tasks, or targets.
+
