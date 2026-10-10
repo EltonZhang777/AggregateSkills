@@ -26,8 +26,9 @@ any source-branch push and reports the exact missing item and recovery action.
 For a ready case, provide all required change facts and repository guidance.
 Confirm the skill uses the current diff, target-repository PR guidance,
 supplied facts, and relevant same-type examples to prepare the title and body
-with the /pr Summary, Evidence, and Merge Danger template. Inspect the run
-order and confirm the complete draft is ready before the first push; the
+with the /pr Summary, Evidence, and Merge Danger template. Confirm it invokes
+/pr before drafting the body. Inspect the run order and confirm the complete
+draft is ready before the first push; the
 preflight itself performs no push and does not create or edit a PR.
 
 In another disposable run, advance the published source branch after the
