@@ -148,9 +148,48 @@ class RequirementsToSpecTicketsBehaviorTests(unittest.TestCase):
         self.assertIn("if the frontier is empty, use its shared-understanding summary and wait for confirmation", protocol)
         self.assertIn("for every approved group, run /grill-duo-with-docs first", protocol)
         self.assertIn("approval of the complete grouping grants the main agent standing authorization for routine, focused local commits", git)
-        self.assertIn("group approval does not authorize pushes, issue creation, status changes, sub-issue links, or other github writes", git)
-        self.assertIn("obtain explicit approval before a push or any other github write", git)
         self.assertIn("record only user-confirmed content in project documents", documents)
+
+    def test_task_publication_authorization_is_scoped_and_preserves_other_gates(self):
+        text = skill("requirements-to-spec-tickets").lower().replace(chr(96), "")
+        protocol = section(text, "## 4. child-session protocol")
+        git = section(text, "## 5. task branches and git publication")
+        target_policy = section(text, "## 3. create interactive child sessions")
+
+        self.assertNotIn("dependencies recovery rule", protocol)
+        self.assertIn("report all missing dependencies", protocol)
+        self.assertIn("tell the user to install them", protocol)
+        self.assertIn("stop the entire workflow", protocol)
+        self.assertIn("do not install dependencies automatically", protocol)
+        self.assertIn("only the normative prose in the root agents.md of the repository receiving that text", target_policy)
+        self.assertIn("do not use the source or installation agents.md as a substitute", target_policy)
+
+        decision = (ROOT / "docs" / "adr" / "0003-task-scoped-write-authorization.md").read_text(encoding="utf-8").lower()
+        self.assertIn("limited to status synchronization", decision)
+        self.assertIn("repository containing the root", decision)
+        self.assertIn("ticket review checkpoint", decision)
+        self.assertIn("root completion checkpoint", decision)
+        self.assertIn("non-status writes", decision)
+
+        self.assertIn("ordinary non-force pushes", git)
+        self.assertIn("dedicated task branch", git)
+        self.assertIn("initial push that creates the matching remote ref", git)
+        self.assertIn("limited to the approved group and its task branch", git)
+        approval_boundary = next((line for line in git.splitlines() if "force-pushes" in line), "")
+        self.assertTrue(approval_boundary)
+        self.assertIn("separate approval", approval_boundary)
+        for boundary in (
+            "force-pushes",
+            "remote-ref deletion",
+            "pushes to other branches",
+            "pull request actions",
+            "issue creation",
+            "status changes",
+            "sub-issue linking",
+            "other github writes",
+        ):
+            with self.subTest(boundary=boundary):
+                self.assertIn(boundary, approval_boundary)
 
 
 class SpecImplementLoopBehaviorTests(unittest.TestCase):
