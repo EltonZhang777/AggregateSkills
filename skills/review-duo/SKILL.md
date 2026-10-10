@@ -13,10 +13,12 @@ Use this skill only when the user explicitly requests `/review-duo` or strict `/
 
 If any dependency is missing, report all missing dependencies, tell the user to install them, and stop the entire workflow. Do not install dependencies automatically.
 
+Before starting the workflow, confirm that the `skillroute` command is callable in the current environment.
+
 | Name | Type | Source |
 | --- | --- | --- |
 | /code-review | Skill | https://github.com/mattpocock/skills |
-| SkillRoute CLI | Tool | https://github.com/erichare/skillroute |
+| SkillRoute CLI executable (`skillroute`) | Tool | https://github.com/erichare/skillroute |
 
 ## Freeze the review inputs
 

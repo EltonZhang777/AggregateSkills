@@ -83,7 +83,9 @@ class PrAndMergeBehaviorTests(unittest.TestCase):
         merge_route = section(text, "## merge after approval")
         merge = skill_reference("pr-and-merge", "merge-after-approval.md").lower().replace(chr(96), "")
         self.assertIn("it handles github only", activation)
-        self.assertIn("immediately before drafting or materially updating a pr title or body, read and follow /conventional-git-messages", reuse)
+        self.assertIn("before drafting new pr title or body text", reuse)
+        self.assertIn("pass the durable-project-text language rule", reuse)
+        self.assertIn("to /conventional-git-messages", reuse)
         self.assertIn("only when the user requests a merge", merge_route)
         self.assertIn("explicitly approves that exact pr", merge_route)
         self.assertIn("references/merge-after-approval.md", merge_route)
@@ -132,6 +134,25 @@ class GrillDuoWithDocsBehaviorTests(unittest.TestCase):
         self.assertIn("use /grill-duo for the grilling protocol", activation)
         self.assertIn("use /domain-modeling for glossary and decision discipline", activation)
         self.assertIn("do not copy either skill's body into this entrypoint", activation)
+
+
+class SkillRoutePrerequisiteTests(unittest.TestCase):
+    def test_cli_identity_and_callability_are_clear_across_affected_skills(self):
+        for name in (
+            "grill-duo",
+            "grill-duo-with-docs",
+            "pr-and-merge",
+            "requirements-to-spec-tickets",
+            "review-duo",
+        ):
+            with self.subTest(skill=name):
+                dependencies = section(
+                    skill(name).lower().replace(chr(96), ""), "## dependencies"
+                )
+                self.assertIn("skillroute cli executable (skillroute)", dependencies)
+                self.assertIn("before starting the workflow", dependencies)
+                self.assertIn("callable", dependencies)
+                self.assertIn("https://github.com/erichare/skillroute", dependencies)
 
 
 class RequirementsToSpecTicketsBehaviorTests(unittest.TestCase):
