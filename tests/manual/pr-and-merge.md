@@ -16,6 +16,36 @@ the PR link, diff, and required-check status, then pauses without merging.
 Repeat with a second clean branch and an explicit non-default target; confirm
 it uses the requested base.
 
+## PR-text preflight before the first push
+
+In a disposable repository, prepare a new PR from a source branch that needs
+a push. Run one case with a required drafting prerequisite unavailable and
+another with a required change fact missing. Confirm each case blocks before
+any source-branch push and reports the exact missing item and recovery action.
+
+For a ready case, provide all required change facts and repository guidance.
+Confirm the skill uses the current diff, target-repository PR guidance,
+supplied facts, and relevant same-type examples to prepare the title and body
+with the /pr Summary, Evidence, and Merge Danger template. Inspect the run
+order and confirm the complete draft is ready before the first push; the
+preflight itself performs no push and does not create or edit a PR.
+
+In another disposable run, advance the published source branch after the
+initial comparison but before the final write-time fetch (for example, while
+the title and body are being prepared). Confirm the changed OID is reported
+and no push or PR write uses the old snapshot. The workflow must reclassify
+the new state and repeat any required preflight before continuing, or stop if
+the new state blocks progress.
+
+Repeat with an exact matching open PR whose text is accurate, then with text
+that needs correction. Confirm accurate text is reused and any required
+correction is prepared before the push. Run another PR-preparation entry with
+no matching PR whose source branch is published at the same OID as local
+`HEAD`; confirm the read-only comparison classifies it as no-push, skips the
+pre-push gate, and leaves any needed draft ready before PR creation.
+Also confirm merge-only entries and completed exact matches for merged PRs
+skip this preflight, and an explicit choice not to push remains unchanged.
+
 ## Reuse an existing matching PR
 
 Create an open PR for the exact source branch with a non-default base. Add a
@@ -23,9 +53,10 @@ commit to the supplied local branch without publishing it, and make the PR
 title or body stale. Ask the skill to prepare that branch again without
 naming a target.
 
-Confirm it pushes only that branch normally, refreshes the PR head, diff, and
-checks, preserves the existing base, reuses the exact open PR, and updates
-only inaccurate PR text using repository evidence and
+Confirm the needed title or body correction is prepared before the push.
+Then confirm it pushes only that branch normally, refreshes the PR head,
+diff and checks, preserves the existing base, reuses the exact open PR, and
+updates only inaccurate PR text using repository evidence and
 `/conventional-git-messages`. Repeat with an explicit target that conflicts
 with the existing PR; confirm it reports the conflict and asks before opening
 another PR. A closed PR must also be reported before another is opened.

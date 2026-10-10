@@ -76,6 +76,58 @@ class SkillScoutBehaviorTests(unittest.TestCase):
 
 
 class PrAndMergeBehaviorTests(unittest.TestCase):
+    def test_pr_text_gate_follows_push_classification_and_precedes_writes(self):
+        text = skill("pr-and-merge").lower().replace(chr(96), "")
+        reuse = section(text, "## reuse or prepare the pr")
+        prepare_heading = "### prepare or reuse pr text"
+        preflight_heading = "### pr-text preflight before the first source push"
+        prepare_start = reuse.index(prepare_heading)
+        preflight_start = reuse.index(preflight_heading)
+        checks = reuse.index("after required local checks")
+        classify = reuse.index("before deciding whether a source push is needed")
+        prepare = section(reuse, prepare_heading)
+        preflight = section(reuse, preflight_heading)
+        push = reuse.index("git push remote head:refs/heads/head_branch")
+        create_pr = reuse.index("gh pr create")
+        edit_pr = reuse.index("gh pr edit")
+
+        self.assertLess(checks, classify)
+        self.assertLess(classify, prepare_start)
+        self.assertLess(prepare_start, preflight_start)
+        self.assertLess(classify, preflight_start)
+        self.assertLess(preflight_start, push)
+        self.assertLess(push, create_pr)
+        self.assertLess(push, edit_pr)
+        classification = " ".join(reuse[classify:preflight_start].split())
+        self.assertIn("git fetch", classification)
+        self.assertRegex(classification, r"source push as required.*source push is needed")
+        self.assertRegex(classification, r"ahead or .*diverge.*stop and ask")
+        self.assertRegex(prepare, r"complete it before a required source push.*if no push is needed.*before creating or editing")
+        self.assertRegex(prepare, r"reuse accurate.*without rewriting")
+        self.assertLess(prepare.index("resolve all prerequisites"), prepare.index("delegate the title and body"))
+        self.assertRegex(prepare, r"current diff.*target-repository.*change facts.*same-type examples")
+        self.assertIn("summary, evidence, and merge danger", prepare)
+        self.assertRegex(prepare, r"(?:missing|unresolved|incomplete).*?(?:stop|block).*?(?:push|pr write)")
+        self.assertRegex(preflight, r"only for eligible entries .*pr preparation.*classified .*push as required")
+        self.assertRegex(preflight, r"skip entries .*merged-pr match.*merge-only.*no source push")
+        self.assertRegex(preflight, r"title and body.*ready before the first source-branch push")
+        self.assertIn("does not authorize a push", preflight)
+
+        no_push_start = preflight.index("for an entry classified as needing no source push")
+        no_push = " ".join(preflight[no_push_start:].split())
+        self.assertIn("skip this pre-push gate", no_push)
+        self.assertIn("shared text-preparation procedure above", no_push)
+        self.assertRegex(no_push, r"before any pr write")
+        no_push_global = preflight_start + no_push_start
+        self.assertLess(no_push_global, create_pr)
+        self.assertLess(no_push_global, edit_pr)
+
+        final_check = reuse.index("after preflight or no-push text preparation")
+        self.assertLess(final_check, push)
+        self.assertLess(final_check, create_pr)
+        self.assertLess(final_check, edit_pr)
+        self.assertIn("state changed, stop and redo source/pr classification", reuse[final_check:])
+
     def test_github_scope_and_subskill_steps_remain_explicit(self):
         text = skill("pr-and-merge").lower().replace(chr(96), "")
         activation = section(text, "## activation criteria & objective")
@@ -83,7 +135,10 @@ class PrAndMergeBehaviorTests(unittest.TestCase):
         merge_route = section(text, "## merge after approval")
         merge = skill_reference("pr-and-merge", "merge-after-approval.md").lower().replace(chr(96), "")
         self.assertIn("it handles github only", activation)
-        self.assertIn("immediately before drafting or materially updating a pr title or body, read and follow /conventional-git-messages", reuse)
+        self.assertIn(
+            "immediately before drafting or materially updating a pr title or body, pass the durable-project-text language rule",
+            reuse,
+        )
         self.assertIn("only when the user requests a merge", merge_route)
         self.assertIn("explicitly approves that exact pr", merge_route)
         self.assertIn("references/merge-after-approval.md", merge_route)

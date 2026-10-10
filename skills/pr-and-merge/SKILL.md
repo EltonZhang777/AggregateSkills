@@ -67,7 +67,7 @@ If `protected` is false, there is no classic branch protection; still inspect ru
 
 ## Reuse or prepare the PR
 
-Before drafting new PR title or body text, pass the durable-project-text language rule from the root `AGENTS.md` of the repository that will own the PR to `/conventional-git-messages`. If the target differs from this skill's source repository, do not use the source or installation `AGENTS.md` as target policy; if both are the same repository, use its root file as the target policy. Preserve untouched existing PR text; use the target language only for new or materially revised passages and report a resulting language mixture.
+Immediately before drafting or materially updating a PR title or body, pass the durable-project-text language rule from the root `AGENTS.md` of the repository that will own the PR to `/conventional-git-messages`. If the target differs from this skill's source repository, do not use the source or installation `AGENTS.md` as target policy; if both are the same repository, use its root file as the target policy. Preserve untouched existing PR text; use the target language only for new or materially revised passages and report a resulting language mixture.
 
 From the PR candidates gathered above, match the exact source repository, source branch, and resolved base. If exactly one matching open PR exists, reuse it, even when matching merged PR history also exists. If multiple matching open PRs exist, report the candidates and ask. If no matching open PR exists and exactly one matching PR has `state=MERGED`, verify it with `gh pr view NUMBER --repo OWNER/REPO --json state,mergedAt,headRepository,headRefName,headRefOid,baseRefName`; require the returned repository, head branch, and base branch to still match, plus `state=MERGED`, a non-null `mergedAt`, and `headRefOid` equal to the recorded source OID, then mark the entry completed without pushing or creating or updating a PR. If the merged PR's head OID differs from the source OID, block the entry, report both OIDs, and ask before opening another PR; do not mark the entry completed. If the merge or identity cannot be verified, block the entry and report the uncertainty. If multiple remaining matches make the result ambiguous, report the candidates and ask. If only a closed unmerged or differently based PR exists, report the candidates and ask before opening another. Do not create a duplicate.
 
@@ -75,17 +75,33 @@ Only an explicit request to prepare or create this PR authorizes pushing the sup
 
 After required local checks, recheck `git status --porcelain=v1 --untracked-files=all`. Repeat this check immediately before any push, PR creation, or PR edit. If a check leaves the worktree dirty, stop without publishing or cleaning it.
 
-Before creating or updating a PR, compare local `HEAD` with the exact source branch published on GitHub. Fetch it with `git fetch REMOTE HEAD_BRANCH`. For an existing PR, confirm the fetched OID matches its `headRefOid`; if not, reload the PR and ask if they still disagree. Distinguish a missing source ref from authentication or network errors; treat an unknown result as a blocker. If no source branch is published and there is no existing PR candidate, push only the supplied branch normally. If a PR candidate exists but its source branch is unpublished, stop and ask. If local HEAD is strictly ahead, push only that branch with a normal fast-forward push. If the published branch is ahead or the histories diverge, stop and ask; never force-push or rewrite. After a push, reload the PR candidates and verify the published source head. If a PR already exists, reload its head OID, diff, and checks. If creating a new PR, create it next and use the shared post-create verification below.
+Before deciding whether a source push is needed, compare local `HEAD` with the exact source branch published on GitHub. Fetch it with `git fetch REMOTE HEAD_BRANCH`. For an existing PR, confirm the fetched OID matches its `headRefOid`; if not, reload the PR and ask if they still disagree. Distinguish a missing source ref from authentication or network errors; treat an unknown result as a blocker. If no source branch is published and there is no existing PR candidate, classify a source push as required. If a PR candidate exists but its source branch is unpublished, stop and ask. If local HEAD is strictly ahead, classify a source push as required. If the published branch points to local HEAD, no source push is needed. If the published branch is ahead or the histories diverge, stop and ask; never force-push or rewrite.
 
-The only push command is:
+### Prepare or reuse PR text
+
+Use this shared procedure for eligible PR-preparation entries. Complete it before a required source push; if no push is needed, complete it before creating or editing the PR. It does not itself push, create, or edit a PR.
+
+Inspect any exact matching open PR against the current diff, target-repository guidance, and supplied change facts. Resolve the facts and conventions needed to verify existing text. Reuse accurate title and body text without rewriting; draft only when there is no matching open PR or a correction is necessary.
+
+Before drafting new or corrected text, resolve all prerequisites declared by /conventional-git-messages, including /pr, /skill-scout, and SkillRoute CLI. Follow /skill-scout's documented resolution flow and selected inventory; inspect the original source of each selected skill before invoking it. If a prerequisite is missing or unresolved, the inventory is incomplete, or a user decision is required, block this entry before any required push or PR write, and report the prerequisite, evidence, and recovery condition. Do not install a dependency or switch discovery modes automatically.
+
+If a draft or correction is needed, resolve its required facts and conventions, then delegate the title and body or only the necessary correction to /conventional-git-messages using the current diff, target-repository PR title and description guidance, supplied change facts, and relevant same-type examples. Follow the target repository's AGENTS.md language rule and the /pr Summary, Evidence, and Merge Danger body template. If any fact or convention needed to verify existing text or prepare a draft is unresolved, stop and report what is missing before any required push or PR write.
+
+### PR-text preflight before the first source push
+
+Run this gate only for eligible entries whose requested outcome includes PR preparation and whose source comparison above classified a source push as required. Skip entries already completed by an exact merged-PR match, merge-only entries, and entries that do not request PR preparation. For an entry classified as needing no source push, skip this pre-push gate but complete the shared text-preparation procedure above before any PR write. Keep the user's existing choice and authorization for the push.
+
+For a required-push entry, the title and body or confirmation that existing text is accurate must be ready before the first source-branch push. This preflight does not authorize a push; follow the existing status and push-authorization gates.
+
+After preflight or no-push text preparation, repeat the clean-worktree check and fetch the exact source branch again immediately before any push, PR creation, or PR edit. Require its published OID (or missing-ref state) to match the state used for classification; for an existing PR, also require the fetched OID to match its current `headRefOid`. If the state changed, stop and redo source/PR classification and any required preflight; do not write using stale results. A failed or unknown check blocks the write.
+
+For an entry still classified as requiring a push after the final comparison, use only this normal fast-forward push:
 
 ```sh
 git push REMOTE HEAD:refs/heads/HEAD_BRANCH
 ```
 
-Delegate PR title and body drafting to `/conventional-git-messages`, supplying the current diff, target repository's PR title and description guidance, supplied change facts, and recent same-type PR examples. Follow its `/pr` prerequisite before drafting any body.
-
-After synchronizing the source branch as above, create a new PR with the resolved head, base, title, and body:
+After a required push, reload the PR candidates and verify the published source head. For an existing PR, reload its head OID, diff, and checks. If the source branch was classified as needing no push, proceed without pushing. Create a new PR with the resolved head and base and the text prepared for this entry:
 
 ```sh
 gh pr create --repo OWNER/REPO --head HEAD_BRANCH --base BASE --title "TITLE" --body-file BODY_FILE
