@@ -26,11 +26,11 @@ Create a ticket whose explicit blockers are closed but whose acceptance criteria
 
 Approve one root and run two small tickets. Confirm each ticket gets one focused integration commit after acceptance and review, and its confirmed commit is pushed without a separate commit or push prompt. Confirm the same authorization covers the integration worktree and its initial branch push.
 
-Confirm ticket and root status synchronization follows issue #143 without an extra status-approval pause. Ask the workflow to create an issue, add a comment other than the authorized graph comment, change labels, create a PR, or merge a PR; confirm each non-status action retains its approval gate. Finish the root, then start an unrelated root and confirm the prior Git authorization does not carry over.
+With the supplied root in Repository A, include one in-repository ticket and one cross-repository ticket in Repository B. Confirm status sync changes only the root and in-repository ticket issue statuses in Repository A, only at the documented ticket and root status checkpoints; the Repository B ticket stays unchanged. Confirm status-sync authorization does not permit issue creation, comments, label changes, sub-issue links, PR creation, merges, or any other GitHub write. Finish the root, then start an unrelated root and confirm the prior authorization does not carry over.
 
 ## Interruption and reconciliation
 
-Interrupt once after a commit and once after a push, then resume the same root. Confirm the workflow rereads the issue graph and reconciles the integration and worker worktrees, branches, local commits and changes, upstream mappings, and exact remote ref before continuing. It must not repeat a confirmed commit or push. For an outcome that cannot be established, confirm it blocks and asks for reconciliation.
+Interrupt once after a commit and once after a push, then resume the same root. Before resuming any status write, confirm the workflow re-reads and reconciles the supplied root, ticket context, and target GitHub repository. Also reconcile the issue graph and the integration and worker worktrees, branches, local commits and changes, upstream mappings, and exact remote ref before continuing. It must not repeat a confirmed commit or push. For an outcome that cannot be established, confirm it blocks and asks for reconciliation.
 
 ## Push retries and partial results
 
@@ -38,9 +38,9 @@ In separate runs for the same ref and commit, inject a clearly transient push fa
 
 ## Ticket and root checkpoints
 
-After a ticket passes acceptance and review, is integrated, and its commit is pushed, confirm the existing ticket review checkpoint remains. After that checkpoint is approved, confirm ticket and root progress status sync runs without another pause or approval.
+After a ticket passes acceptance and review, is integrated, and its commit is pushed, confirm the existing ticket review checkpoint remains. After that checkpoint is approved, confirm the ticket status sync runs without another pause or approval.
 
-After all tickets, confirm the workflow runs final verification and root review, syncs the root issue status before the separate root completion checkpoint, then presents the evidence and waits for explicit completion approval. If the root is already synced as complete while approval is pending, confirm it remains complete; if work resumes, confirm the next status sync reopens it. Confirm issue creation, comments other than the authorized graph comment, labels, PR operations, and other non-status writes retain their approval gates.
+After all tickets, confirm the workflow runs final verification and root review, syncs the root issue status before the separate root completion checkpoint, then presents the evidence and waits for explicit completion approval. Confirm status sync itself does not satisfy the completion checkpoint. If the root is already synced as complete while approval is pending, confirm it remains complete; if work resumes, confirm the next status sync reopens it. Confirm non-status GitHub writes retain their approval gates.
 
 ## Self-contained behavior
 

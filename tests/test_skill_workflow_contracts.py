@@ -213,6 +213,83 @@ class SpecImplementLoopBehaviorTests(unittest.TestCase):
         self.assertIn("show the complete p0/p1 batch and ask the user for approval", remediation)
         self.assertIn("allow at most three rounds", remediation)
 
+    def test_status_sync_authorization_is_repository_and_checkpoint_scoped(self):
+        text = skill("spec-implement-loop").lower().replace(chr(96), "")
+        authorization = section(text, "## plan the graph and reusable worktree pool")
+        lifecycle = section(text, "## root-run lifecycle")
+        issue_loop = section(text, "## issue loop")
+
+        self.assertFalse("issue #143" in text, "Issue #143 cannot provide reusable status authorization.")
+        self.assertTrue("repository containing the supplied root" in authorization, "Status sync must stay in the root repository.")
+        self.assertTrue("limited to that root issue and its tickets" in authorization, "Status sync must be limited to the supplied root and its tickets.")
+        self.assertTrue("ticket and root status checkpoints" in authorization, "Status sync must be limited to its documented checkpoints.")
+        self.assertTrue("change issue status only" in authorization, "Status sync may change issue status only.")
+        status_boundary = authorization[authorization.index("status-sync authorization does not authorize"):]
+        for operation in (
+            "issue creation",
+            "comments",
+            "labels",
+            "sub-issue links",
+            "pull requests",
+            "merges",
+            "other github writes",
+        ):
+            with self.subTest(operation=operation):
+                self.assertTrue(operation in status_boundary, f"Status sync must not authorize {operation}.")
+
+        self.assertTrue("pause for the existing ticket review checkpoint" in lifecycle, "Keep the ticket review checkpoint.")
+        self.assertTrue("pause for explicit approval to declare the root complete" in lifecycle, "Keep the root completion checkpoint.")
+        self.assertTrue("never counts as approval to declare the root complete" in lifecycle, "Status sync cannot approve root completion.")
+        ticket_checkpoint = lifecycle.index("| ticket_checkpoint")
+        ticket_sync = lifecycle.index("| status_sync")
+        root_sync = lifecycle.index("| root_status_sync")
+        root_checkpoint = lifecycle.index("| root_checkpoint")
+        self.assertLess(ticket_checkpoint, ticket_sync)
+        self.assertLess(ticket_sync, root_sync)
+        self.assertLess(root_sync, root_checkpoint)
+        self.assertTrue("after the existing ticket review checkpoint" in issue_loop, "Ticket status sync follows its review checkpoint.")
+        self.assertTrue("before the separate root completion checkpoint" in issue_loop, "Root status sync precedes its separate checkpoint.")
+
+        interruption = lifecycle[lifecycle.index("after a restart or interruption"):]
+        for evidence in (
+            "before resuming any status write",
+            "reconcile the supplied root",
+            "ticket context",
+            "target github repository",
+        ):
+            with self.subTest(evidence=evidence):
+                self.assertTrue(evidence in interruption, f"Interruption recovery must include {evidence}.")
+
+    def test_manual_status_scenario_covers_repository_and_operation_boundaries(self):
+        manual = (ROOT / "tests" / "manual" / "spec-implement-loop.md").read_text(encoding="utf-8").lower()
+        scenario = section(manual, "## task-scoped commits and pushes")
+        status_scenario = scenario[scenario.index("with the supplied root"):]
+
+        for boundary in (
+            "repository a",
+            "repository b",
+            "cross-repository ticket",
+            "root and in-repository ticket issue statuses",
+            "ticket and root status checkpoints",
+            "repository b ticket stays unchanged",
+        ):
+            with self.subTest(boundary=boundary):
+                self.assertTrue(boundary in status_scenario, f"Manual scenario is missing {boundary}.")
+        self.assertFalse("issue #143" in status_scenario, "Manual scenario must not rely on Issue #143.")
+
+        denial = status_scenario[status_scenario.index("status-sync authorization does not permit"):]
+        for operation in (
+            "issue creation",
+            "comments",
+            "label changes",
+            "sub-issue links",
+            "pr creation",
+            "merges",
+            "any other github write",
+        ):
+            with self.subTest(operation=operation):
+                self.assertTrue(operation in denial, f"Status-sync denial is missing {operation}.")
+
 
 class ConventionalGitMessagesBehaviorTests(unittest.TestCase):
     def test_each_output_type_routes_to_an_existing_reference(self):
