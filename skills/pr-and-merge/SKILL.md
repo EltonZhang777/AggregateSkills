@@ -93,7 +93,7 @@ Run this gate only for eligible entries whose requested outcome includes PR prep
 
 For a required-push entry, the title and body or confirmation that existing text is accurate must be ready before the first source-branch push. This preflight does not authorize a push; follow the existing status and push-authorization gates.
 
-After preflight or no-push text preparation, repeat the clean-worktree check and fetch the exact source branch again immediately before any push, PR creation, or PR edit. Require its published OID (or missing-ref state) to match the state used for classification; for an existing PR, also require the fetched OID to match its current `headRefOid`. If the state changed, stop and redo source/PR classification and any required preflight; do not write using stale results. A failed or unknown check blocks the write.
+Immediately before any push, PR creation, or PR edit, repeat the clean-worktree check and confirm `git branch --show-current` and `git rev-parse HEAD` still match the source branch and OID recorded above. Fetch the exact source branch again. Before the first push, or before a PR write on the no-push path, require its published OID (or missing-ref state) to match the initial classification snapshot. After a successful push, require the published OID to equal the recorded source OID before any PR write. For an existing PR, also require its current `headRefOid` to match the fetched OID. If local or remote state changed, stop and redo source/PR classification and any required local checks and text preparation; do not write using stale results. If the branch no longer matches the user-supplied source identity, ask before proceeding. A failed or unknown check blocks the write.
 
 For an entry still classified as requiring a push after the final comparison, use only this normal fast-forward push:
 
@@ -101,7 +101,7 @@ For an entry still classified as requiring a push after the final comparison, us
 git push REMOTE HEAD:refs/heads/HEAD_BRANCH
 ```
 
-After a required push, reload the PR candidates and verify the published source head. For an existing PR, reload its head OID, diff, and checks. If the source branch was classified as needing no push, proceed without pushing. Create a new PR with the resolved head and base and the text prepared for this entry:
+After a required push, refetch the exact source branch and reload the PR candidates; require the published source head to equal the recorded source OID. For an existing PR, reload its head OID, diff, and checks. If the source branch was classified as needing no push, proceed without pushing. Create a new PR with the resolved head and base and the text prepared for this entry:
 
 ```sh
 gh pr create --repo OWNER/REPO --head HEAD_BRANCH --base BASE --title "TITLE" --body-file BODY_FILE

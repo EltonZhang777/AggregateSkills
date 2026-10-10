@@ -31,11 +31,15 @@ order and confirm the complete draft is ready before the first push; the
 preflight itself performs no push and does not create or edit a PR.
 
 In another disposable run, advance the published source branch after the
-initial comparison but before the final write-time fetch (for example, while
-the title and body are being prepared). Confirm the changed OID is reported
-and no push or PR write uses the old snapshot. The workflow must reclassify
-the new state and repeat any required preflight before continuing, or stop if
-the new state blocks progress.
+initial comparison but before the final write-time check (for example, while
+the title and body are being prepared). In a separate run, advance local
+`HEAD` or switch the current branch after preparation. In a third run, advance
+the remote again after a successful source push but before the PR write-time
+fetch. Confirm the changed OID or branch identity is reported and no push or
+PR write uses the old snapshot.
+The workflow must recheck required local checks, reclassify, and repeat any
+required text preparation before continuing, or stop if the source identity
+no longer matches or the new state blocks progress.
 
 Repeat with an exact matching open PR whose text is accurate, then with text
 that needs correction. Confirm accurate text is reused and any required

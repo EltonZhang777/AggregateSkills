@@ -122,10 +122,14 @@ class PrAndMergeBehaviorTests(unittest.TestCase):
         self.assertLess(no_push_global, create_pr)
         self.assertLess(no_push_global, edit_pr)
 
-        final_check = reuse.index("after preflight or no-push text preparation")
+        final_check = reuse.index("immediately before any push, pr creation, or pr edit", preflight_start)
         self.assertLess(final_check, push)
         self.assertLess(final_check, create_pr)
         self.assertLess(final_check, edit_pr)
+        self.assertIn("git branch --show-current", reuse[final_check:])
+        self.assertIn("git rev-parse head", reuse[final_check:])
+        self.assertIn("initial classification snapshot", reuse[final_check:])
+        self.assertIn("after a successful push, require the published oid to equal the recorded source oid", reuse[final_check:])
         self.assertIn("state changed, stop and redo source/pr classification", reuse[final_check:])
 
     def test_github_scope_and_subskill_steps_remain_explicit(self):
