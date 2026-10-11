@@ -26,4 +26,4 @@ Use the five canonical triage labels documented for this repository. See `docs/a
 
 ### Domain docs
 
-This repository uses a single-context domain-doc layout. See `docs/agents/domain.md`.
+Before any codebase exploration, read `docs/agents/domain.md` regardless of the task's domain relevance. This repository uses a single-context domain-doc layout.
