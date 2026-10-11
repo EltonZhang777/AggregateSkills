@@ -5,6 +5,10 @@ description: Compress explicitly named documents or user-approved files selected
 
 # Compress Docs
 
+## Dependencies
+
+When this skill's own workflow explicitly reaches a call to one of its directly declared Skill prerequisites, the call is explicit and may proceed even if that prerequisite disables implicit invocation. This waives only that invocation gate. It does not waive other prerequisite instructions or confirmation, authorization, security, or safety gates. It does not authorize transitive calls, create new call steps, or override an explicit prohibition on invoking another skill.
+
 ## Activation Criteria & Objective
 
 Handle one explicitly named file or a user-approved file list. For directory, glob, or "all" selection, require one explicit root directory and follow the bounded discovery rules below.
