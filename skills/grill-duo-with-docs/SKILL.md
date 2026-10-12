@@ -15,13 +15,17 @@ Use `/grill-duo` for the grilling protocol and use `/domain-modeling` for glossa
 
 ## Dependencies
 
+When this skill's own workflow explicitly reaches a call to one of its directly declared Skill prerequisites, the call is explicit and may proceed even if that prerequisite disables implicit invocation. This waives only that invocation gate. It does not waive other prerequisite instructions or confirmation, authorization, security, or safety gates. It does not authorize transitive calls, create new call steps, or override an explicit prohibition on invoking another skill.
+
 If any dependency is missing, report all missing dependencies, tell the user to install them, and stop the entire workflow. Do not install dependencies automatically.
+
+Before starting the workflow, confirm that the `skillroute` command is callable in the current environment.
 
 | Name | Type | Source |
 | --- | --- | --- |
 | /grill-duo | Skill | https://github.com/EltonZhang777/AggregateSkills |
 | /domain-modeling | Skill | https://github.com/mattpocock/skills |
-| SkillRoute CLI | Tool | https://github.com/erichare/skillroute |
+| SkillRoute CLI executable (`skillroute`) | Tool | https://github.com/erichare/skillroute |
 
 ## Read the repository's documentation map
 

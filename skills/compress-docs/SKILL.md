@@ -1,9 +1,13 @@
 ---
 name: compress-docs
-description: Compress explicitly named documents or user-approved files selected by directory, glob, or all-under-root discovery, preserving protected content and applying each validated shorter candidate.
+description: Compress explicitly named or user-approved documents into candidates; apply them only through storage backends with atomic version-conditional writes; reject ordinary local paths safely.
 ---
 
 # Compress Docs
+
+## Dependencies
+
+When this skill's own workflow explicitly reaches a call to one of its directly declared Skill prerequisites, the call is explicit and may proceed even if that prerequisite disables implicit invocation. This waives only that invocation gate. It does not waive other prerequisite instructions or confirmation, authorization, security, or safety gates. It does not authorize transitive calls, create new call steps, or override an explicit prohibition on invoking another skill.
 
 ## Activation Criteria & Objective
 
@@ -31,6 +35,7 @@ For each selected path, whether user-supplied or discovered, check the path and 
 - Do not read or send a path that looks sensitive. Skip credential and secret names such as `.env`, `.netrc`, `credentials`, `secrets`, `password`, `token`, `apikey`, or `privatekey`; private-key and certificate files such as `id_rsa`, `id_ed25519`, `.pem`, `.key`, `.p12`, or `.pfx`; and paths under `.ssh`, `.aws`, `.gnupg`, `.kube`, or `.docker`. If unsure, skip and explain why.
 
 Do not probe or infer operating-system, filesystem, or storage-provider replacement semantics. Normal directory enumeration and path/file metadata checks for selection are allowed. For a rejected target, report the reason and leave it unchanged.
+Ordinary local paths do not provide the version-conditional writes this project requires. Do not treat a final check followed by an unconditional replacement as an equivalent guarantee.
 
 For multiple paths, show every selected path, its path-level eligibility or skip reason, and ask for approval of the complete eligible list before reading any document content. Preserve the supplied order for explicit paths and use the relative-path order for discovered paths. Unsupported formats, sensitive paths, links, non-files, and oversized files can be marked skipped from path and metadata checks. A refusal leaves all documents unread and unchanged.
 
@@ -54,16 +59,17 @@ If validation fails, send that file's same agent a precise repair request for on
 
 ## Apply the candidate
 
-For each valid candidate, run `scripts/apply_candidate.py` with that source path and its original snapshot SHA-256 as separate arguments, and send candidate bytes on standard input. For a discovered file, also pass the recorded resolved root with `--approved-root`; the script rechecks containment before backup/staging and immediately before replacement. Omit this option for explicitly supplied paths. Use the host's Python 3.8 or later standard-library runtime and pass arguments without shell-string interpolation. If the runtime is unavailable, report that file as not applied and continue other files.
+The current repository has no version-conditional storage backend. For an ordinary local path, run `scripts/apply_candidate.py` with the source path and snapshot SHA-256 as separate arguments, and send the candidate bytes on standard input. Before reading or modifying the source, creating a backup, or staging a file, the script returns `not_applied` with reason `conditional_replace_unsupported`. You may still provide the validated candidate, but state clearly that it was not applied. Do not use a final file check followed by `os.replace` as a substitute for a version-conditional write.
 
-The script verifies the original snapshot, creates or verifies the adjacent backup formed by appending `.original.md` to the full source filename, stages the candidate in the source directory, rechecks the source snapshot, and calls the host's replace operation. It preserves the available file mode. It does not probe storage semantics, read the source after replacement, or roll back.
+In the future, a candidate may be applied only through a backend that checks the snapshot version in the same atomic commit, leaves the destination unchanged on conflict, and preserves the target's access boundary. The backend must also define a safely retryable backup strategy. Run the current refusal script with Python 3.8 or later and the standard library; pass arguments separately without shell-string interpolation. If the runtime is unavailable, report that the candidate was not applied and continue with other files.
 
 Report the result from the script:
 
+The current script returns only `not_applied` for local paths; the following other states apply only to future backends that meet the version-conditional write contract.
 - `applied`: replacement returned successfully. Report success and the verified backup path. This is the completion point; do not read the source back.
 - `not_applied`: report the reason and the backup path if one exists. The script did not call replace.
 - `replacement_unknown`: report "replacement result uncertain", give the verified backup path, and do not claim the source is unchanged.
-- If the script invocation ends without a valid result after it may have started, report "replacement result uncertain"; preserve and report the backup path if known. Do not read back or roll back.
+- The current script has no code path that writes the destination. If invocation returns no valid result, report that the candidate was not applied and include the invocation error; do not report an unknown replacement result. A future backend returns `replacement_unknown` only when a conditional commit may have occurred but its outcome cannot be confirmed.
 
 Use the current conversation language for chat explanations and status reports. For each compressed project document, if the candidate contains more than one language, mention the resulting language mixture in the report. Repository instructions do not set or infer the conversation language, and the report language does not change the candidate's source-language rules.
 

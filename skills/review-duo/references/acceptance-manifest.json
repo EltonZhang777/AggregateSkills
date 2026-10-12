@@ -3,7 +3,7 @@
     {
       "command": "not run",
       "name": "repository tests",
-      "reason": "The synthetic patch is not applied to the repository and has no executable test seam.",
+      "reason": "The synthetic patch is review-only and is not applied to a repository.",
       "result": "not_run"
     }
   ],
@@ -12,7 +12,7 @@
       "src/pricing.py"
     ],
     "kind": "synthetic patch",
-    "path": "skills/review-duo/references/acceptance-fixture.patch",
+    "path": "references/acceptance-fixture.patch",
     "sha256": "6f667e2413dc6081ec83ec81756fcfa3e15397922c4231cce942697a53b78c3f",
     "size_bytes": 398
   },
@@ -21,81 +21,49 @@
     "patch_snapshot": "exact frozen file bytes without newline normalization",
     "text_sha256": "UTF-8 bytes after normalizing CRLF or CR line endings to LF"
   },
-  "sources": [
+  "package_resources": [
     {
-      "included": true,
-      "path": ".gitattributes",
-      "role": "exact-byte patch checkout rule",
-      "sha256": "5942d952d521d82991b75d536068a5d02b23c274de9b1f493b7459cd556abdad"
-    },
-    {
-      "included": true,
-      "path": "AGENTS.md",
-      "role": "repository instructions",
-      "sha256": "f0c3cca9d22bfcbff449ea239f254b8284a3d16efff3a21abf6228af53c0a57d"
-    },
-    {
-      "included": true,
-      "path": "CONTEXT.md",
-      "role": "review terminology",
-      "sha256": "38431712cec5a685c758a4e473c762e38e12b22f2bd7a2b50b81de12a64e8472"
-    },
-    {
-      "included": true,
-      "path": "docs/agents/domain.md",
-      "role": "domain documentation rules",
-      "sha256": "edc6d6131fdffc4b7135704f5262124fc43355c95f61b7399dc5a4db643e28ca"
-    },
-    {
-      "included": true,
-      "normalized_text_sha256": "47f4e52c21694def9c7c11cbfbf891ca35eac7a93e395797515be3c8a409ae50",
-      "role": "resolved upstream /code-review skill",
-      "uri": "file:///C:/Users/28090/.codex/skills/code-review/SKILL.md"
-    },
-    {
-      "included": true,
-      "path": "skills/review-duo/SKILL.md",
+      "path": "SKILL.md",
+      "review_input": true,
       "role": "strict review workflow",
-      "sha256": "02c7cedb619e11eba30eb7979aaf1d070e780c77722c3364b33384cd9e18255c"
+      "sha256": "d4a9743f9527393a18e3175e9157b935ae2b7280fb87a1978c8ac00506505eea"
     },
     {
-      "included": true,
-      "path": "skills/review-duo/references/acceptance-fixture.patch",
+      "path": "references/acceptance-fixture.patch",
+      "review_input": true,
       "role": "synthetic implementation patch",
       "sha256": "6f667e2413dc6081ec83ec81756fcfa3e15397922c4231cce942697a53b78c3f"
     },
     {
-      "included": true,
-      "path": "skills/review-duo/references/acceptance-requirements.md",
+      "path": "references/acceptance-requirements.md",
+      "review_input": true,
       "role": "pinned requirements",
       "sha256": "03216a79ee7aa4d2d8526977fcd89f02ef2c6b20d613959278fb01da398b7a23"
     },
     {
-      "included": false,
-      "path": "skills/review-duo/references/acceptance-scenario.md",
-      "reason": "Contains the oracle and is not reviewer input.",
+      "path": "references/acceptance-scenario.md",
+      "review_input": false,
       "role": "operator procedure with expected findings",
-      "sha256": "5451d34b5b6139c30bd50190f08d5f922b6e5d5377199998522271366e2ad0db"
+      "sha256": "267b6b4eff8c1f311f25d95c65813838838d2480bf37c49184109c1e8c0f5742"
     },
     {
-      "included": true,
-      "path": "skills/review-duo/references/acceptance-standard.md",
+      "path": "references/acceptance-standard.md",
+      "review_input": true,
       "role": "pinned Decimal money standard",
       "sha256": "a39387fd1195726d124eb259eba6fb23b836c7cf948804c09cbb3c73e6f67e19"
-    },
+    }
+  ],
+  "package_root": "directory containing SKILL.md; package resource paths are relative to this directory",
+  "runtime_context": {
+    "provider": "target repository at invocation time",
+    "source_hashing": "Pin selected paths and normalized-text hashes in the run-specific coverage manifest; never use copies from this package's repository as package resources.",
+    "supplied_separately": true
+  },
+  "runtime_dependencies": [
     {
-      "included": false,
-      "path": "tests/skill-scout/test_skillroute_contract.py",
-      "reason": "Unrelated to the synthetic pricing patch.",
-      "role": "repository test source",
-      "sha256": "472b4be03d39d570276ca5c22f9361bad538325c2c1b8fb3e26548ede2165e25"
-    },
-    {
-      "included": false,
-      "path": "tests/test_skill_workflow_contracts.py",
-      "reason": "Unrelated to the synthetic pricing patch.",
-      "role": "repository test source",
-      "sha256": "711fa005c92fadc067b6abf9806967f4f2b94724b4977a2f738db65763a27d82"
+      "name": "/code-review",
+      "resolution": "resolve in the current runtime",
+      "uri_and_hash": "record the resolved URI and normalized-text SHA-256 in the run-specific coverage manifest"
     }
   ]
 }
