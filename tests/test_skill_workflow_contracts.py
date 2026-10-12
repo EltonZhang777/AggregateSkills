@@ -1,5 +1,6 @@
 """Focused behavior contracts retained from the retired prerequisite checks."""
 
+import re
 import unittest
 from pathlib import Path
 
@@ -25,6 +26,161 @@ def section(text, heading):
         if same_level != -1 and (end == -1 or same_level < end):
             end = same_level
     return text[start:] if end == -1 else text[start:end]
+
+
+def mentions_concepts(text, *concepts):
+    return all(any(term in text for term in alternatives) for alternatives in concepts)
+
+
+def sentence_with_concepts(text, *concepts):
+    return next((sentence for sentence in re.split(r"(?<=[.!?])\s+", text) if mentions_concepts(
+        sentence, *concepts,
+    )), "")
+
+
+def independent_work_continuation(text):
+    sentence = sentence_with_concepts(
+        text, ("independent", "unrelated"), ("phase", "group", "work"),
+        ("continue", "continues", "continuing", "proceed", "proceeds", "proceeding",
+         "remain eligible", "remain available", "keep running", "running"),
+    )
+    if re.search(
+        r"\b(?:does not|doesn't|did not|didn't|cannot|can't|must not|mustn't|"
+        r"may not|will not|won't|would not|wouldn't|should not|shouldn't|"
+        r"is not|isn't|are not|aren't|was not|wasn't|were not|weren't|never|unable to)\s+"
+        r"(?:(?:be\s+)?(?:able|allowed|permitted|authorized|expected|guaranteed)\s+to\s+)?"
+        r"(?:continue|proceed|remain|run)\b",
+        sentence,
+    ) or re.search(
+        r"\b(?:is|are|was|were|will be|may be)\s+"
+        r"(?:blocked|prevented|barred|stopped|paused|prohibited|forbidden|unable)\s+"
+        r"from\s+(?:continu\w*|proceed\w*|remain\w*|run\w*)\b",
+        sentence,
+    ):
+        return ""
+    return sentence
+
+
+def clauses(text):
+    return [clause.strip() for clause in re.split(
+        r"\b(?:however|although|though|while|yet|except|unless|rather than)\b"
+        r"|\bbut\b(?!\s+(?:only\s+)?(?:with|after|unless|when|if)\s+(?:a\s+)?"
+        r"(?:separate|additional|own)(?:\s+user)?\s+approval)"
+        r"|\band(?=\s+(?:does not|doesn't|cannot|can't|must not|never)\b)"
+        r"|\band(?=\s+(?:commit(?:s)?|push(?:es)?)\b"
+        r"(?:(?!\band\b)[^.!?])*\b(?:requir\w*|need\w*)\b"
+        r"(?:(?!\band\b)[^.!?])*\b(?:separate|additional)\s+approval\b)"
+        r"|\band(?=\s+(?:(?:a|the)\s+)?(?:separate\s+)?user(?:'s)?\s+"
+        r"(?:(?:separate|own)\s+)?(?:approval|authorization)\b)"
+        r"|\band(?=\s+(?:(?:a|the)\s+)?(?:(?:separate|own)\s+)?"
+        r"(?:approval|authorization)\s+(?:from|by)\s+(?:the\s+)?user\b)"
+        r"|\band(?=\s+(?:issue creation|comments?|label changes|sub-issue links?|"
+        r"pull request actions?|pr creation|merges?)\b[^.!?]*\b(?:is|are)\s+"
+        r"(?:separately\s+)?(?:authorized|approved|permitted|allowed)\s+by\s+(?:the\s+)?user\b)"
+        r"|\band(?=\s+(?:these|those|they)\s+(?:still\s+)?(?:requir\w*|need\w*)\b"
+        r"[^.!?]*\b(?:separate|additional)\s+approval\b)"
+        r"|\band(?=\s+(?:(?:the|a)\s+)?(?:user|group\s+b|b\b))|[;.!?]",
+        text,
+    ) if clause.strip()]
+
+
+def authorization_grant_clause(text, *concepts):
+    parts = clauses(text)
+    for index, clause in enumerate(parts):
+        match = TASK_AUTHORIZATION_GRANT.search(clause)
+        if (
+            match
+            and not TASK_AUTHORIZATION_DENIAL.search(clause)
+            and mentions_concepts(clause[match.end():], *concepts)
+            and not (
+                index + 1 < len(parts)
+                and ANAPHORIC_SEPARATE_APPROVAL.search(parts[index + 1])
+            )
+        ):
+            return clause
+    return ""
+
+
+def permission_clause(text, *concepts):
+    for clause in clauses(text):
+        clause = re.sub(
+            r"\b(?:not|never|without|rather than)\s+under a's (?:approval|authorization)\b",
+            "",
+            clause,
+        )
+        if (
+            mentions_concepts(clause, *concepts)
+            and re.search(
+                r"\b(?:may|can|allowed|permitted|authorized|authorizes?|permits?|"
+                r"allows?|grants?|covers?)\b",
+                clause,
+            )
+            and not TASK_ACTION_DENIAL.search(clause)
+        ):
+            return clause
+    return ""
+
+
+def status_sync_grant_clause(text, *concepts):
+    for clause in clauses(text):
+        direct_scope = STATUS_SYNC_CONDITIONALLY_APPROVED_WRITE.sub("", clause)
+        match = STATUS_SYNC_GRANT.search(direct_scope)
+        if match and mentions_concepts(direct_scope[match.start():], *concepts):
+            return clause
+    return ""
+
+
+AUTO_INSTALL_PROHIBITION = re.compile(
+    r"\b(?:do not|does not|don't|never|must not)\s+(?:automatically\s+)?install\b"
+)
+TASK_AUTHORIZATION_GRANT = re.compile(
+    r"\b(?:approval|authorization)\b.*\b"
+    r"(?:grant(?:s|ed)?|authoriz(?:e|es|ed)|permit(?:s|ted)?|"
+    r"allow(?:s|ed)?|cover(?:s|ed)?|enable(?:s|d)?)\b"
+)
+TASK_AUTHORIZATION_DENIAL = re.compile(
+    r"\b(?:approval|authorization)\s+"
+    r"(?:does not|doesn't|cannot|can't|must not|never)\s+"
+    r"(?:grant|authorize|permit|allow|cover)\b"
+    r"|\b(?:approval|authorization)\s+(?:(?:is\s+)?alone\s+)?(?:is\s+)?"
+    r"(?:insufficient|inadequate|not sufficient|not enough)\s+to\s+"
+    r"(?:grant|authorize|permit|allow|cover)\b"
+)
+TASK_ACTION_DENIAL = re.compile(
+    r"\b(?:does not|doesn't|cannot|can't|must not|never)\s+"
+    r"(?:grant|authorize|permit|allow|cover)\b"
+    r"|\b(?:may not|cannot|can't|must not|should not)\s+(?:write|commit|push)\b"
+    r"|\b(?:never|isn't|is not|aren't|are not|not)\s+(?:permitted|authorized|allowed)\b"
+)
+ANAPHORIC_SEPARATE_APPROVAL = re.compile(
+    r"\b(?:these|those|they)\s+(?:still\s+)?(?:requir\w*|need\w*)\b"
+    r"[^.!?]*\b(?:separate|additional)\s+approval\b"
+)
+TASK_AUTHORIZATION_LIMIT = re.compile(
+    r"\b(?:does not|doesn't|cannot|can't|must not)\s+(?:carry|transfer|extend|apply)\b"
+)
+STATUS_SYNC_GRANT = re.compile(
+    r"\b(?:status-sync authorization|status synchronization|status sync)\s+"
+    r"(?:(?:itself|also|may|can|still)\s+)*(?:authoriz(?:es|e)|permit(?:s)?|"
+    r"allow(?:s)?|cover(?:s)?|grant(?:s)?|enable(?:s)?|creat(?:e|es)|"
+    r"writ(?:e|es)|post(?:s)?|link(?:s)?|label(?:s)?|chang(?:e|es)|updat(?:e|s)|"
+    r"merg(?:e|es)|delet(?:e|es)|edit(?:s)?|comment(?:s)?|add(?:s)?|"
+    r"remov(?:e|es)|open(?:s)?|clos(?:e|es)|perform(?:s)?|"
+    r"execut(?:e|es)|issue(?:s)?)\b"
+)
+STATUS_SYNC_CONDITIONALLY_APPROVED_WRITE = re.compile(
+    r"\b(?:allow(?:s|ed)?|authoriz(?:e|es|ed)|permit(?:s|ted)?|grant(?:s|ed)?|"
+    r"cover(?:s|ed)?|enable(?:s|d)?)\s+"
+    r"(?:the\s+)?(?:issue creation|create an issue|new issue|comments?|labels?|"
+    r"label changes|sub-issue links?|pull request actions?|pr creation|merges?|"
+    r"other github writes?)\s*,?\s*(?:but\s+)?(?:only\s+)?"
+    r"(?:with|after|unless|when|if)\s+(?:a\s+)?"
+    r"(?:separate|additional|own)(?:\s+user)?\s+approval\b"
+)
+NON_STATUS_WRITES = (
+    "issue creation", "create an issue", "new issue", "comment", "label", "sub-issue",
+    "pull request", "pr creation", "merge", "other github write",
+)
 
 
 class SkillScoutBehaviorTests(unittest.TestCase):
@@ -83,7 +239,19 @@ class PrAndMergeBehaviorTests(unittest.TestCase):
         merge_route = section(text, "## merge after approval")
         merge = skill_reference("pr-and-merge", "merge-after-approval.md").lower().replace(chr(96), "")
         self.assertIn("it handles github only", activation)
-        self.assertIn("before drafting new pr title or body text, pass the durable-project-text language rule from the root agents.md of the repository that will own the pr to /conventional-git-messages", reuse)
+        drafting_rule = sentence_with_concepts(
+            reuse, ("before drafting",), ("pr title",), ("body text",),
+            ("language rule",), ("root agents.md",), ("conventional-git-messages",),
+        )
+        self.assertTrue(drafting_rule)
+        self.assertRegex(drafting_rule, r"\b(?:pass|read|follow|apply|use|provide)\b")
+        self.assertNotRegex(
+            drafting_rule,
+            r"\b(?:do not|don't|does not|doesn't|never|must not|mustn't|"
+            r"may not|will not|won't|would not|wouldn't|should not|shouldn't|"
+            r"cannot|can't|is not|isn't|are not|aren't)\s+"
+            r"(?:pass|read|follow|apply|use|provide)\b",
+        )
         self.assertIn("delegate pr title and body drafting to /conventional-git-messages", reuse)
         self.assertIn("only when the user requests a merge", merge_route)
         self.assertIn("explicitly approves that exact pr", merge_route)
@@ -142,16 +310,340 @@ class RequirementsToSpecTicketsBehaviorTests(unittest.TestCase):
         protocol = section(text, "## 4. child-session protocol")
         git = section(text, "## 5. task branches and git publication")
         documents = section(text, "## 6. shared workspace and document writes")
-        self.assertIn("wait for explicit approval of that complete grouping", grouping)
-        self.assertIn("approval starts every approved group in the /grill-duo-with-docs", grouping)
-        self.assertNotIn("explicit opt-in", grouping)
-        self.assertIn("for every approved group, invoke /grill-duo-with-docs", protocol)
-        self.assertIn("if the frontier is empty, use its shared-understanding summary and wait for confirmation", protocol)
-        self.assertIn("for every approved group, run /grill-duo-with-docs first", protocol)
-        self.assertIn("approval of the complete grouping grants the main agent standing authorization for routine, focused local commits", git)
-        self.assertIn("group approval does not authorize pushes, issue creation, status changes, sub-issue links, or other github writes", git)
-        self.assertIn("obtain explicit approval before a push or any other github write", git)
-        self.assertIn("record only user-confirmed content in project documents", documents)
+        self.assertTrue(sentence_with_concepts(
+            grouping, ("complete", "entire", "whole"), ("grouping", "groups"),
+            ("approval", "approved"), ("wait", "pause"),
+        ))
+        self.assertTrue(sentence_with_concepts(
+            grouping, ("approval",), ("group",), ("start", "begin"), ("grill-duo-with-docs",),
+        ))
+        self.assertTrue(sentence_with_concepts(
+            grouping, ("group", "grouping"), ("no", "without", "not"), ("opt-in", "opt in"),
+        ))
+        self.assertTrue(sentence_with_concepts(
+            protocol, ("group",), ("grill-duo-with-docs",), ("invoke", "run"),
+        ))
+        self.assertTrue(sentence_with_concepts(
+            protocol, ("frontier",), ("empty", "no answerable questions"),
+            ("shared-understanding", "summary"), ("wait", "pause"), ("confirmation", "confirm"),
+        ))
+        sequence = sentence_with_concepts(
+            protocol, ("grill-duo-with-docs",), ("to-spec",), ("to-tickets",),
+            ("first", "before", "prior"), ("then", "next", "order"),
+        )
+        self.assertTrue(sequence)
+        self.assertLess(sequence.index("grill-duo-with-docs"), sequence.index("to-spec"))
+        self.assertLess(sequence.index("to-spec"), sequence.index("to-tickets"))
+        self.assertTrue(sentence_with_concepts(git, ("approval", "authorize"), ("group",), ("commit",)))
+        self.assertTrue(sentence_with_concepts(documents, ("user-confirmed",), ("project documents",)))
+
+    def test_phase_sources_and_global_prerequisites_have_distinct_failure_scopes(self):
+        text = skill("requirements-to-spec-tickets").lower().replace(chr(96), "")
+        dependencies = section(text, "## dependencies")
+        protocol = section(text, "## 4. child-session protocol")
+        phase_rules = protocol.split("the first response must", 1)[0]
+
+        self.assertTrue(mentions_concepts(dependencies, ("skill",), ("tool",)))
+        self.assertTrue(sentence_with_concepts(
+            dependencies, ("missing",), ("report",), ("stop", "halt"),
+        ))
+        no_auto_install = sentence_with_concepts(
+            dependencies, ("install",), ("not", "never", "without"), ("automatic", "automatically"),
+        )
+        self.assertTrue(no_auto_install)
+        self.assertRegex(no_auto_install, AUTO_INSTALL_PROHIBITION)
+        self.assertTrue(sentence_with_concepts(
+            phase_rules, ("source",), ("phase",), ("pause", "hold"),
+        ))
+        self.assertTrue(independent_work_continuation(phase_rules))
+        self.assertFalse(independent_work_continuation(
+            "A missing source pauses its phase and also pauses every independent eligible phase."
+        ))
+        self.assertFalse(independent_work_continuation(
+            "A missing source pauses its phase and the independent eligible phase is not allowed to continue."
+        ))
+        self.assertFalse(independent_work_continuation(
+            "A missing source pauses its phase, but the unrelated eligible phase will not proceed."
+        ))
+        self.assertFalse(independent_work_continuation(
+            "A missing source pauses its phase, but the unrelated eligible phase is blocked from continuing."
+        ))
+        self.assertFalse(independent_work_continuation(
+            "A missing source pauses its phase, but the unrelated eligible phase is unable to continue."
+        ))
+        self.assertTrue(sentence_with_concepts(
+            phase_rules, ("source",), ("resume", "resuming"), ("re-read", "reread", "check again"),
+        ))
+        global_rule = sentence_with_concepts(
+            phase_rules, ("global", "prerequisite"), ("stop", "halt"), ("install",),
+            ("not", "never", "without"),
+        )
+        self.assertTrue(global_rule)
+        self.assertRegex(global_rule, AUTO_INSTALL_PROHIBITION)
+
+        manual = (ROOT / "tests" / "manual" / "requirements-to-spec-tickets.md").read_text(encoding="utf-8").lower()
+        phase_scenario = section(manual, "## phase-scoped source failure")
+        global_scenario = section(manual, "## missing global dependencies")
+        self.assertTrue(sentence_with_concepts(
+            phase_scenario, ("source",), ("phase",), ("pause", "hold"),
+        ))
+        self.assertTrue(independent_work_continuation(phase_scenario))
+        self.assertTrue(sentence_with_concepts(
+            phase_scenario, ("source",), ("resume", "resuming"), ("re-read", "reread", "check again"),
+        ))
+        phase_install_rule = sentence_with_concepts(
+            phase_scenario, ("install",), ("automatic", "automatically"), ("not", "never", "without"),
+        )
+        self.assertTrue(phase_install_rule)
+        self.assertRegex(phase_install_rule, AUTO_INSTALL_PROHIBITION)
+        self.assertTrue(sentence_with_concepts(
+            global_scenario, ("skill",), ("tool",), ("preflight",),
+        ))
+        global_install_rule = sentence_with_concepts(
+            global_scenario, ("report", "identify"), ("stop", "halt"), ("install",),
+            ("not", "never", "without"), ("automatic", "automatically"),
+        )
+        self.assertTrue(global_install_rule)
+        self.assertRegex(global_install_rule, AUTO_INSTALL_PROHIBITION)
+
+    def test_task_publication_authorization_is_scoped_and_preserves_other_gates(self):
+        text = skill("requirements-to-spec-tickets").lower().replace(chr(96), "")
+        protocol = section(text, "## 4. child-session protocol")
+        git = section(text, "## 5. task branches and git publication")
+        target_policy = section(text, "## 3. create interactive child sessions")
+
+        self.assertTrue(sentence_with_concepts(
+            protocol, ("missing", "unavailable"), ("dependency", "prerequisite"),
+            ("install",), ("stop", "halt"),
+        ))
+        self.assertTrue(sentence_with_concepts(
+            target_policy, ("normative", "policy"), ("root",), ("agents.md",),
+            ("repository",), ("receiving", "target"),
+        ))
+        self.assertTrue(sentence_with_concepts(
+            target_policy, ("source", "installation"), ("agents.md",), ("substitute", "replace"),
+        ))
+
+        decision = (
+            ROOT / "docs" / "adr" / "0003-task-scoped-write-authorization.md"
+        ).read_text(encoding="utf-8").lower()
+        self.assertTrue(sentence_with_concepts(
+            decision, ("status",), ("root",), ("repository",), ("ticket",), ("checkpoint",),
+        ))
+        self.assertTrue(sentence_with_concepts(
+            decision, ("not", "does not", "outside"), ("authorize", "permit"),
+            ("non-status",), ("write",),
+        ))
+        self.assertTrue(permission_clause(
+            "Existing group authorization permits force-pushes to other branches.".lower(),
+            ("existing",), ("group",), ("authorization",), ("force-push", "force push"),
+            ("other branch",),
+        ))
+        self.assertFalse(permission_clause(
+            "Force-pushes require separate approval, but a user may separately authorize them.".lower(),
+            ("existing", "current"), ("group",), ("authorization",), ("force-push", "force push"),
+            ("other branch",),
+        ))
+
+        allowed = authorization_grant_clause(
+            git, ("group",), ("commit",), ("push",), ("branch",),
+            ("ordinary", "normal", "non-force", "routine"),
+            ("initial", "first"), ("remote ref", "remote branch"),
+        )
+        self.assertTrue(allowed)
+        self.assertTrue(mentions_concepts(
+            allowed, ("ordinary", "normal", "non-force", "routine"), ("initial", "first"),
+            ("remote ref", "remote branch"),
+        ))
+        scope = sentence_with_concepts(
+            git, ("authorization",), ("limited", "only", "restricted", "confined"),
+            ("group",), ("branch",), ("unrelated", "other groups"), ("task",),
+        )
+        self.assertTrue(scope)
+        self.assertTrue(mentions_concepts(
+            scope, ("unrelated", "other groups"), ("task",),
+        ))
+        self.assertRegex(scope, TASK_AUTHORIZATION_LIMIT)
+
+        denied = sentence_with_concepts(
+            git, ("force-push", "force push"), ("remote-ref", "remote ref", "remote reference"),
+            ("delete", "deletion", "remove"), ("other branch", "different branch"), ("pull request", "pull-request"),
+            ("issue",), ("status",), ("sub-issue", "sub issue"), ("github",), ("write",),
+            ("separate approval",), ("retain", "require", "need", "necessary", "must"),
+        )
+        self.assertTrue(denied)
+        self.assertRegex(
+            denied,
+            (
+                r"\b(?:retain(?:s)?|require(?:s)?|need(?:s)?|must have|must retain)\b"
+                r".*\b(?:separate|additional|own)\s+approval\b"
+            ),
+        )
+        self.assertFalse(permission_clause(
+            denied, ("current", "same", "approved", "existing"),
+            ("group", "task", "branch"), ("authorization", "approval"),
+            ("force-push", "force push", "remote-ref deletion", "remote ref deletion",
+             "other branch", "pull request", "issue creation", "status change", "comment",
+             "label", "sub-issue", "github write"),
+        ))
+
+    def test_authorization_contract_accepts_paraphrases_and_rejects_broadening(self):
+        grant = (
+            "Full-group approval permits routine commits and normal pushes on the group's "
+            "dedicated task branch, including the initial remote ref."
+        )
+        self.assertTrue(sentence_with_concepts(
+            grant, ("approval", "authorization"), ("grant", "authorize", "permit", "allow"),
+            ("group",), ("commit",), ("push",), ("task branch", "dedicated branch"),
+            ("ordinary", "normal", "routine"), ("initial", "first"), ("remote ref", "remote branch"),
+        ))
+        self.assertTrue(authorization_grant_clause(
+            grant, ("group",), ("commit",), ("push",), ("task branch", "dedicated branch"),
+            ("ordinary", "normal", "routine"), ("initial", "first"), ("remote ref", "remote branch"),
+        ))
+
+        combined_boundary = (
+            "Group approval permits routine commits and ordinary pushes on the dedicated task branch, "
+            "but does not permit pushes to another branch."
+        )
+        self.assertTrue(authorization_grant_clause(
+            combined_boundary, ("routine",), ("commit",), ("push",), ("task branch",),
+        ))
+        self.assertTrue(authorization_grant_clause(
+            "Group approval permits routine commits and ordinary pushes on its task branch, "
+            "and force-pushes require separate approval.",
+            ("routine",), ("commit",), ("push",), ("task branch",),
+        ))
+        self.assertFalse(authorization_grant_clause(
+            "Group approval authorizes review, while commits and pushes on the task branch need separate approval.",
+            ("commit",), ("push",), ("task branch",),
+        ))
+        self.assertFalse(authorization_grant_clause(
+            "Group approval authorizes review, and commits and pushes on the task branch require separate approval.",
+            ("commit",), ("push",), ("task branch",),
+        ))
+        self.assertFalse(authorization_grant_clause(
+            "Group approval authorizes document work, with commits and pushes on its task branch "
+            "requiring separate approval.",
+            ("commit",), ("push",), ("task branch",),
+        ))
+        self.assertFalse(authorization_grant_clause(
+            "Group approval authorizes document work, with routine commits and pushes on its task branch, "
+            "and these require separate approval.",
+            ("commit",), ("push",), ("task branch",),
+        ))
+        self.assertFalse(authorization_grant_clause(
+            "Approval is insufficient to authorize focused group commits and normal pushes on the dedicated task branch, "
+            "including the initial remote ref.",
+            ("commit",), ("push",), ("task branch",), ("initial",), ("remote ref",),
+        ))
+        self.assertFalse(authorization_grant_clause(
+            "Approval alone is insufficient to authorize focused group commits and normal pushes on the dedicated task branch.",
+            ("commit",), ("push",), ("task branch",),
+        ))
+        self.assertTrue(authorization_grant_clause(
+            "After group B receives its own approval, that approval permits B to write files, commit, "
+            "and push only on B's dedicated task branch.".lower(),
+            ("write",), ("commit",), ("push",),
+            ("only",), ("dedicated task branch",),
+        ))
+        paraphrased_denial = (
+            "Before separate approval, group B is never authorized to write files, commit, or push "
+            "under A's approval."
+        ).lower()
+        self.assertTrue(sentence_with_concepts(
+            paraphrased_denial, ("group b",), ("before",), ("separate approval",),
+            ("write",), ("commit",), ("push",), ("under a's approval",),
+        ))
+        self.assertRegex(paraphrased_denial, TASK_ACTION_DENIAL)
+
+        removed_branch = "Group approval permits routine commits and normal pushes, including the initial push."
+        self.assertFalse(sentence_with_concepts(
+            removed_branch, ("approval",), ("commit",), ("push",), ("task branch", "dedicated branch"),
+        ))
+
+        limited = (
+            "Authorization is confined to this group's task branch and cannot transfer to other groups "
+            "or later tasks."
+        ).lower()
+        self.assertTrue(sentence_with_concepts(
+            limited, ("authorization",), ("limited", "restricted", "confined"),
+            ("group",), ("branch",), ("other groups", "unrelated"), ("task",),
+        ))
+        self.assertRegex(limited, TASK_AUTHORIZATION_LIMIT)
+
+        broadened = "Authorization extends to every group, task, and branch.".lower()
+        self.assertFalse(sentence_with_concepts(
+            broadened, ("limited", "restricted", "confined"), ("other groups", "unrelated"),
+            ("task",),
+        ))
+        self.assertNotRegex(broadened, TASK_AUTHORIZATION_LIMIT)
+
+    def test_manual_multiple_groups_covers_authorization_non_carryover(self):
+        manual = (ROOT / "tests" / "manual" / "requirements-to-spec-tickets.md").read_text(encoding="utf-8").lower()
+        scenario = section(manual, "## multiple groups in a shared checkout")
+        self.assertTrue(sentence_with_concepts(
+            scenario, ("group a",), ("only",), ("a's task branch", "group a's branch"),
+        ))
+        self.assertTrue(sentence_with_concepts(
+            scenario, ("group b",), ("only",), ("b's dedicated task branch", "group b's branch"),
+        ))
+        self.assertTrue(sentence_with_concepts(
+            scenario, ("group b",), ("unapproved", "not approved", "without approval"),
+        ))
+        b_grant = authorization_grant_clause(
+            scenario, ("write",), ("commit",), ("push",),
+            ("b's dedicated task branch", "group b's branch"),
+        )
+        self.assertTrue(b_grant)
+        self.assertTrue(mentions_concepts(
+            b_grant, ("group b", "b's"), ("separate approval", "own approval"), ("only",),
+        ))
+        no_carry_rule = sentence_with_concepts(
+            scenario, ("group b",), ("before", "until"), ("separate approval",),
+            ("cannot", "can't", "must not", "may not", "prohibited", "never authorized",
+             "isn't authorized", "is not authorized", "not permitted"),
+            ("write", "writing", "files"),
+            ("commit",), ("push",), ("under a's approval", "under a's authorization"),
+            ("separate approval", "own approval"),
+        )
+        self.assertTrue(no_carry_rule)
+        self.assertRegex(
+            no_carry_rule,
+            (
+                r"\b(?:cannot|can't|must not|may not)\s+(?:write|writing|commit|push)\b"
+                r"|\b(?:does not|doesn't|cannot|can't|must not)\s+(?:authorize|permit|allow|cover)\b"
+                r"|\b(?:never|isn't|is not|aren't|are not|not)\s+"
+                r"(?:authorized|permitted|allowed)\b"
+            ),
+        )
+        self.assertNotRegex(
+            no_carry_rule,
+            r"\b(?:cannot|can't)\s+be\s+(?:blocked|prevented|stopped|prohibited|barred)\b",
+        )
+        self.assertFalse(permission_clause(
+            scenario, ("group b",), ("under a's approval", "under a's authorization"),
+            ("write", "writing", "commit", "push"),
+        ))
+        self.assertFalse(permission_clause(
+            "Group B may write under its own approval, not under A's approval.".lower(),
+            ("group b",), ("under a's approval",), ("write",),
+        ))
+        self.assertFalse(permission_clause(
+            "Group B may not write under A's approval.".lower(),
+            ("group b",), ("under a's approval",), ("write",),
+        ))
+        for denial in (
+            "Group B is never authorized to write under A's approval.",
+            "Group B isn't authorized to write under A's approval.",
+        ):
+            self.assertFalse(permission_clause(
+                denial.lower(), ("group b",), ("under a's approval",), ("write",),
+            ))
+        self.assertTrue(permission_clause(
+            "Group B may write under A's approval.".lower(),
+            ("group b",), ("under a's approval",), ("write",),
+        ))
 
 
 class SpecImplementLoopBehaviorTests(unittest.TestCase):
@@ -174,6 +666,167 @@ class SpecImplementLoopBehaviorTests(unittest.TestCase):
         self.assertIn("**deferred:** yes", remediation)
         self.assertIn("show the complete p0/p1 batch and ask the user for approval", remediation)
         self.assertIn("allow at most three rounds", remediation)
+
+    def test_status_sync_authorization_is_repository_and_checkpoint_scoped(self):
+        text = skill("spec-implement-loop").lower().replace(chr(96), "")
+        authorization = section(text, "## plan the graph and reusable worktree pool")
+        lifecycle = section(text, "## root-run lifecycle")
+        issue_loop = section(text, "## issue loop")
+
+        self.assertFalse("issue #143" in text, "Issue #143 cannot provide reusable status authorization.")
+        self.assertTrue(sentence_with_concepts(
+            authorization, ("root",), ("repository", "repo"), ("ticket",), ("status",),
+            ("limited", "only", "scoped"),
+        ))
+        self.assertTrue(sentence_with_concepts(
+            authorization, ("status",), ("only", "limited"), ("ticket",), ("root",), ("checkpoint",),
+        ))
+        denied = sentence_with_concepts(
+            authorization, ("status-sync authorization", "status synchronization"),
+            ("not", "cannot", "prohibited", "outside"),
+            ("issue",), ("comment",), ("label",), ("sub-issue", "sub issue"),
+            ("pull request", "pull-request"), ("merge",), ("github",), ("write",),
+            ("authorize", "permit"),
+        )
+        self.assertTrue(denied, "The status-sync scope must distinguish status changes from other writes.")
+        self.assertRegex(
+            denied,
+            r"\b(?:does not|doesn't|cannot|can't|must not|never)\s+(?:authorize|permit|allow|cover)\b",
+        )
+        self.assertFalse(status_sync_grant_clause(
+            authorization, NON_STATUS_WRITES,
+        ))
+        self.assertFalse(status_sync_grant_clause(
+            "Status-sync authorization is status-only, but a separate user approval authorizes a comment.".lower(),
+            ("comment",),
+        ))
+        self.assertFalse(status_sync_grant_clause(
+            "Status-sync authorization permits status changes, and the user separately authorizes issue creation.".lower(),
+            NON_STATUS_WRITES,
+        ))
+        self.assertFalse(status_sync_grant_clause(
+            "Status-sync authorization permits status changes, and a separate approval from the user "
+            "authorizes a comment.".lower(),
+            NON_STATUS_WRITES,
+        ))
+        self.assertFalse(status_sync_grant_clause(
+            "Status-sync authorization permits status changes, and a separate approval by the user "
+            "authorizes a comment.".lower(),
+            NON_STATUS_WRITES,
+        ))
+        self.assertFalse(status_sync_grant_clause(
+            "Status-sync authorization permits status changes, and issue creation is separately "
+            "authorized by the user.".lower(),
+            NON_STATUS_WRITES,
+        ))
+        self.assertFalse(status_sync_grant_clause(
+            "Status sync permits status changes and allows comments only with separate user approval.".lower(),
+            NON_STATUS_WRITES,
+        ))
+        self.assertFalse(status_sync_grant_clause(
+            "Status sync allows issue creation only after separate user approval.".lower(),
+            NON_STATUS_WRITES,
+        ))
+        self.assertFalse(status_sync_grant_clause(
+            "Status sync may allow issue creation, but only after a separate approval.".lower(),
+            NON_STATUS_WRITES,
+        ))
+        self.assertFalse(status_sync_grant_clause(
+            "Status sync may allow issue creation, but only if separate approval is granted.".lower(),
+            NON_STATUS_WRITES,
+        ))
+        self.assertFalse(status_sync_grant_clause(
+            "Status sync may allow issue creation, but only when a separate approval is in place.".lower(),
+            NON_STATUS_WRITES,
+        ))
+        self.assertFalse(status_sync_grant_clause(
+            "Status-sync authorization permits status changes on the supplied root issue.".lower(),
+            NON_STATUS_WRITES,
+        ))
+        self.assertTrue(status_sync_grant_clause(
+            "Status sync can create an issue.".lower(), NON_STATUS_WRITES,
+        ))
+        self.assertTrue(status_sync_grant_clause(
+            "Status sync may label an issue.".lower(), NON_STATUS_WRITES,
+        ))
+        self.assertTrue(status_sync_grant_clause(
+            "Status-sync authorization only permits status changes. Status-sync authorization also permits issue creation.".lower(),
+            ("issue creation",),
+        ))
+
+        ticket_checkpoint = lifecycle.index("| ticket_checkpoint")
+        ticket_sync = lifecycle.index("| status_sync")
+        root_sync = lifecycle.index("| root_status_sync")
+        root_checkpoint = lifecycle.index("| root_checkpoint")
+        self.assertLess(ticket_checkpoint, ticket_sync)
+        self.assertLess(ticket_sync, root_sync)
+        self.assertLess(root_sync, root_checkpoint)
+        ticket_checkpoint_rule = next(
+            line for line in lifecycle.splitlines() if "| ticket_checkpoint |" in line
+        )
+        self.assertTrue(mentions_concepts(
+            ticket_checkpoint_rule, ("review",), ("pause",), ("approval",), ("status_sync",),
+        ))
+        root_status_rule = next(line for line in lifecycle.splitlines() if "| root_status_sync |" in line)
+        self.assertTrue(mentions_concepts(
+            root_status_rule, ("final verification",), ("review",), ("completed",),
+            ("without a separate approval", "approval pause"),
+        ))
+        root_checkpoint_rule = next(line for line in lifecycle.splitlines() if "| root_checkpoint |" in line)
+        self.assertTrue(mentions_concepts(
+            root_checkpoint_rule, ("explicit approval", "approval"), ("complete",),
+        ))
+        self.assertTrue(sentence_with_concepts(
+            lifecycle, ("status synchronization", "status_sync"), ("never", "does not"),
+            ("approval",), ("root",), ("complete",),
+        ))
+
+        ticket_sync_rule = next(line for line in issue_loop.splitlines() if line.lstrip().startswith("6."))
+        self.assertTrue(mentions_concepts(
+            ticket_sync_rule, ("ticket review checkpoint", "review checkpoint"),
+            ("confirmed push",), ("ticket's status", "ticket status"), ("without a separate approval",),
+        ))
+        root_sync_rule = next(line for line in issue_loop.splitlines() if line.lstrip().startswith("7."))
+        self.assertTrue(mentions_concepts(
+            root_sync_rule, ("final verification",), ("root status",), ("before",),
+            ("root completion checkpoint", "completion checkpoint"),
+        ))
+
+        interruption = sentence_with_concepts(
+            lifecycle, ("restart", "interruption", "resume"), ("reconcile", "re-read"),
+            ("root",), ("ticket",), ("repository",), ("status",), ("write",),
+        )
+        self.assertTrue(interruption)
+
+    def test_manual_status_scenario_covers_repository_and_operation_boundaries(self):
+        manual = (ROOT / "tests" / "manual" / "spec-implement-loop.md").read_text(encoding="utf-8").lower()
+        scenario = section(manual, "## task-scoped commits and pushes")
+        status_scenario = sentence_with_concepts(
+            scenario, ("repository a", "repo a"), ("repository b", "repo b"),
+            ("root",), ("ticket",), ("status",), ("checkpoint",),
+            ("unchanged", "unmodified"),
+        )
+        self.assertTrue(status_scenario)
+        self.assertTrue(sentence_with_concepts(
+            scenario, ("repository a", "repo a"), ("in-repository ticket",),
+            ("cross-repository ticket",), ("repository b", "repo b"),
+        ))
+        self.assertFalse("issue #143" in status_scenario, "Manual scenario must not rely on Issue #143.")
+
+        denial = sentence_with_concepts(
+            scenario, ("status-sync authorization", "status sync authorization"),
+            ("not", "cannot", "outside", "prohibited"),
+            ("issue",), ("comment",), ("label",), ("sub-issue", "sub issue"),
+            ("pr", "pull request"), ("merge",), ("github",), ("write",),
+        )
+        self.assertTrue(denial)
+        self.assertRegex(
+            denial,
+            r"\b(?:does not|doesn't|cannot|can't|must not|never)\s+(?:authorize|permit|allow|cover)\b",
+        )
+        self.assertFalse(status_sync_grant_clause(
+            scenario, NON_STATUS_WRITES + ("pr action",),
+        ))
 
 
 class ConventionalGitMessagesBehaviorTests(unittest.TestCase):
