@@ -28,6 +28,10 @@ _Avoid_: 观点、偏好
 源文档替换操作报告错误，无法确认源路径当前保留原文还是已采用压缩候选。
 _Avoid_: 操作失败（容易被理解为源文件未改变）
 
+**Version-conditional write (CAS)**:
+An atomic commit writes the candidate only if the target version token still matches the validated snapshot; a mismatch leaves the target unchanged.
+_Avoid_: last-minute recheck (does not make compare and write atomic)
+
 ### Skill prerequisite governance
 
 **Skill prerequisite**:
