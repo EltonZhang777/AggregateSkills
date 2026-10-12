@@ -14,6 +14,8 @@ Use this skill when the user wants to turn one or more codebase ideas into clari
 
 The dependencies listed here are global workflow prerequisites. If any is missing, report all missing dependencies, tell the user to install them, and stop the entire workflow. Do not install dependencies automatically.
 
+Before starting the workflow, confirm that the `skillroute` command is callable in the current environment.
+
 | Name | Type | Source |
 | --- | --- | --- |
 | /grill-duo-with-docs | Skill | https://github.com/EltonZhang777/AggregateSkills |
@@ -21,7 +23,7 @@ The dependencies listed here are global workflow prerequisites. If any is missin
 | /to-tickets | Skill | https://github.com/mattpocock/skills |
 | /conventional-git-messages | Skill | https://github.com/EltonZhang777/AggregateSkills |
 | /setup-matt-pocock-skills | Skill | https://github.com/mattpocock/skills |
-| SkillRoute CLI | Tool | https://github.com/erichare/skillroute |
+| SkillRoute CLI executable (`skillroute`) | Tool | https://github.com/erichare/skillroute |
 
 ## 1. Preflight
 

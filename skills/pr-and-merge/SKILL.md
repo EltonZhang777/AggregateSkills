@@ -13,11 +13,13 @@ Use this skill when the user asks to prepare GitHub pull requests for supplied b
 
 If any dependency is missing, report all missing dependencies, tell the user to install them, and stop the entire workflow. Do not install dependencies automatically.
 
+Before starting the workflow, confirm that the `skillroute` command is callable in the current environment.
+
 | Name | Type | Source |
 | --- | --- | --- |
 | /conventional-git-messages | Skill | https://github.com/EltonZhang777/AggregateSkills |
 | /resolving-merge-conflicts | Skill | https://github.com/mattpocock/skills |
-| SkillRoute CLI | Tool | https://github.com/erichare/skillroute |
+| SkillRoute CLI executable (`skillroute`) | Tool | https://github.com/erichare/skillroute |
 
 ## Process a batch
 

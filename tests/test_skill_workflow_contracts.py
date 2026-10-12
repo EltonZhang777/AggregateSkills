@@ -303,6 +303,25 @@ class GrillDuoWithDocsBehaviorTests(unittest.TestCase):
         self.assertIn("do not copy either skill's body into this entrypoint", activation)
 
 
+class SkillRoutePrerequisiteTests(unittest.TestCase):
+    def test_cli_identity_and_callability_are_clear_across_affected_skills(self):
+        for name in (
+            "grill-duo",
+            "grill-duo-with-docs",
+            "pr-and-merge",
+            "requirements-to-spec-tickets",
+            "review-duo",
+        ):
+            with self.subTest(skill=name):
+                dependencies = section(
+                    skill(name).lower().replace(chr(96), ""), "## dependencies"
+                )
+                self.assertIn("skillroute cli executable (skillroute)", dependencies)
+                self.assertIn("before starting the workflow", dependencies)
+                self.assertIn("callable", dependencies)
+                self.assertIn("https://github.com/erichare/skillroute", dependencies)
+
+
 class RequirementsToSpecTicketsBehaviorTests(unittest.TestCase):
     def test_complete_group_approval_starts_documentation_phase(self):
         text = skill("requirements-to-spec-tickets").lower().replace(chr(96), "")
