@@ -150,17 +150,45 @@ class RequirementsToSpecTicketsBehaviorTests(unittest.TestCase):
         self.assertIn("approval of the complete grouping grants the main agent standing authorization for routine, focused local commits", git)
         self.assertIn("record only user-confirmed content in project documents", documents)
 
+    def test_phase_sources_and_global_prerequisites_have_distinct_failure_scopes(self):
+        text = skill("requirements-to-spec-tickets").lower().replace(chr(96), "")
+        dependencies = section(text, "## dependencies")
+        protocol = section(text, "## 4. child-session protocol")
+        phase_rules = protocol.split("the first response must", 1)[0]
+
+        self.assertNotIn("dependencies recovery rule", text)
+        self.assertIn("global workflow prerequisites", dependencies)
+        self.assertIn("| skill |", dependencies)
+        self.assertIn("| tool |", dependencies)
+        self.assertIn("stop the entire workflow", dependencies)
+        self.assertIn("do not install dependencies automatically", dependencies)
+        self.assertIn("source file needed by one phase", phase_rules)
+        self.assertIn("blocking source", phase_rules)
+        self.assertIn("pause only that phase", phase_rules)
+        self.assertIn("independent eligible phases", phase_rules)
+        self.assertIn("re-read the source file before resuming", phase_rules)
+        self.assertIn("missing global prerequisites", phase_rules)
+        self.assertIn("stop the entire workflow", phase_rules)
+
+        manual = (ROOT / "tests" / "manual" / "requirements-to-spec-tickets.md").read_text(encoding="utf-8").lower()
+        phase_scenario = " ".join(section(manual, "## phase-scoped source failure").split())
+        global_scenario = " ".join(section(manual, "## missing global dependencies").split())
+        self.assertIn("all global dependencies available", phase_scenario)
+        self.assertIn("pauses only that phase", phase_scenario)
+        self.assertIn("independent eligible", phase_scenario)
+        self.assertIn("re-reads it before proceeding", phase_scenario)
+        self.assertIn("do not install the source automatically", phase_scenario)
+        self.assertIn("before preflight", global_scenario)
+        self.assertIn("reports both", global_scenario)
+        self.assertIn("stops the entire workflow", global_scenario)
+        self.assertIn("does not install either dependency automatically", global_scenario)
+
     def test_task_publication_authorization_is_scoped_and_preserves_other_gates(self):
         text = skill("requirements-to-spec-tickets").lower().replace(chr(96), "")
         protocol = section(text, "## 4. child-session protocol")
         git = section(text, "## 5. task branches and git publication")
         target_policy = section(text, "## 3. create interactive child sessions")
 
-        self.assertNotIn("dependencies recovery rule", protocol)
-        self.assertIn("report all missing dependencies", protocol)
-        self.assertIn("tell the user to install them", protocol)
-        self.assertIn("stop the entire workflow", protocol)
-        self.assertIn("do not install dependencies automatically", protocol)
         self.assertIn("only the normative prose in the root agents.md of the repository receiving that text", target_policy)
         self.assertIn("do not use the source or installation agents.md as a substitute", target_policy)
 

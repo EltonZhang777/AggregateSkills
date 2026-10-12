@@ -3,11 +3,21 @@
 Run through the user-visible workflow in a disposable repository and test
 issue tree. Do not use production issues, branches, or important worktrees.
 
-## Missing dependencies
+## Phase-scoped source failure
+
+Complete preflight with all global dependencies available. In an isolated
+disposable setup, make one source file needed by a single phase unavailable
+immediately before that phase. Confirm the workflow reports the phase and
+blocking source, pauses only that phase, and continues an independent eligible
+phase or group whose sources remain available. Restore access to the source
+and resume; confirm the workflow re-reads it before proceeding. Do not install
+the source automatically.
+
+## Missing global dependencies
 
 Make two required dependencies unavailable before preflight. Confirm the
-workflow reports both, tells the user to install them, stops, and does not
-install either dependency automatically.
+workflow reports both, tells the user to install them, stops the entire
+workflow, and does not install either dependency automatically.
 
 ## Target repository language
 

@@ -12,7 +12,7 @@ Use this skill when the user wants to turn one or more codebase ideas into clari
 
 ## Dependencies
 
-If any dependency is missing, report all missing dependencies, tell the user to install them, and stop the entire workflow. Do not install dependencies automatically.
+The dependencies listed here are global workflow prerequisites. If any is missing, report all missing dependencies, tell the user to install them, and stop the entire workflow. Do not install dependencies automatically.
 
 | Name | Type | Source |
 | --- | --- | --- |
@@ -71,7 +71,7 @@ Child-session creation is complete only when every approved group has a real int
 
 ## 4. Child-session protocol
 
-In every child session, re-read each current dependency file immediately before its phase. If any required dependency is missing or unavailable, report all missing dependencies, tell the user to install them, stop the entire workflow, and do not install dependencies automatically. The first response must briefly restate the group's outcome, scope, non-goals, and key workflow constraints. For every approved group, invoke `/grill-duo-with-docs` to present the current answerable frontier and wait for the user's response. If the frontier is empty, use its shared-understanding summary and wait for confirmation. The complete-grouping approval includes this workflow; no further opt-in is required. The child prompt alone does not establish readiness.
+In every child session, re-read the source file needed by each phase immediately before it. If a source file needed by one phase is unavailable, report the phase and blocking source, pause only that phase, and allow independent eligible phases to continue. Re-read the source file before resuming that phase. Missing global prerequisites in the Dependencies section still stop the entire workflow; do not install dependencies automatically. The first response must briefly restate the group's outcome, scope, non-goals, and key workflow constraints. For every approved group, invoke `/grill-duo-with-docs` to present the current answerable frontier and wait for the user's response. If the frontier is empty, use its shared-understanding summary and wait for confirmation. The complete-grouping approval includes this workflow; no further opt-in is required. The child prompt alone does not establish readiness.
 
 For every approved group, run `/grill-duo-with-docs` first, then `/to-spec` and `/to-tickets` in that order. Advance only after the current skill's confirmation gate passes, including `/to-spec`'s seam confirmation and `/to-tickets`' ticket-granularity, blocking-edge, and publication gates.
 
