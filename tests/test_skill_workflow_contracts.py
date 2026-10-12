@@ -28,6 +28,52 @@ def section(text, heading):
     return text[start:] if end == -1 else text[start:end]
 
 
+class SkillPrerequisiteInvocationTests(unittest.TestCase):
+    def test_all_entrypoints_put_the_bounded_invocation_rule_first(self):
+        entrypoints = sorted((ROOT / "skills").glob("*/SKILL.md"))
+        self.assertEqual(10, len(entrypoints))
+
+        for path in entrypoints:
+            with self.subTest(skill=path.parent.name):
+                text = path.read_text(encoding="utf-8")
+                self.assertIn("## Dependencies", text)
+                dependencies = section(text, "## Dependencies")
+                rule = " ".join(dependencies.strip().split("\n\n", 1)[0].split()).lower()
+
+                required_concepts = (
+                    "explicitly reaches a call",
+                    "directly declared skill prerequisite",
+                    "may proceed",
+                    "disables implicit invocation",
+                    "waives only",
+                    "other prerequisite instructions",
+                    "confirmation",
+                    "authorization",
+                    "security",
+                    "safety",
+                    "does not authorize transitive calls",
+                    "new call steps",
+                    "explicit prohibition",
+                )
+                missing = [phrase for phrase in required_concepts if phrase not in rule]
+                self.assertEqual([], missing, f"{path}: incomplete or misplaced rule")
+
+    def test_skill_scout_remains_plan_only(self):
+        text = skill("skill-scout").lower()
+        self.assertIn("return a selection plan to the caller", text)
+        self.assertIn("does not invoke selected workflows", text)
+
+    def test_user_only_workflows_keep_invocation_metadata(self):
+        for name in ("requirements-to-spec-tickets", "spec-implement-loop"):
+            with self.subTest(skill=name):
+                frontmatter = skill(name).split("---", 2)[1]
+                self.assertIn("disable-model-invocation: true", frontmatter)
+
+    def test_implicit_discovery_remains_disabled_where_configured(self):
+        for name in ("requirements-to-spec-tickets", "review-duo", "skill-scout", "spec-implement-loop"):
+            with self.subTest(skill=name):
+                policy = (ROOT / "skills" / name / "agents" / "openai.yaml").read_text(encoding="utf-8")
+                self.assertIn("allow_implicit_invocation: false", policy)
 def mentions_concepts(text, *concepts):
     return all(any(term in text for term in alternatives) for alternatives in concepts)
 
