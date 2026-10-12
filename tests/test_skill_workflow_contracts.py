@@ -232,6 +232,35 @@ class SkillScoutBehaviorTests(unittest.TestCase):
 
 
 class PrAndMergeBehaviorTests(unittest.TestCase):
+    def test_pr_text_gate_follows_push_classification_and_precedes_writes(self):
+        text = skill("pr-and-merge").lower().replace(chr(96), "")
+        reuse = section(text, "## reuse or prepare the pr")
+        prepare_heading = "### prepare or reuse pr text"
+        preflight_heading = "### pr-text preflight before the first source push"
+        prepare_start = reuse.index(prepare_heading)
+        preflight_start = reuse.index(preflight_heading)
+        first_fetch = reuse.index("git fetch remote head_branch")
+        second_fetch = reuse.index("git fetch remote head_branch", first_fetch + 1)
+        third_fetch = reuse.index("git fetch remote head_branch", second_fetch + 1)
+        branch_check = reuse.index("git branch --show-current", preflight_start)
+        head_check = reuse.index("git rev-parse head", preflight_start)
+        push = reuse.index("git push remote head:refs/heads/head_branch")
+        create_pr = reuse.index("gh pr create")
+        edit_pr = reuse.index("gh pr edit")
+
+        self.assertLess(first_fetch, prepare_start)
+        self.assertLess(prepare_start, preflight_start)
+        self.assertLess(preflight_start, branch_check)
+        self.assertLess(preflight_start, head_check)
+        self.assertLess(branch_check, second_fetch)
+        self.assertLess(head_check, second_fetch)
+        self.assertLess(second_fetch, push)
+        self.assertLess(push, third_fetch)
+        self.assertLess(third_fetch, create_pr)
+        self.assertLess(third_fetch, edit_pr)
+        self.assertLess(prepare_start, create_pr)
+        self.assertLess(prepare_start, edit_pr)
+
     def test_github_scope_and_subskill_steps_remain_explicit(self):
         text = skill("pr-and-merge").lower().replace(chr(96), "")
         activation = section(text, "## activation criteria & objective")
@@ -240,7 +269,7 @@ class PrAndMergeBehaviorTests(unittest.TestCase):
         merge = skill_reference("pr-and-merge", "merge-after-approval.md").lower().replace(chr(96), "")
         self.assertIn("it handles github only", activation)
         drafting_rule = sentence_with_concepts(
-            reuse, ("before drafting",), ("pr title",), ("body text",),
+            reuse, ("before drafting",), ("materially updating",), ("pr title",), ("body",),
             ("language rule",), ("root agents.md",), ("conventional-git-messages",),
         )
         self.assertTrue(drafting_rule)
