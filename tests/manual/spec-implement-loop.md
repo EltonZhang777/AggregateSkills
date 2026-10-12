@@ -26,6 +26,8 @@ Create a ticket whose explicit blockers are closed but whose acceptance criteria
 
 Approve one root and run two small tickets. Confirm each ticket gets one focused integration commit after acceptance and review, and its confirmed commit is pushed without a separate commit or push prompt. Confirm the same authorization covers the integration worktree and its initial branch push.
 
+In a separate run, give an instruction explicitly limited to review, with no approved root implementation scope. After reviewing a patch, confirm that review permission does not authorize an integration commit or push and the workflow pauses for the applicable authorization.
+
 With the supplied root in Repository A, include one in-repository ticket and one cross-repository ticket in Repository B. Confirm status sync changes only the root and in-repository ticket issue statuses in Repository A, only at the documented ticket and root status checkpoints; the Repository B ticket stays unchanged. Confirm status-sync authorization does not permit issue creation, comments, label changes, sub-issue links, PR creation, merges, or any other GitHub write. Finish the root, then start an unrelated root and confirm the prior authorization does not carry over.
 
 ## Interruption and reconciliation

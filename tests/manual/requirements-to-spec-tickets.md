@@ -15,9 +15,9 @@ the source automatically.
 
 ## Missing global dependencies
 
-Make two required dependencies unavailable before preflight. Confirm the
-workflow reports both, tells the user to install them, stops the entire
-workflow, and does not install either dependency automatically.
+Make one required skill and one required tool unavailable before preflight.
+Confirm the workflow reports both, tells the user to install them, stops the
+entire workflow, and does not install either dependency automatically.
 
 ## Target repository language
 
@@ -58,10 +58,17 @@ push. Do not create a worktree when the user did not request one.
 
 ## Multiple groups in a shared checkout
 
-Approve two independent groups that both write local files in the shared
-checkout. Confirm their local file-writing phases run sequentially and the
-workflow does not switch branches while another group may write. Confirm an
-issue-only group can proceed without waiting for a branch.
+Approve two independent local-artifact groups in the shared checkout. Confirm
+local file-writing phases run sequentially, the workflow does not switch
+branches while another group may write, and an issue-only group can proceed
+without waiting for a branch.
+
+Approve group A while leaving group B unapproved. Confirm group A's work uses
+only A's task branch. Before group B receives separate approval, confirm it
+cannot write files, commit, or push under A's approval and must wait for its
+own approval. Then approve group B separately and confirm B's work uses only
+B's dedicated task branch. Confirm B's separate approval authorizes B to write
+files, commit, and push only on B's dedicated task branch.
 
 ## Approval boundaries and recovery
 
