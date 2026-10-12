@@ -19,11 +19,13 @@ When this skill's own workflow explicitly reaches a call to one of its directly 
 
 If any dependency is missing, report all missing dependencies, tell the user to install them, and stop the entire workflow. Do not install dependencies automatically.
 
+Before starting the workflow, confirm that the `skillroute` command is callable in the current environment.
+
 | Name | Type | Source |
 | --- | --- | --- |
 | /grill-duo | Skill | https://github.com/EltonZhang777/AggregateSkills |
 | /domain-modeling | Skill | https://github.com/mattpocock/skills |
-| SkillRoute CLI | Tool | https://github.com/erichare/skillroute |
+| SkillRoute CLI executable (`skillroute`) | Tool | https://github.com/erichare/skillroute |
 
 ## Read the repository's documentation map
 
