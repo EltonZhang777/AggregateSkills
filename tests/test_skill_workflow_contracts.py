@@ -776,6 +776,48 @@ class SpecImplementLoopBehaviorTests(unittest.TestCase):
         self.assertIn("complete, validated listing", selection)
         self.assertIn("single-root flow", selection)
 
+    def test_multi_root_batch_approval_scopes_cross_root_operations(self):
+        reference = skill_reference("spec-implement-loop", "multi-root-coordination.md").lower()
+        preparation = section(reference, "## 3. prepare and authorize the batch")
+        adr_text = " ".join((
+            ROOT / "docs" / "adr" / "0003-task-scoped-write-authorization.md"
+        ).read_text(encoding="utf-8").lower().split())
+
+        for detail in (
+            "explicit prerequisite edges",
+            "confirm the existing task-scoped write authorization and record its exact scope",
+            "current integration branch and required worktree",
+            "graph width",
+            "size the stable worker slots to that width",
+            "prepare or reconcile only worktrees whose bases do not require cross-root operations",
+            "using coordinator-selected bases",
+            "before dependent work is dispatched, refresh a clean idle slot from the latest target integration branch",
+            "wait if no safe slot is available",
+            "ticket assignments",
+            "source root and branch",
+            "dependent root and exact destination branch or worktree",
+            "creates a dependent ticket branch from the source",
+            "merges the source branch into the dependent integration branch",
+            "each root's task-scoped write scope",
+            "do not create or start implementation conversations before this approval",
+            "after approval, perform only the listed cross-root operations, prepare all required worktrees on the bases recorded in the plan, and then create or start the planned conversations",
+        ):
+            self.assertIn(detail, preparation)
+
+        self.assertLess(
+            preparation.index("prepare or reconcile only worktrees"),
+            preparation.index("request one batch-start approval"),
+        )
+        self.assertLess(
+            preparation.index("request one batch-start approval"),
+            preparation.index("after approval, perform only the listed cross-root operations"),
+        )
+
+        self.assertIn("batch-start approval authorizes only those listed cross-root operations", adr_text)
+        self.assertIn("source root and branch", adr_text)
+        self.assertIn("dependent root and exact destination branch or", adr_text)
+        self.assertIn("existing per-root task-scoped grants", adr_text)
+
     def test_remediation_routes_only_when_final_review_finds_issues(self):
         text = skill("spec-implement-loop").lower()
         final_review = section(text, "## final review")

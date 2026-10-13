@@ -17,3 +17,12 @@ the root after final verification and review, before the separate
 root completion checkpoint. It does not waive either checkpoint or authorize
 non-status writes such as issue creation, comments, labels, pull requests, or
 merges. Other repositories retain their own approval rules.
+
+For a multi-root `/spec-implement-loop` batch, one batch-start approval may
+authorize cross-root base or merge operations only when each operation names
+the source root and branch, the dependent root and exact destination branch or
+worktree, and whether it creates a dependent ticket branch from the source or
+merges the source branch into the dependent integration branch. The
+batch-start approval authorizes only those listed cross-root operations
+for that batch. It supplements the existing per-root task-scoped grants;
+every other Git or GitHub write keeps its existing approval gate.
