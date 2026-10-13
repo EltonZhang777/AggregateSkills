@@ -5,15 +5,15 @@ Use this reference only when read-only intake and deduplication in the [main ski
 ## 1. List and validate roots
 
 - Follow the main skill's [intake and frontier](../SKILL.md#intake-and-frontier) rules to identify roots and discover descendants from explicit issue evidence. Do not infer roots, tickets, or relationships.
-- List every distinct root and its explicitly linked tickets in issue-number order. Include the evidence for parent/child and blocker relationships, and preserve each root's source.
-- Show child tickets that are explicitly named as subtasks but lack native GitHub sub-issue links. Ask once whether to create all missing links or a specified subset. Create only approved links, reconcile the result, and repeat the complete listing before selection.
+- Present the proposed root-to-ticket mapping with root entries in issue-number order; within each root, list explicitly referenced child tickets in issue-number order. Include tickets without native sub-issue links, cite each child reference, show blocker edges separately, and preserve each root's source.
+- Before asking to create sub-issue links, detect child tickets listed under multiple roots. Show each overlap and its affected roots; ask the user to choose one owning root or decompose the ticket. Pause only affected roots until resolved, while unaffected roots may continue under their existing authorizations. Do not link an overlapping ticket until ownership or decomposition is resolved; refresh the mapping after resolution.
+- Mark each ticket described as a child task when it lacks a native GitHub sub-issue link to its root. Ask once whether to link all missing cases in the validated roots or a specified subset. Create only approved links, verify the resulting native links, and return to the complete root-to-ticket listing before selection.
 - If evidence is contradictory, a dependency cycle exists, or documentation conflicts, pause the affected root with the evidence and resume condition. Continue safe independent roots.
 
 ## 2. Select and freeze the batch
 
-- Ask the user to select eligible roots from the complete listing. If only one root remains selected, continue the main skill's single-root flow with that validated root: apply its [root readiness checks](../SKILL.md#intake-and-frontier), then its [graph and worker-pool procedure](../SKILL.md#plan-the-graph-and-reusable-worktree-pool). Do not restart candidate-root intake or the multi-root selection.
+- Ask the user to select eligible roots from the complete, validated listing. If only one root remains selected, continue the main skill's single-root flow with that validated root: apply its [root readiness checks](../SKILL.md#intake-and-frontier), then its [graph and worker-pool procedure](../SKILL.md#plan-the-graph-and-reusable-worktree-pool). Do not restart candidate-root intake or the multi-root selection.
 - When multiple roots remain, freeze that selected set at batch-start approval. A newly discovered root stays out of the batch until the user approves the scope change and renewed batch start.
-- Do not implement an issue twice across roots. Ask the user to assign or decompose an overlap; pause only the affected roots until it is resolved.
 
 ## 3. Prepare and authorize the batch
 

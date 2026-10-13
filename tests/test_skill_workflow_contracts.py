@@ -746,6 +746,36 @@ class SpecImplementLoopBehaviorTests(unittest.TestCase):
         self.assertIn("Pass the target rule to /grill-duo-with-docs", text)
         self.assertNotIn("/grill-with-docs", text)
 
+    def test_multi_root_scope_is_mapped_and_validated_before_selection(self):
+        reference = skill_reference("spec-implement-loop", "multi-root-coordination.md").lower()
+        listing = section(reference, "## 1. list and validate roots")
+        selection = section(reference, "## 2. select and freeze the batch")
+
+        self.assertIn(
+            "proposed root-to-ticket mapping with root entries in issue-number order",
+            listing,
+        )
+        self.assertIn(
+            "within each root, list explicitly referenced child tickets in issue-number order",
+            listing,
+        )
+        self.assertIn("show blocker edges separately", listing)
+        steps = [
+            listing.index("detect child tickets listed under multiple roots"),
+            listing.index("do not link an overlapping ticket until ownership or decomposition is resolved"),
+            listing.index("mark each ticket described as a child task"),
+            listing.index("ask once whether to link all missing cases in the validated roots"),
+            listing.index("create only approved links"),
+            listing.index("verify the resulting native links"),
+            listing.index("return to the complete root-to-ticket listing"),
+        ]
+        self.assertEqual(steps, sorted(steps))
+        self.assertIn("choose one owning root or decompose the ticket", listing)
+        self.assertIn("pause only affected roots", listing)
+        self.assertIn("unaffected roots may continue under their existing authorizations", listing)
+        self.assertIn("complete, validated listing", selection)
+        self.assertIn("single-root flow", selection)
+
     def test_remediation_routes_only_when_final_review_finds_issues(self):
         text = skill("spec-implement-loop").lower()
         final_review = section(text, "## final review")
