@@ -398,6 +398,121 @@ class SkillRoutePrerequisiteTests(unittest.TestCase):
 
 
 class RequirementsToSpecTicketsBehaviorTests(unittest.TestCase):
+    def test_child_prompt_template_is_referenced_and_contains_the_handoff_contract(self):
+        parent = skill("requirements-to-spec-tickets").lower().replace(chr(96), "")
+        filename = "child-session-initial-prompt.md"
+        reference = f"references/{filename}"
+        self.assertIn(reference, parent)
+
+        template = skill_reference("requirements-to-spec-tickets", filename).lower().replace(chr(96), "")
+        fill_instructions = section(template, "## fill instructions")
+        copy_ready = template[template.index("## copy-ready prompt"):]
+        group = section(template, "## approved group")
+        startup = section(template, "## first response and grilling gate")
+        workflow = section(template, "## workflow gates")
+        boundaries = section(template, "## boundaries and completion")
+
+        for placeholder in (
+            "[group title]", "[approved outcome]", "[approved scope]", "[non-goals]",
+            "[acceptance intent]", "[target repository]", "[workspace path and branch]",
+            "[required dependencies]", "[known group dependencies]",
+            "[target repository root agents.md language rule]",
+            "[shared workspace and write-authorization rules]",
+        ):
+            with self.subTest(placeholder=placeholder):
+                self.assertIn(placeholder, group)
+
+        self.assertTrue(sentence_with_concepts(
+            fill_instructions, ("placeholder",), ("fill", "replace"), ("before",), ("handoff", "start"),
+        ))
+        self.assertTrue(sentence_with_concepts(
+            fill_instructions, ("confirmed information", "confirmed facts"), ("do not", "never"), ("invent",),
+        ))
+        self.assertTrue(sentence_with_concepts(
+            fill_instructions, ("sibling requirements",), ("exclude", "omit", "leave out"),
+        ))
+        self.assertTrue(sentence_with_concepts(
+            fill_instructions, ("unrelated parent history",), ("exclude", "omit", "leave out"),
+        ))
+        self.assertNotIn("example", copy_ready)
+
+        self.assertTrue(sentence_with_concepts(
+            startup, ("first response",), ("restate",), ("outcome",), ("scope",), ("non-goals",),
+            ("workflow constraints",),
+        ))
+        self.assertTrue(sentence_with_concepts(
+            startup, ("complete-grouping approval",), ("already",), ("authorizes",),
+            ("workflow",), ("do not", "don't", "never"), ("opt-in",),
+        ))
+        self.assertTrue(sentence_with_concepts(
+            startup, ("grill-duo-with-docs",), ("answerable frontier",), ("wait",), ("user",),
+        ))
+        self.assertTrue(sentence_with_concepts(
+            startup, ("no answerable questions", "frontier is empty"), ("shared-understanding summary",),
+            ("wait",), ("confirmation",),
+        ))
+
+        phases = ("/grill-duo-with-docs", "/to-spec", "/to-tickets")
+        for phase in phases:
+            self.assertIn(phase, workflow)
+        self.assertLess(workflow.index(phases[0]), workflow.index(phases[1]))
+        self.assertLess(workflow.index(phases[1]), workflow.index(phases[2]))
+        self.assertTrue(sentence_with_concepts(
+            workflow, ("re-read", "reread"), ("source",), ("each phase",), ("before",),
+        ))
+        self.assertTrue(sentence_with_concepts(
+            workflow, ("phase source",), ("unavailable",), ("report",), ("pause",), ("phase",),
+        ))
+        self.assertTrue(sentence_with_concepts(
+            workflow, ("phase source",), ("independent",), ("eligible",), ("in-scope work",),
+            ("continue",), ("phase order",),
+        ))
+        self.assertTrue(sentence_with_concepts(
+            workflow, ("global prerequisite",), ("missing",), ("report",), ("all",),
+            ("dependencies",), ("tell the user",), ("install them",), ("stop",),
+            ("entire workflow",), ("automatically",),
+        ))
+        self.assertTrue(sentence_with_concepts(
+            workflow, ("grill-duo-with-docs",), ("confirmation",),
+            ("shared project-document changes",), ("before",),
+        ))
+        self.assertTrue(sentence_with_concepts(
+            workflow, ("to-spec",), ("seam",), ("confirmation", "gate"),
+        ))
+        self.assertTrue(sentence_with_concepts(
+            workflow, ("to-tickets",), ("ticket-granularity", "granularity"),
+            ("blocking-edge", "blocking edge"), ("publication",), ("gate", "confirmation"),
+        ))
+        language_rule = sentence_with_concepts(
+            workflow, ("target repository",), ("root agents.md",), ("language rule",), ("pass",),
+        )
+        self.assertTrue(language_rule)
+        for phase in (*phases, "/conventional-git-messages"):
+            self.assertIn(phase, language_rule)
+        self.assertTrue(sentence_with_concepts(
+            workflow, ("shared workspace",), ("write-authorization rules", "write authorization rules"),
+            ("preserve", "follow", "carry"),
+        ))
+        self.assertTrue(sentence_with_concepts(
+            workflow, ("conventional-git-messages",), ("re-read", "reread"), ("original",), ("before",),
+        ))
+
+        self.assertTrue(sentence_with_concepts(
+            boundaries, ("user-facing questions",), ("must not", "do not", "never"),
+            ("answer",), ("user",),
+        ))
+        self.assertTrue(sentence_with_concepts(
+            boundaries, ("parent",), ("readiness",), ("handoff",), ("retry",), ("resumption",),
+        ))
+        self.assertTrue(sentence_with_concepts(
+            boundaries, ("prompt", "child-session identifier"), ("alone",), ("readiness",),
+            ("does not establish", "not evidence", "does not prove"),
+        ))
+        self.assertTrue(sentence_with_concepts(
+            boundaries, ("completion report",), ("actual status",), ("completed phases",),
+            ("artifacts", "outputs"), ("blockers",),
+        ))
+
     def test_complete_group_approval_starts_documentation_phase(self):
         text = skill("requirements-to-spec-tickets").lower().replace(chr(96), "")
         grouping = section(text, "## 2. turn the request into groups")

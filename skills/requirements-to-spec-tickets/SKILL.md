@@ -55,6 +55,8 @@ The grouping step is complete only when the user has explicitly approved the cur
 
 Create one child session per approved group. Each child must be visible to and directly interactive with the user: the user can enter it, answer its questions, and let it continue. A background subagent does not satisfy this requirement. Name each child session exactly `spec: <feature-slug>`, using the approved group slug that will also identify its spec. In Codex Desktop, pass this as the `title`; on other platforms, use the equivalent session title.
 
+Use the [child-session initial prompt template](references/child-session-initial-prompt.md) as each child's initial prompt or manual handoff. Fill every placeholder with confirmed information before creating or delivering it.
+
 For independent groups, create child sessions in parallel when the host supports it. For groups with a decision dependency, process the blocker first or make the dependent child wait for the blocker's relevant conclusion. Ticket-level implementation dependencies remain the responsibility of `/to-tickets`.
 
 When multiple approved groups will change local repository files in the shared checkout, serialize their file-writing work. Do not switch branches while another group may write to that checkout. Issue-only groups can still run in parallel.
