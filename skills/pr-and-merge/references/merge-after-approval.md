@@ -1,6 +1,6 @@
 # Merge after approval
 
-Merge each PR only after the user explicitly approves that exact PR. Follow the dependency order, then input order among independent entries. Immediately before each merge, recheck that PR's head and base, mergeability, required checks, and repository merge policy. A blocker stops that PR and its dependents; continue with other approved independent PRs. Also confirm the supplied worktree is clean; if it became dirty, stop and ask:
+Merge each PR only after the user explicitly approves that exact PR. For a multi-PR batch, retain the batch-plan order through merging: among dependency-ready entries, process conflict-free entries before conflict candidates, using the supplied or original input order only to break ties within either group. Immediately before each merge, recheck that PR's head and base, mergeability, required checks, and repository merge policy. A blocker stops that PR and its dependents; continue with other approved independent PRs. Also confirm the supplied worktree is clean; if it became dirty, stop and ask:
 
 ```sh
 gh pr view NUMBER --repo OWNER/REPO --json state,isDraft,mergeable,mergeStateStatus,reviewDecision,statusCheckRollup,headRefName,headRefOid,baseRefName,baseRefOid,url

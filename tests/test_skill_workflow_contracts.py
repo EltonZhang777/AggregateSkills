@@ -328,6 +328,7 @@ class PrAndMergeBehaviorTests(unittest.TestCase):
         self.assertIn("no new conflict-resolution work is required", plan)
 
         execution = section(text, "## execute the approved batch")
+        self.assertIn("then merge them in that same order", execution)
         self.assertIn("do not ask again for that unchanged merge", execution)
         self.assertIn("do not ask again solely because the base oid advanced", execution)
         self.assertIn("live per-pr merge checks", execution)
@@ -371,6 +372,9 @@ class PrAndMergeBehaviorTests(unittest.TestCase):
 
         merge = skill_reference("pr-and-merge", "merge-after-approval.md").lower()
         self.assertIn("multi-pr-batch.md#refresh-after-source-or-base-changes", merge)
+        self.assertIn("retain the batch-plan order through merging", merge)
+        self.assertIn("conflict-free entries before conflict candidates", merge)
+        self.assertIn("only to break ties within either group", merge)
         self.assertIn("before staging or any other write", merge)
         self.assertIn("stage only the approved files", merge)
         self.assertIn("if it differs from the approved diff", merge)

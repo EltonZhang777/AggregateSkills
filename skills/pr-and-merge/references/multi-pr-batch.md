@@ -30,7 +30,7 @@ Use changed-path overlap only to group potential conflicts for PRs with the same
 
 ## Execute the approved batch
 
-Start writes only after the batch plan is authorized. Prepare or reuse every eligible PR in the approved order before merging any. Apply the main skill's per-entry blockers throughout: a blocked operation blocks its dependents, while unrelated eligible operations continue.
+Start writes only after the batch plan is authorized. Prepare or reuse every eligible PR in the approved order before merging any, then merge them in that same order. Apply the main skill's per-entry blockers throughout: a blocked operation blocks its dependents, while unrelated eligible operations continue.
 
 Before each merge, compare the PR, source head, and target base ref with the authorized plan. Do not ask again for that unchanged merge. Do not ask again solely because the base OID advanced when the approved source head is unchanged and no new conflict-resolution work is required. Run the live per-PR merge checks in the main skill immediately before merging. If a merge was not listed, obtain its exact per-PR approval once before merging. If the source head, target base ref, or planned action changed, or new conflict-resolution work is required, refresh the plan and obtain renewed authorization before that operation's next write. Use the main skill's outcome summary at every pause, stop, and batch completion.
 
