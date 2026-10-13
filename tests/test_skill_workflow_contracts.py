@@ -410,6 +410,7 @@ class RequirementsToSpecTicketsBehaviorTests(unittest.TestCase):
         group = section(template, "## approved group")
         startup = section(template, "## first response and grilling gate")
         workflow = section(template, "## workflow gates")
+        linking = section(template, "### native ticket linking")
         boundaries = section(template, "## boundaries and completion")
 
         for placeholder in (
@@ -482,6 +483,55 @@ class RequirementsToSpecTicketsBehaviorTests(unittest.TestCase):
         self.assertTrue(sentence_with_concepts(
             workflow, ("to-tickets",), ("ticket-granularity", "granularity"),
             ("blocking-edge", "blocking edge"), ("publication",), ("gate", "confirmation"),
+        ))
+        self.assertTrue(sentence_with_concepts(
+            linking, ("after all planned tickets exist",), ("publication gates",), ("pass",),
+        ))
+        self.assertTrue(sentence_with_concepts(
+            linking, ("required permissions are unavailable",), ("report the blocker",), ("stop",),
+        ))
+        self.assertTrue(sentence_with_concepts(
+            linking, ("before each write", "before each link"), ("ticket exists",),
+            ("current parent", "parent endpoint"), ("fully paginate",), ("spec",), ("sub-issues",),
+        ))
+        self.assertTrue(sentence_with_concepts(
+            linking, ("already complete", "already linked"), ("both reads", "both endpoints"),
+            ("same spec",), ("skip",),
+        ))
+        self.assertTrue(sentence_with_concepts(
+            linking, ("404",), ("ticket exists",), ("spec",), ("sub-issues read succeeds",),
+            ("must not contain", "does not contain"),
+        ))
+        self.assertTrue(sentence_with_concepts(
+            linking, ("different parent",), ("disagree", "cannot establish"), ("pause",),
+            ("never reparent",),
+        ))
+        self.assertTrue(sentence_with_concepts(
+            linking, ("failed or ambiguous",), ("re-read", "reread"), ("both relationships",),
+        ))
+        self.assertTrue(sentence_with_concepts(
+            linking, ("clearly transient",), ("three total", "at most three"),
+            ("write attempts",), ("per link",),
+        ))
+        self.assertTrue(sentence_with_concepts(
+            linking, ("record", "count"), ("attempt",), ("before each write", "before every retry"),
+        ))
+        self.assertTrue(sentence_with_concepts(
+            linking, ("preserve",), ("ticket and spec issue titles",), ("bodies",), ("labels",),
+            ("states",), ("blocker edges", "blocking edges"), ("record",),
+        ))
+        self.assertTrue(sentence_with_concepts(
+            linking, ("before linking, record",), ("after linking, verify",),
+            ("ticket and spec issue titles",), ("bodies",), ("labels",), ("states",),
+            ("blocker edges", "blocking edges"),
+        ))
+        self.assertTrue(sentence_with_concepts(
+            linking, ("verify",), ("native parent relationship",),
+            ("re-read", "reread"), ("spec sub-issues list", "spec's sub-issues list"),
+            ("paginate", "paginating"),
+        ))
+        self.assertTrue(sentence_with_concepts(
+            linking, ("report links",), ("succeeded",), ("remain pending",),
         ))
         language_rule = sentence_with_concepts(
             workflow, ("target repository",), ("root agents.md",), ("language rule",), ("pass",),
