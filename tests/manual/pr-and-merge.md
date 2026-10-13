@@ -124,13 +124,17 @@ In a separate batch, supply a dirty branch D, branch E explicitly stacked on D, 
 
 ## Complete batch outcome summary
 
-In a disposable repository, supply five entries in one batch: A's repository, source branch, and resolved base exactly match an already merged PR, and A's current source OID matches that PR's head OID; B and E are independent open PRs with passing checks; C has a failing required check; and D's exact existing PR targets C. At the initial batch plan, confirm A is completed, B and E are pending, and C and D are blocked. List B's exact PR/head/base merge in the plan and authorize that write set once; leave E's merge unapproved. Execute B's listed merge without a second approval prompt, then inspect the final stop summary: A and B are completed, E is pending, and C and D remain blocked.
+In a disposable repository, supply six entries in one batch: A's repository, source branch, and resolved base exactly match an already merged PR, and A's current source OID matches that PR's head OID; B and E are independent open PRs with passing checks; C has a failing required check; D's exact existing PR targets C; and F is a closed unmerged PR. In the initial scope report, confirm A and F are report-only with no planned writes. At the batch authorization plan, confirm B and E are pending and C and D are blocked. List B's exact PR/head/base merge in the plan and authorize that write set once; leave E's merge unapproved. Execute B's listed merge without a second approval prompt, then inspect the final stop summary: A and B are completed, F remains report-only, E is pending, and C and D remain blocked.
 
 At every summary boundary, confirm every source appears exactly once with its repository and branch/worktree, and its PR link when one exists. Give B and E their own waiting reason and head/base names and OIDs at the initial batch plan; do not combine entries. One authorization covers only the listed actions and exact merge snapshots, so do not ask again for a listed merge. In the final summary, verify E remains pending with its own current head/base names and OIDs. Give C its failed-check reason and D the unmet prerequisite C. Repeat with C's required check pending and then unknown/unavailable; in both runs, C and D must be blocked with the exact check state or uncertainty reported. No unapproved PR is merged.
 
 Also test a source with one matching merged PR and one matching open PR for the same repository, source branch, and base. Reuse the open PR, classify the entry as pending with its own approval snapshot, and do not mark it completed based on the merged history.
 
 Advance a source branch after its matching PR is merged. On the next batch, verify the old PR's `headRefOid` differs from the recorded source OID, report both, and classify the entry as `blocked` until the user decides whether to prepare a new PR; do not mark the newer source `completed`.
+
+## Multi-PR batch: exact worktree match and dirtiness
+
+For a PR requiring conflict resolution, provide a clean worktree for the exact repository and source branch, a clean worktree for the same repository on a different branch, and a clean worktree for a different repository on the same branch. Confirm only the exact repository-and-branch match is reused. Repeat with the exact-match worktree containing a modified file and then an untracked file; confirm the operation is blocked and the worktree is left untouched.
 
 ## Other hosting platform
 
