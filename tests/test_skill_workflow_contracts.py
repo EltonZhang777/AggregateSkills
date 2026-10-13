@@ -278,6 +278,93 @@ class SkillScoutBehaviorTests(unittest.TestCase):
 
 
 class PrAndMergeBehaviorTests(unittest.TestCase):
+    def test_multi_pr_requests_route_before_discovery_and_preserve_single_pr_flow(self):
+        text = skill("pr-and-merge").lower().replace(chr(96), "")
+        routing_heading = "## multi-pr request routing"
+        self.assertIn(routing_heading, text)
+        self.assertLess(text.index(routing_heading), text.index("## dependencies"))
+
+        routing = section(text, routing_heading)
+        self.assertIn("before discovery", routing)
+        self.assertIn("references/multi-pr-batch.md", routing)
+        self.assertIn("exactly one operation is resolved", routing)
+        self.assertIn("no other outcome needs a batch report", routing)
+        self.assertNotIn("eligible operation", routing)
+        self.assertIn("single-pr flow", routing)
+        self.assertIn("## resolve the source and target", text)
+
+    def test_multi_pr_reference_covers_scope_plan_ordering_and_refresh_gates(self):
+        reference_path = ROOT / "skills" / "pr-and-merge" / "references" / "multi-pr-batch.md"
+        self.assertTrue(reference_path.is_file(), "the routed multi-PR reference must exist")
+        text = skill_reference("pr-and-merge", "multi-pr-batch.md").lower().replace(chr(96), "")
+
+        selectors = section(text, "## discover and deduplicate selectors")
+        self.assertIn("inclusive pr ranges", selectors)
+        self.assertIn("selector aliases", selectors)
+        self.assertIn("same exact pr", selectors)
+        self.assertIn("different bases stay separate operations", selectors)
+        self.assertIn("explicit stack relationship", selectors)
+
+        scope = section(text, "## report the complete scope")
+        self.assertIn("one row per deduplicated operation", scope)
+        self.assertIn("unmatched", scope)
+        self.assertIn("ambiguous", scope)
+        self.assertIn("missing base", scope)
+        self.assertIn("draft", scope)
+        self.assertIn("already-blocked prs", scope)
+        self.assertIn("prospective pr operation", scope)
+        self.assertIn("report-only", scope)
+
+        plan = section(text, "## present the exact plan and authorize the batch")
+        for detail in ("source head sha", "dependencies", "planned pushes", "blockers"):
+            self.assertIn(detail, plan)
+        self.assertIn("one explicit authorization", plan)
+        self.assertIn("no writes", plan)
+        self.assertIn("head and base names and oids", plan)
+        self.assertIn("satisfies", plan)
+        self.assertIn("per-pr merge approval", plan)
+        self.assertIn("base oid advancement alone does not revoke batch authorization", plan)
+        self.assertIn("approved source head is unchanged", plan)
+        self.assertIn("no new conflict-resolution work is required", plan)
+
+        execution = section(text, "## execute the approved batch")
+        self.assertIn("do not ask again for that unchanged merge", execution)
+        self.assertIn("do not ask again solely because the base oid advanced", execution)
+        self.assertIn("live per-pr merge checks", execution)
+
+        batch = section(skill("pr-and-merge").lower(), "## process a batch")
+        self.assertNotIn("present a separate approval snapshot for each pr", batch)
+        self.assertNotIn("finish preparing every eligible pr before merging any", batch)
+
+        preparation = section(skill("pr-and-merge").lower(), "## reuse or prepare the pr")
+        self.assertIn("for a single-pr request", preparation)
+        self.assertIn("for a batch request", preparation)
+        self.assertIn("do not pause again for a merge already listed in the authorized batch", preparation)
+
+        ordering = section(text, "## order dependencies and conflict candidates")
+        self.assertIn("read every selected diff before ordering", ordering)
+        self.assertIn("hard constraints", ordering)
+        self.assertIn("conflict-free", ordering)
+        self.assertIn("same base", ordering)
+
+        conflicts = section(text, "## gate conflict resolution")
+        self.assertIn(".wt", conflicts)
+        self.assertIn("dirty worktree", conflicts)
+        self.assertIn("never stage, commit, stash, discard, or push automatically", conflicts)
+        self.assertIn("exact conflict-resolution diff", conflicts)
+
+        refresh = section(text, "## refresh after source or base changes")
+        self.assertIn("head and base oids", refresh)
+        self.assertIn("reviews", refresh)
+        self.assertIn("checks", refresh)
+        self.assertIn("base oid advancement alone does not revoke batch authorization", refresh)
+        self.assertIn("unrelated operations continue", refresh)
+        self.assertIn("../skill.md#process-a-batch", text)
+        self.assertIn("../skill.md#merge-after-approval", text)
+
+        merge = skill_reference("pr-and-merge", "merge-after-approval.md").lower()
+        self.assertIn("multi-pr-batch.md#refresh-after-source-or-base-changes", merge)
+
     def test_pr_text_gate_follows_push_classification_and_precedes_writes(self):
         text = skill("pr-and-merge").lower().replace(chr(96), "")
         reuse = section(text, "## reuse or prepare the pr")
