@@ -327,7 +327,7 @@ class PrAndMergeBehaviorTests(unittest.TestCase):
             r"cannot|can't|is not|isn't|are not|aren't)\s+"
             r"(?:pass|read|follow|apply|use|provide)\b",
         )
-        self.assertIn("delegate pr title and body drafting to /conventional-git-messages", reuse)
+        self.assertIn("delegate the title and body or only the necessary correction to /conventional-git-messages", reuse)
         self.assertIn("only when the user requests a merge", merge_route)
         self.assertIn("explicitly approves that exact pr", merge_route)
         self.assertIn("references/merge-after-approval.md", merge_route)
