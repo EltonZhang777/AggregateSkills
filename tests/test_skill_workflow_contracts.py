@@ -818,6 +818,24 @@ class SpecImplementLoopBehaviorTests(unittest.TestCase):
         self.assertIn("dependent root and exact destination branch or", adr_text)
         self.assertIn("existing per-root task-scoped grants", adr_text)
 
+    def test_multi_root_scheduler_shares_limit_and_releases_safe_slots(self):
+        reference = skill_reference("spec-implement-loop", "multi-root-coordination.md").lower().replace(chr(96), "")
+        preparation = section(reference, "## 3. prepare and authorize the batch")
+        scheduling = section(reference, "## 4. schedule queues and gate prerequisites")
+        acceptance = section(reference, "## 5. track acceptance, closure, and rework")
+
+        self.assertIn("before the first implementation conversation, ask once for a single batch-wide parallel limit", preparation)
+        self.assertIn("apply that cap across roots to every dispatch and refill throughout the batch", preparation)
+        self.assertIn("unlimited still cannot exceed the clean, available worker slots", preparation)
+        self.assertIn("count active implementation conversations across all selected roots against the same limit", scheduling)
+        self.assertIn("refill capacity as work completes without exceeding the shared limit or available slots", scheduling)
+        self.assertIn("check for newly eligible work on the agreed 15-minute cadence", scheduling)
+        self.assertIn("stop checking once every selected root has an implementation conversation", scheduling)
+        self.assertIn("do not interrupt an active worker when newly eligible work changes queue order", scheduling)
+        self.assertIn("reuse an idle slot only when it is safe and its workspace is clean", scheduling)
+        self.assertIn("release its worker slot at root_checkpoint", acceptance)
+        self.assertIn("lightweight wait for final user acceptance or closure does not consume an implementation slot", acceptance)
+
     def test_remediation_routes_only_when_final_review_finds_issues(self):
         text = skill("spec-implement-loop").lower()
         final_review = section(text, "## final review")
