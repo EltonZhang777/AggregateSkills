@@ -33,7 +33,7 @@ Before starting the workflow, confirm that the `skillroute` command is callable 
 
 Follow the [multi-PR batch reference](references/multi-pr-batch.md) for batch discovery, planning, authorization, ordering, and orchestration.
 
-Treat every supplied source as an entry identified by its exact repository and branch or worktree. Resolve authentication, repository identity, target, existing PR, and required checks for each entry separately. If the repository for the whole batch is unclear, pause the batch. If one entry is unclear, ask about it in plain text, block that entry and its dependents, and continue unrelated entries whose inputs are clear. Never stash, stage, or clean a supplied worktree.
+Treat every supplied source as an entry identified by its exact repository and branch or worktree. Resolve authentication, repository identity, target, existing PR, and required checks for each entry separately. If the repository for the whole batch is unclear, pause the batch. If one entry is unclear, ask about it in plain text, block that entry and its dependents, and continue unrelated entries whose inputs are clear. Never stash or clean a supplied worktree. Stage its conflict-resolution files only after explicit approval of the exact diff, and only as described in the [conflict-resolution gate](references/multi-pr-batch.md#gate-conflict-resolution).
 
 A dirty worktree, failed or unknown required check, or other blocking condition blocks only that entry and its dependents. Skip dependent entries whose required upstream is blocked, but continue independent entries.
 

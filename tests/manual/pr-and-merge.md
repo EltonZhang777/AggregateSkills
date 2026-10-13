@@ -103,14 +103,18 @@ merging.
 ## Conflict resolution and second approval
 
 Create a branch that conflicts with its target. Prepare its PR, then approve
-that exact PR for merging.
+that exact PR for merging. Run conflict resolution in an explicitly supplied,
+clean worktree for the exact repository and source branch.
 
 Confirm the skill uses `/resolving-merge-conflicts`, runs the required checks,
-and presents the resolved diff and results. It must pause for a second
-explicit approval covering the conflict-fix commit, its push, and that PR's
-merge. After the approved push, confirm it checks the PR's required CI gates
-again and that the published diff matches the approved resolution before
-merging. Confirm any later head or base OID change requires renewed approval.
+and presents the complete unstaged diff and results without staging. It must
+pause for explicit approval of that exact diff and write set before staging.
+After approval, confirm it stages only the approved files and inspects the
+staged diff. If that diff changed, it must present the change and obtain renewed
+approval before commit, push, or merge. After the approved push, confirm it
+checks the PR's required CI gates again and that the published diff matches
+the approved resolution before merging. Confirm any later head or base OID
+change requires renewed approval.
 
 ## Multi-PR batch: ordering, stacked retarget, and failure isolation
 

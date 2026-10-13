@@ -341,6 +341,8 @@ class PrAndMergeBehaviorTests(unittest.TestCase):
         batch = section(skill("pr-and-merge").lower(), "## process a batch")
         self.assertNotIn("present a separate approval snapshot for each pr", batch)
         self.assertNotIn("finish preparing every eligible pr before merging any", batch)
+        self.assertIn("never stash or clean a supplied worktree", batch)
+        self.assertIn("stage its conflict-resolution files only after explicit approval of the exact diff", batch)
 
         preparation = section(skill("pr-and-merge").lower(), "## reuse or prepare the pr")
         self.assertIn("for a single-pr request", preparation)
