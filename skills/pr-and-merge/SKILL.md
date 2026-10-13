@@ -41,7 +41,7 @@ At every pause, stop, or batch completion, return one outcome summary with each 
 
 ## Resolve the source and target
 
-Require an exact source repository and branch or worktree. From that checkout, inspect `git rev-parse --show-toplevel`, `git remote -v`, `git branch --show-current`, `git rev-parse HEAD`, and `git status --porcelain=v1 --untracked-files=all`; record the source OID. Verify the supplied worktree belongs to the intended repository and branch. If the repository, source branch, target, or existing stacked relationship is ambiguous for this entry, ask before acting on this entry. A dirty worktree blocks this entry; do not stash, stage, or clean it.
+Require an exact source repository and branch or worktree. From that checkout, inspect `git rev-parse --show-toplevel`, `git remote -v`, `git branch --show-current`, `git rev-parse HEAD`, and `git status --porcelain=v1 --untracked-files=all`; record the source OID. Verify the supplied worktree belongs to the intended repository and branch. If the repository, source branch, target, or existing stacked relationship is ambiguous for this entry, ask before acting on this entry. A worktree that is already dirty at this initial source-resolution check blocks the entry; do not stash, stage, or clean it to bypass the gate. If conflict resolution later makes the worktree dirty, follow the separate approval-before-staging rules in the multi-PR batch reference.
 
 For GitHub, verify `gh auth status --hostname github.com` and resolve the exact `OWNER/REPO`. Read the default branch with:
 

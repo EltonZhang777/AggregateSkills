@@ -344,6 +344,10 @@ class PrAndMergeBehaviorTests(unittest.TestCase):
         self.assertIn("never stash or clean a supplied worktree", batch)
         self.assertIn("stage its conflict-resolution files only after explicit approval of the exact diff", batch)
 
+        source_resolution = section(skill("pr-and-merge").lower(), "## resolve the source and target")
+        self.assertIn("already dirty at this initial source-resolution check", source_resolution)
+        self.assertIn("if conflict resolution later makes the worktree dirty", source_resolution)
+
         preparation = section(skill("pr-and-merge").lower(), "## reuse or prepare the pr")
         self.assertIn("for a single-pr request", preparation)
         self.assertIn("for a batch request", preparation)
