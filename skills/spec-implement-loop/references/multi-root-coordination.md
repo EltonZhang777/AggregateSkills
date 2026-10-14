@@ -1,6 +1,6 @@
 # Multi-root coordination
 
-Use this reference only when read-only intake and deduplication in the [main skill](../SKILL.md) leave more than one distinct candidate root. The main skill remains authoritative for shared procedures; this reference defines the multi-root stages from listing through batch completion. If the documents conflict, pause only affected roots and ask the user. The caller must not edit skill documents during the run.
+Use this reference only when read-only intake and deduplication in the [main skill](../SKILL.md) leave more than one distinct candidate root. The main skill remains authoritative for shared procedures; this reference defines the multi-root stages from listing through batch completion. If the documents or skill instructions conflict, explain the conflict to the user and pause only affected roots. The caller must not edit skill documents during the run.
 
 ## 1. List and validate roots
 
@@ -33,7 +33,7 @@ Use this reference only when read-only intake and deduplication in the [main ski
 ## 5. Track acceptance, closure, and rework
 
 - Keep tracking every selected root through final acceptance and root close. Release its worker slot at `root_checkpoint`; the lightweight wait for final user acceptance or closure does not consume an implementation slot. Use the main skill's [root-run lifecycle](../SKILL.md#root-run-lifecycle), [ticket loop](../SKILL.md#issue-loop), and [final review](../SKILL.md#final-review) for each root.
-- In-scope acceptance rework returns to the current batch and the same parallel limit. Out-of-scope rework, scope expansion, or adding a root pauses for renewed authorization.
+- In-scope acceptance rework returns to the current batch and the same parallel limit. Pause out-of-scope rework and scope expansion; present the proposed scope change to the user and resume only after renewed scope and authorization are approved.
 - If a newly found root blocks only some selected roots, pause those roots and continue unaffected roots. Do not silently expand the frozen batch.
 
 ## 6. Complete the batch

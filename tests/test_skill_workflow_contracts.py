@@ -776,6 +776,24 @@ class SpecImplementLoopBehaviorTests(unittest.TestCase):
         self.assertIn("complete, validated listing", selection)
         self.assertIn("single-root flow", selection)
 
+    def test_multi_root_batch_scope_stays_frozen_through_root_completion(self):
+        reference = skill_reference("spec-implement-loop", "multi-root-coordination.md").lower().replace(chr(96), "")
+        listing = section(reference, "## 1. list and validate roots")
+        selection = section(reference, "## 2. select and freeze the batch")
+        tracking = section(reference, "## 5. track acceptance, closure, and rework")
+        completion = section(reference, "## 6. complete the batch")
+
+        self.assertIn("if the documents or skill instructions conflict, explain the conflict to the user and pause only affected roots", reference)
+        self.assertIn("the caller must not edit skill documents during the run", reference)
+        self.assertIn("freeze that selected set at batch-start approval", selection)
+        self.assertIn("a newly discovered root stays out of the batch until the user approves the scope change and renewed batch start", selection)
+        self.assertIn("pause the affected root with the evidence and resume condition", listing)
+        self.assertIn("continue safe independent roots", listing)
+        self.assertIn("in-scope acceptance rework returns to the current batch and the same parallel limit", tracking)
+        self.assertIn("pause out-of-scope rework and scope expansion; present the proposed scope change to the user and resume only after renewed scope and authorization are approved", tracking)
+        self.assertIn("if a newly found root blocks only some selected roots, pause those roots and continue unaffected roots", tracking)
+        self.assertIn("the batch stays open until every selected root has reached its completion checkpoint and root close", completion)
+
     def test_multi_root_batch_approval_scopes_cross_root_operations(self):
         reference = skill_reference("spec-implement-loop", "multi-root-coordination.md").lower()
         preparation = section(reference, "## 3. prepare and authorize the batch")
