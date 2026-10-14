@@ -1029,6 +1029,153 @@ class SpecImplementLoopBehaviorTests(unittest.TestCase):
         self.assertIn("Pass the target rule to /grill-duo-with-docs", text)
         self.assertNotIn("/grill-with-docs", text)
 
+    def test_multi_root_reference_is_selected_only_after_read_only_deduplication(self):
+        intake = section(skill("spec-implement-loop").lower(), "## intake and frontier")
+
+        self.assertIn("after read-only intake and deduplication", intake)
+        self.assertIn("if more than one distinct root remains", intake)
+        self.assertIn(
+            "follow the [multi-root coordination reference](references/multi-root-coordination.md)",
+            intake,
+        )
+        self.assertIn("with one root, continue the single-root workflow below", intake)
+        self.assertIn("this skill remains authoritative for procedures shared by both paths", intake)
+        self.assertIn("prioritizing dependency order and then root order or issue number", intake)
+
+    def test_multi_root_scope_is_mapped_and_validated_before_selection(self):
+        reference = skill_reference("spec-implement-loop", "multi-root-coordination.md").lower()
+        listing = section(reference, "## 1. list and validate roots")
+        selection = section(reference, "## 2. select and freeze the batch")
+
+        self.assertIn(
+            "proposed root-to-ticket mapping with root entries in issue-number order",
+            listing,
+        )
+        self.assertIn(
+            "within each root, list explicitly referenced child tickets in issue-number order",
+            listing,
+        )
+        self.assertIn("show blocker edges separately", listing)
+        steps = [
+            listing.index("detect child tickets listed under multiple roots"),
+            listing.index("do not link an overlapping ticket until ownership or decomposition is resolved"),
+            listing.index("mark each ticket described as a child task"),
+            listing.index("ask once whether to link all missing cases in the validated roots"),
+            listing.index("create only approved links"),
+            listing.index("verify the resulting native links"),
+            listing.index("return to the complete root-to-ticket listing"),
+        ]
+        self.assertEqual(steps, sorted(steps))
+        self.assertIn("choose one owning root or decompose the ticket", listing)
+        self.assertIn("pause only affected roots", listing)
+        self.assertIn("unaffected roots may continue under their existing authorizations", listing)
+        self.assertIn("if a link points to another root", listing)
+        self.assertIn("ask for explicit approval for that exact relationship change", listing)
+        self.assertIn("approval for missing links does not authorize moving or removing an existing link", listing)
+        self.assertIn("if supported github tooling cannot apply and verify the exact change", listing)
+        self.assertIn("do not substitute another operation", listing)
+        self.assertIn("resume only after a read-only authoritative check confirms the chosen parent", listing)
+        self.assertIn("if it cannot be verified, keep the affected roots paused", listing)
+        self.assertIn("complete, validated listing", selection)
+        self.assertIn("single-root flow", selection)
+
+    def test_multi_root_batch_scope_stays_frozen_through_root_completion(self):
+        reference = skill_reference("spec-implement-loop", "multi-root-coordination.md").lower().replace(chr(96), "")
+        listing = section(reference, "## 1. list and validate roots")
+        selection = section(reference, "## 2. select and freeze the batch")
+        tracking = section(reference, "## 5. track acceptance, closure, and rework")
+        completion = section(reference, "## 6. complete the batch")
+
+        self.assertIn("if the documents or skill instructions conflict, explain the conflict to the user and pause only affected roots", reference)
+        self.assertIn("the caller must not edit skill documents during the run", reference)
+        self.assertIn("freeze that selected set at batch-start approval", selection)
+        self.assertIn("a newly discovered root stays out of the batch until the user approves the scope change and renewed batch start", selection)
+        self.assertIn("pause the affected root with the evidence and resume condition", listing)
+        self.assertIn("continue safe independent roots", listing)
+        self.assertIn("in-scope acceptance rework returns to the current batch and the same parallel limit", tracking)
+        self.assertIn("pause out-of-scope rework and scope expansion; present the proposed scope change to the user and resume only after renewed scope and authorization are approved", tracking)
+        self.assertIn("if a newly found root blocks only some selected roots, pause those roots and continue unaffected roots", tracking)
+        self.assertIn("the batch stays open until every selected root has reached its completion checkpoint and root close", completion)
+
+    def test_multi_root_batch_approval_scopes_cross_root_operations(self):
+        reference = skill_reference("spec-implement-loop", "multi-root-coordination.md").lower()
+        preparation = section(reference, "## 3. prepare and authorize the batch")
+        adr_text = " ".join((
+            ROOT / "docs" / "adr" / "0003-task-scoped-write-authorization.md"
+        ).read_text(encoding="utf-8").lower().split())
+
+        for detail in (
+            "explicit prerequisite edges",
+            "confirm the existing task-scoped write authorization and record its exact scope",
+            "current integration branch and required worktree",
+            "graph width",
+            "size the stable worker slots to that width",
+            "prepare or reconcile only worktrees whose bases do not require cross-root operations",
+            "using coordinator-selected bases",
+            "before dependent work is dispatched, refresh a clean idle slot from the latest dependent integration branch",
+            "wait if no safe slot is available",
+            "ticket assignments",
+            "source root and branch",
+            "dependent root and exact destination branch or worktree",
+            "creates a dependent ticket branch from the source",
+            "merges the source branch into the dependent integration branch",
+            "each root's task-scoped write scope",
+            "do not create or start implementation conversations before this approval",
+            "after approval, perform only the listed cross-root operations, prepare all required worktrees on the bases recorded in the plan, and then create or start the planned conversations",
+        ):
+            self.assertIn(detail, preparation)
+
+        self.assertLess(
+            preparation.index("prepare or reconcile only worktrees"),
+            preparation.index("request one batch-start approval"),
+        )
+        self.assertLess(
+            preparation.index("request one batch-start approval"),
+            preparation.index("after approval, perform only the listed cross-root operations"),
+        )
+
+        self.assertIn("batch-start approval authorizes only those listed cross-root operations", adr_text)
+        self.assertIn("source root and branch", adr_text)
+        self.assertIn("dependent root and exact destination branch or", adr_text)
+        self.assertIn("existing per-root task-scoped grants", adr_text)
+
+    def test_multi_root_scheduler_shares_limit_and_releases_safe_slots(self):
+        reference = skill_reference("spec-implement-loop", "multi-root-coordination.md").lower().replace(chr(96), "")
+        preparation = section(reference, "## 3. prepare and authorize the batch")
+        scheduling = section(reference, "## 4. schedule queues and gate prerequisites")
+        acceptance = section(reference, "## 5. track acceptance, closure, and rework")
+
+        self.assertIn("before the first implementation conversation, ask once for a single batch-wide parallel limit", preparation)
+        self.assertIn("apply that cap across roots to every dispatch and refill throughout the batch", preparation)
+        self.assertIn("unlimited still cannot exceed the clean, available worker slots", preparation)
+        self.assertIn("count active implementation conversations across all selected roots against the same limit", scheduling)
+        self.assertIn("refill capacity as work completes without exceeding the shared limit or available slots", scheduling)
+        self.assertIn("check for newly eligible work on the agreed 15-minute cadence", scheduling)
+        self.assertIn("stop checking once every selected root has an implementation conversation", scheduling)
+        self.assertIn("do not interrupt an active worker when newly eligible work changes queue order", scheduling)
+        self.assertIn("reuse an idle slot only when it is safe and its workspace is clean", scheduling)
+        self.assertIn("release its worker slot at root_checkpoint", acceptance)
+        self.assertIn("lightweight wait for final user acceptance or closure does not consume an implementation slot", acceptance)
+
+    def test_cross_root_prerequisites_are_resolved_and_integrated_before_dispatch(self):
+        reference = skill_reference("spec-implement-loop", "multi-root-coordination.md").lower().replace(chr(96), "")
+        preparation = section(reference, "## 3. prepare and authorize the batch")
+        scheduling = section(reference, "## 4. schedule queues and gate prerequisites")
+
+        self.assertIn("if the required base or source branch is ambiguous, ask which existing branch to use or which source branch to merge", preparation)
+        self.assertIn("pause only the affected dependent root until resolved", preparation)
+        self.assertIn("do not infer a branch or merge operation", preparation)
+        self.assertIn("the plan and batch-start approval must explicitly name the source root branch and its merge into the dependent integration branch", preparation)
+        self.assertIn("creating a dependent ticket branch from the source does not substitute for or authorize that merge", preparation)
+        self.assertIn("merge that branch into the dependent root as authorized; dispatch the dependent ticket only after the merge succeeds", scheduling)
+        self.assertIn("do not wait for the source root's full queue or final acceptance", scheduling)
+        self.assertIn("a blocked prerequisite or merge conflict pauses only the affected dependent root", scheduling)
+        self.assertIn("continue other roots with ready tickets", scheduling)
+        self.assertLess(
+            preparation.index("if the required base or source branch is ambiguous"),
+            preparation.index("request one batch-start approval"),
+        )
+
     def test_remediation_routes_only_when_final_review_finds_issues(self):
         text = skill("spec-implement-loop").lower()
         final_review = section(text, "## final review")

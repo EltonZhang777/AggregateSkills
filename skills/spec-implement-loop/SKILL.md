@@ -80,7 +80,7 @@ Track the active root, ticket, lifecycle state, and resume point in the current 
 | blocked | Stop the affected dependency chain and record the reason class, evidence, recovery condition, and safe resume state. Resume only after the condition is met and issue and Git state are reconciled. |
 | completed | Every non-deferred ticket and approved repair is complete; acceptance checks and the required full suite pass; final review passes; pushes and status syncs are confirmed; and the root checkpoint is approved. |
 
-Classify dependency when a required blocker remains unsatisfied; technical for an implementation or verification failure; external-service for a known service or network failure; operator-decision when a required user decision is unresolved, such as approval for a non-status issue write or pull request; decomposition when scope needs further ticketing; and needs-reconcile when a side-effect result is uncertain. A review repair uses remediate, not a generic blocked state. A blocker pauses only its dependent work; continue another independent root queue when it has a ready ticket.
+Classify dependency when a required blocker remains unsatisfied; technical for an implementation or verification failure; external-service for a known service or network failure; operator-decision when a required user decision is unresolved, such as approval for a non-status issue write or pull request; decomposition when scope needs further ticketing; and needs-reconcile when a side-effect result is uncertain. A review repair uses remediate, not a generic blocked state. A blocker pauses only its dependent work.
 
 Keep the ticket review checkpoint and the separate root completion checkpoint. Status synchronization never counts as approval to declare the root complete. All other GitHub writes retain their existing approval gates.
 
@@ -90,7 +90,7 @@ After a restart or interruption, before resuming any status write, re-read and r
 
 ## Intake and frontier
 
-Accept one or more inline specs, local spec/ticket paths, or GitHub issue URLs/identifiers. Preserve each root's source and keep multiple roots as independent queues unless an explicit dependency joins them.
+Accept one or more inline specs, local spec/ticket paths, or GitHub issue URLs/identifiers. After read-only intake and deduplication, if more than one distinct root remains, follow the [multi-root coordination reference](references/multi-root-coordination.md). With one root, continue the single-root workflow below. This skill remains authoritative for procedures shared by both paths.
 
 Discover descendants only from explicit parent/child links, checklists, issue links, or blocking/dependency edges. Do not infer tickets from titles or invent relationships.
 
