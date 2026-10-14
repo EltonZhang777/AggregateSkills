@@ -6,7 +6,9 @@ Create one prompt for each explicitly approved group. Replace every bracketed pl
 
 For dependencies, name known blockers and their current state; say `None` only when the parent has confirmed there are none. For write constraints, carry forward the applicable shared-workspace and authorization rules without broadening them. For project text, include the normative language rule from the target repository's root `AGENTS.md`; if the target is another repository, the parent must read that repository's root file before drafting.
 
-## Copy-ready prompt
+# Copy-ready prompt (below):
+
+---
 
 You are the interactive child session for one explicitly approved group. Work only within the group and rules below. The parent owns child readiness, handoff, retry, and resumption decisions.
 
