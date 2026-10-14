@@ -103,32 +103,42 @@ merging.
 ## Conflict resolution and second approval
 
 Create a branch that conflicts with its target. Prepare its PR, then approve
-that exact PR for merging.
+that exact PR for merging. Run conflict resolution in an explicitly supplied,
+clean worktree for the exact repository and source branch.
 
 Confirm the skill uses `/resolving-merge-conflicts`, runs the required checks,
-and presents the resolved diff and results. It must pause for a second
-explicit approval covering the conflict-fix commit, its push, and that PR's
-merge. After the approved push, confirm it checks the PR's required CI gates
-again and that the published diff matches the approved resolution before
-merging. Confirm any later head or base OID change requires renewed approval.
+and presents the complete unstaged diff and results without staging. It must
+pause for explicit approval of that exact diff and write set before staging.
+After approval, confirm it stages only the approved files and inspects the
+staged diff. If that diff changed, it must present the change and obtain renewed
+approval before commit, push, or merge. After the approved push, confirm it
+checks the PR's required CI gates again and that the published diff matches
+the approved resolution before merging. Confirm any later head or base OID
+change requires renewed approval.
 
 ## Multi-PR batch: ordering, stacked retarget, and failure isolation
 
-Prepare three clean worktrees in one test repository: branch A and branch B independently target the same base, and branch C is explicitly stacked on branch A. Supply them in the order C, B, A in one /pr-and-merge invocation. Confirm the workflow processes B, then A, then C: the dependency requires A before C, while the input order puts independent B before A. Confirm it creates or reuses one exact PR per eligible source, then returns separate review snapshots and pauses before merging.
+Prepare three clean worktrees in one test repository: branch A and branch B independently target the same base with disjoint changed paths, and branch C is explicitly stacked on branch A. Supply them in the order C, B, A in one /pr-and-merge invocation. Confirm the workflow presents one exact batch plan and requests one authorization for its listed writes. For each planned merge, name the exact PR and head/base names and OIDs; this authorizes each listed merge while live per-PR checks remain active. Confirm it creates or reuses one exact PR per eligible source and does not pause again for a merge already listed in the authorized batch. The workflow processes dependency-ready work in order: A must precede C, while conflict-free B is considered before conflict-free A by input order.
 
-Approve and merge branch A. Confirm branch C is retargeted from A to A's former base, then its head and base OIDs, diff, mergeability, and required checks are refreshed. If retargeting changes either OID, materially changes the diff, or invalidates approval, confirm the workflow asks for renewed approval before merging C. Branch B remains independent and can proceed only with its own approval and passing gates.
+In a separate batch, select three independent PRs against the same base: A and B have overlapping changed paths, while C has disjoint paths. Supply them in the order A, C, B. Confirm C is prepared and merged before A and B despite the supplied order, and A remains before B within the conflict-candidate group. The merge phase must preserve the same computed order as preparation.
+
+Confirm branch A merges under its listed batch authorization. Branch C is retargeted from A to A's former base, then its head and base OIDs, diff, mergeability, reviews, and required checks are refreshed. If the target base ref changes or new conflict-resolution work is required, confirm the workflow refreshes the plan and obtains renewed authorization before C's next write. Branch B remains independent and can proceed under the same batch authorization if it was listed and its live gates pass.
 
 In a separate batch, supply a dirty branch D, branch E explicitly stacked on D, and a clean independent branch F. Confirm D and dependent E are blocked without publishing them, while F continues through its own prechecks and PR preparation. Repeat with a required check failing for one entry if the test repository can configure that check; confirm only that entry and its dependents stop.
 
 ## Complete batch outcome summary
 
-In a disposable repository, supply five entries in one batch: A's repository, source branch, and resolved base exactly match an already merged PR, and A's current source OID matches that PR's head OID; B and E are independent open PRs with passing checks; C has a failing required check; and D's exact existing PR targets C. At the initial review pause, confirm A is completed, B and E are pending, and C and D are blocked. Approve and merge B only, then inspect the final stop summary: A and B are completed, E is pending, and C and D remain blocked.
+In a disposable repository, supply six entries in one batch: A's repository, source branch, and resolved base exactly match an already merged PR, and A's current source OID matches that PR's head OID; B and E are independent open PRs with passing checks; C has a failing required check; D's exact existing PR targets C; and F is a closed unmerged PR. In the initial scope report, confirm A and F are report-only with no planned writes. At the batch authorization plan, confirm B and E are pending and C and D are blocked. List B's exact PR/head/base merge in the plan and authorize that write set once; leave E's merge unapproved. Execute B's listed merge without a second approval prompt, then inspect the final stop summary: A and B are completed, F remains report-only, E is pending, and C and D remain blocked.
 
-At every summary boundary, confirm every source appears exactly once with its repository and branch/worktree, and its PR link when one exists. Give B and E their own waiting reason and separate head/base names and OIDs at the initial pause; do not combine snapshots. In the final summary, verify E remains pending with its own current head/base names and OIDs. Give C its failed-check reason and D the unmet prerequisite C. Repeat with C's required check pending and then unknown/unavailable; in both runs, C and D must be blocked with the exact check state or uncertainty reported. No unapproved PR is merged.
+At every summary boundary, confirm every source appears exactly once with its repository and branch/worktree, and its PR link when one exists. Give B and E their own waiting reason and head/base names and OIDs at the initial batch plan; do not combine entries. One authorization covers only the listed actions and exact merge snapshots, so do not ask again for a listed merge. In the final summary, verify E remains pending with its own current head/base names and OIDs. Give C its failed-check reason and D the unmet prerequisite C. Repeat with C's required check pending and then unknown/unavailable; in both runs, C and D must be blocked with the exact check state or uncertainty reported. No unapproved PR is merged.
 
 Also test a source with one matching merged PR and one matching open PR for the same repository, source branch, and base. Reuse the open PR, classify the entry as pending with its own approval snapshot, and do not mark it completed based on the merged history.
 
 Advance a source branch after its matching PR is merged. On the next batch, verify the old PR's `headRefOid` differs from the recorded source OID, report both, and classify the entry as `blocked` until the user decides whether to prepare a new PR; do not mark the newer source `completed`.
+
+## Multi-PR batch: exact worktree match and dirtiness
+
+For a PR requiring conflict resolution, provide a clean worktree for the exact repository and source branch, a clean worktree for the same repository on a different branch, and a clean worktree for a different repository on the same branch. Confirm only the exact repository-and-branch match is reused. Repeat with the exact-match worktree containing a modified file and then an untracked file; confirm the operation is blocked and the worktree is left untouched.
 
 ## Other hosting platform
 

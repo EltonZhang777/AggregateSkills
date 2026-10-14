@@ -9,6 +9,12 @@ description: Prepare GitHub pull requests from one or more supplied branches or 
 
 Use this skill when the user asks to prepare GitHub pull requests for supplied branches or worktrees, or to merge prepared PRs after explicit per-PR approval. It handles GitHub only. For another hosting platform, say in one sentence that the invoking agent handles that platform.
 
+## Multi-PR request routing
+
+Before discovery of PRs, branches, worktrees, or diffs, route any request that names multiple sources, an inclusive PR range, mixed selectors, or otherwise may fan out to multiple operations through [the multi-PR batch reference](references/multi-pr-batch.md).
+
+After selector resolution and deduplication, hand off to the existing single-PR flow below only when exactly one operation is resolved and no other outcome needs a batch report. Otherwise, complete the request as a batch. The reference links back to the shared batch, per-PR, and merge guidance here; keep that guidance canonical in this skill.
+
 ## Dependencies
 
 When this skill's own workflow explicitly reaches a call to one of its directly declared Skill prerequisites, the call is explicit and may proceed even if that prerequisite disables implicit invocation. This waives only that invocation gate. It does not waive other prerequisite instructions or confirmation, authorization, security, or safety gates. It does not authorize transitive calls, create new call steps, or override an explicit prohibition on invoking another skill.
@@ -25,17 +31,17 @@ Before starting the workflow, confirm that the `skillroute` command is callable 
 
 ## Process a batch
 
-Treat every supplied source as an entry identified by its exact repository and branch or worktree. Resolve authentication, repository identity, target, existing PR, and required checks for each entry separately. If the repository for the whole batch is unclear, pause the batch. If one entry is unclear, ask about it in plain text, block that entry and its dependents, and continue unrelated entries whose inputs are clear. Never stash, stage, or clean a supplied worktree.
+Follow the [multi-PR batch reference](references/multi-pr-batch.md) for batch discovery, planning, authorization, ordering, and orchestration.
 
-Build dependencies only from relationships stated by the user or an exact existing PR whose base is another supplied source branch; do not infer a stacked target from commit ancestry alone, and link dependencies only within the same repository. Preserve each existing PR base. If the user supplies a complete merge order, follow it only when it respects every dependency; otherwise ask before merging. When no explicit order is supplied, order entries topologically and choose the earliest input entry whenever multiple entries are ready. If an order remains ambiguous, ask a plain-text question. A cycle or unresolved relationship blocks those entries and their dependents while the answer is pending; continue the rest.
+Treat every supplied source as an entry identified by its exact repository and branch or worktree. Resolve authentication, repository identity, target, existing PR, and required checks for each entry separately. If the repository for the whole batch is unclear, pause the batch. If one entry is unclear, ask about it in plain text, block that entry and its dependents, and continue unrelated entries whose inputs are clear. Never stash or clean a supplied worktree. Stage its conflict-resolution files only after explicit approval of the exact diff, and only as described in the [conflict-resolution gate](references/multi-pr-batch.md#gate-conflict-resolution).
 
-Prepare or reuse each eligible PR in that order. A dirty worktree, failed or unknown required check, or other blocking condition blocks only that entry and its dependents. Skip dependent entries whose required upstream is blocked, but continue independent entries. Finish preparing every eligible PR before merging any. Present a separate approval snapshot for each PR and pause. Approval applies only to the exact PR named by the user.
+A dirty worktree, failed or unknown required check, or other blocking condition blocks only that entry and its dependents. Skip dependent entries whose required upstream is blocked, but continue independent entries.
 
-At every pause, stop, or batch completion, return one outcome summary with each supplied entry exactly once. Mark an entry `completed` only after its matching PR's merge is verified. Mark an entry `pending` only when its PR is otherwise eligible to proceed and is waiting for review, approval, or a follow-up action; that wait alone is not a blocker. Mark an entry `blocked` when an unmet prerequisite or safety gate, beyond an ordinary review or approval wait, prevents the next authorized action. Examples include unresolved input, dirty worktree, a failed, pending, or unknown required check, an unmergeable PR, or a blocked prerequisite. Include the exact repository and source branch or worktree, plus the PR link when one exists. Give each pending or blocked entry its concrete reason; name the unmet prerequisite for a blocked dependent. For each pending PR, keep a separate approval snapshot with that PR's head and base names and OIDs.
+At every pause, stop, or batch completion, return one outcome summary with each supplied entry exactly once. Mark an entry `completed` only after its matching PR's merge is verified. Mark an entry `pending` only when its PR is otherwise eligible to proceed and is waiting for review, approval, or a follow-up action; that wait alone is not a blocker. Mark an entry `blocked` when an unmet prerequisite or safety gate, beyond an ordinary review or approval wait, prevents the next authorized action. Examples include unresolved input, dirty worktree, a failed, pending, or unknown required check, an unmergeable PR, or a blocked prerequisite. Include the exact repository and source branch or worktree, plus the PR link when one exists. Give each pending or blocked entry its concrete reason; name the unmet prerequisite for a blocked dependent.
 
 ## Resolve the source and target
 
-Require an exact source repository and branch or worktree. From that checkout, inspect `git rev-parse --show-toplevel`, `git remote -v`, `git branch --show-current`, `git rev-parse HEAD`, and `git status --porcelain=v1 --untracked-files=all`; record the source OID. Verify the supplied worktree belongs to the intended repository and branch. If the repository, source branch, target, or existing stacked relationship is ambiguous for this entry, ask before acting on this entry. A dirty worktree blocks this entry; do not stash, stage, or clean it.
+Require an exact source repository and branch or worktree. From that checkout, inspect `git rev-parse --show-toplevel`, `git remote -v`, `git branch --show-current`, `git rev-parse HEAD`, and `git status --porcelain=v1 --untracked-files=all`; record the source OID. Verify the supplied worktree belongs to the intended repository and branch. If the repository, source branch, target, or existing stacked relationship is ambiguous for this entry, ask before acting on this entry. A worktree that is already dirty at this initial source-resolution check blocks the entry; do not stash, stage, or clean it to bypass the gate. If conflict resolution later makes the worktree dirty, follow the separate approval-before-staging rules in the multi-PR batch reference.
 
 For GitHub, verify `gh auth status --hostname github.com` and resolve the exact `OWNER/REPO`. Read the default branch with:
 
@@ -117,7 +123,7 @@ For a fork head, pass `OWNER:HEAD_BRANCH` to `--head`. If `gh pr create` cannot 
 
 For an existing exact match, reuse it and update only fields that need correction with `gh pr edit NUMBER --repo OWNER/REPO`. Pass `--title` as one shell argument and `--body-file BODY_FILE` for an updated body; omit unchanged fields.
 
-For every created or reused PR, read its head and base names and OIDs with gh pr view, and read its diff and required checks with gh pr diff and gh pr checks. Return each PR link, head and base names and OIDs, relevant diff, and required-check results. Record a separate approval snapshot for each PR, then pause for review. Do not merge yet.
+For every created or reused PR, read its head and base names and OIDs with gh pr view, and read its diff and required checks with gh pr diff and gh pr checks. Return each PR link, head and base names and OIDs, relevant diff, and required-check results. For a single-PR request, record a separate approval snapshot for that PR, then pause for review; do not merge yet. For a batch request, follow the batch authorization and execution rules in the [multi-PR batch reference](references/multi-pr-batch.md); do not pause again for a merge already listed in the authorized batch.
 
 ## Merge after approval
 
