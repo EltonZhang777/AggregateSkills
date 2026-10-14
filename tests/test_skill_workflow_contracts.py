@@ -791,7 +791,7 @@ class SpecImplementLoopBehaviorTests(unittest.TestCase):
             "size the stable worker slots to that width",
             "prepare or reconcile only worktrees whose bases do not require cross-root operations",
             "using coordinator-selected bases",
-            "before dependent work is dispatched, refresh a clean idle slot from the latest target integration branch",
+            "before dependent work is dispatched, refresh a clean idle slot from the latest dependent integration branch",
             "wait if no safe slot is available",
             "ticket assignments",
             "source root and branch",
@@ -835,6 +835,25 @@ class SpecImplementLoopBehaviorTests(unittest.TestCase):
         self.assertIn("reuse an idle slot only when it is safe and its workspace is clean", scheduling)
         self.assertIn("release its worker slot at root_checkpoint", acceptance)
         self.assertIn("lightweight wait for final user acceptance or closure does not consume an implementation slot", acceptance)
+
+    def test_cross_root_prerequisites_are_resolved_and_integrated_before_dispatch(self):
+        reference = skill_reference("spec-implement-loop", "multi-root-coordination.md").lower().replace(chr(96), "")
+        preparation = section(reference, "## 3. prepare and authorize the batch")
+        scheduling = section(reference, "## 4. schedule queues and gate prerequisites")
+
+        self.assertIn("if the required base or source branch is ambiguous, ask which existing branch to use or which source branch to merge", preparation)
+        self.assertIn("pause only the affected dependent root until resolved", preparation)
+        self.assertIn("do not infer a branch or merge operation", preparation)
+        self.assertIn("the plan and batch-start approval must explicitly name the source root branch and its merge into the dependent integration branch", preparation)
+        self.assertIn("creating a dependent ticket branch from the source does not substitute for or authorize that merge", preparation)
+        self.assertIn("merge that branch into the dependent root as authorized; dispatch the dependent ticket only after the merge succeeds", scheduling)
+        self.assertIn("do not wait for the source root's full queue or final acceptance", scheduling)
+        self.assertIn("a blocked prerequisite or merge conflict pauses only the affected dependent root", scheduling)
+        self.assertIn("continue other roots with ready tickets", scheduling)
+        self.assertLess(
+            preparation.index("if the required base or source branch is ambiguous"),
+            preparation.index("request one batch-start approval"),
+        )
 
     def test_remediation_routes_only_when_final_review_finds_issues(self):
         text = skill("spec-implement-loop").lower()
