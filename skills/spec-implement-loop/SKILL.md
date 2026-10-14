@@ -43,8 +43,6 @@ Also require:
 
 Record the starting `HEAD` for review and commit accounting. Do not re-check dependency origins over the network during normal execution.
 
-If a caller request conflicts with this skill, explain the conflict to the user and pause for resolution; do not edit skill documents during the run.
-
 ## Plan the graph and reusable worktree pool
 
 Before implementation starts:
@@ -100,7 +98,7 @@ Discover descendants only from explicit parent/child links, checklists, issue li
 - If a root is clearly too large for one implementation round, pause and ask for approval to load and run `/to-tickets`.
 - If a root is only planning material and has no clear acceptance criteria, pause and report; do not create tickets automatically.
 
-Use the source-specific ready guard above. Fill the planned worker pool from the current ready frontier, prioritizing dependency order. Run independent ready tickets concurrently up to the calculated pool width. Exclude tickets generated and marked `deferred` during the current run.
+Use the source-specific ready guard above. Fill the planned worker pool from the current ready frontier, prioritizing dependency order and then root order or issue number. Run independent ready tickets concurrently up to the calculated pool width. Exclude tickets generated and marked `deferred` during the current run.
 
 ## Issue loop
 

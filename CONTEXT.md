@@ -46,3 +46,10 @@ The stable name and publishing source that distinguish the intended prerequisite
 **Prerequisite resolution**:
 Finding the skill package or tool that matches a prerequisite identity in the current runtime.
 
+### Multi-root implementation
+
+**Batch-start approval**:
+A one-time authorization to begin a frozen multi-root implementation batch,
+with each root's task scope and permitted dependency-directed cross-root Git
+operations named explicitly.
+_Avoid_: Batch approval (too broad; loses the explicit authorization boundary)

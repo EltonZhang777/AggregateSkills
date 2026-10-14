@@ -746,6 +746,19 @@ class SpecImplementLoopBehaviorTests(unittest.TestCase):
         self.assertIn("Pass the target rule to /grill-duo-with-docs", text)
         self.assertNotIn("/grill-with-docs", text)
 
+    def test_multi_root_reference_is_selected_only_after_read_only_deduplication(self):
+        intake = section(skill("spec-implement-loop").lower(), "## intake and frontier")
+
+        self.assertIn("after read-only intake and deduplication", intake)
+        self.assertIn("if more than one distinct root remains", intake)
+        self.assertIn(
+            "follow the [multi-root coordination reference](references/multi-root-coordination.md)",
+            intake,
+        )
+        self.assertIn("with one root, continue the single-root workflow below", intake)
+        self.assertIn("this skill remains authoritative for procedures shared by both paths", intake)
+        self.assertIn("prioritizing dependency order and then root order or issue number", intake)
+
     def test_multi_root_scope_is_mapped_and_validated_before_selection(self):
         reference = skill_reference("spec-implement-loop", "multi-root-coordination.md").lower()
         listing = section(reference, "## 1. list and validate roots")
@@ -773,6 +786,13 @@ class SpecImplementLoopBehaviorTests(unittest.TestCase):
         self.assertIn("choose one owning root or decompose the ticket", listing)
         self.assertIn("pause only affected roots", listing)
         self.assertIn("unaffected roots may continue under their existing authorizations", listing)
+        self.assertIn("if a link points to another root", listing)
+        self.assertIn("ask for explicit approval for that exact relationship change", listing)
+        self.assertIn("approval for missing links does not authorize moving or removing an existing link", listing)
+        self.assertIn("if supported github tooling cannot apply and verify the exact change", listing)
+        self.assertIn("do not substitute another operation", listing)
+        self.assertIn("resume only after a read-only authoritative check confirms the chosen parent", listing)
+        self.assertIn("if it cannot be verified, keep the affected roots paused", listing)
         self.assertIn("complete, validated listing", selection)
         self.assertIn("single-root flow", selection)
 
