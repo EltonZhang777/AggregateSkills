@@ -524,7 +524,7 @@ class RequirementsToSpecTicketsBehaviorTests(unittest.TestCase):
 
         template = skill_reference("requirements-to-spec-tickets", filename).lower().replace(chr(96), "")
         fill_instructions = section(template, "## fill instructions")
-        copy_ready = template[template.index("## copy-ready prompt"):]
+        copy_ready = template[template.index("# copy-ready prompt (below):"):]
         group = section(template, "## approved group")
         startup = section(template, "## first response and grilling gate")
         workflow = section(template, "## workflow gates")
@@ -808,8 +808,8 @@ class RequirementsToSpecTicketsBehaviorTests(unittest.TestCase):
             decision, ("status",), ("root",), ("repository",), ("ticket",), ("checkpoint",),
         ))
         self.assertTrue(sentence_with_concepts(
-            decision, ("not", "does not", "outside"), ("authorize", "permit"),
-            ("non-status",), ("write",),
+            decision, ("every other",), ("git",), ("github",), ("write",),
+            ("existing",), ("approval gate",),
         ))
         self.assertTrue(permission_clause(
             "Existing group authorization permits force-pushes to other branches.".lower(),
@@ -1104,65 +1104,105 @@ class SpecImplementLoopBehaviorTests(unittest.TestCase):
             ROOT / "docs" / "adr" / "0003-task-scoped-write-authorization.md"
         ).read_text(encoding="utf-8").lower().split())
 
-        for detail in (
-            "explicit prerequisite edges",
-            "record each root's required write scope for the single batch grant",
-            "current integration branch and required worktree",
-            "graph width",
-            "size the stable worker slots to that width",
-            "prepare or reconcile only worktrees whose bases do not require cross-root operations",
-            "using coordinator-selected bases",
-            "before dependent work is dispatched, refresh a clean idle slot from the latest dependent integration branch",
-            "wait if no safe slot is available",
-            "source root and branch",
-            "dependent root and exact destination branch or worktree",
-            "creates a dependent ticket branch from the source",
-            "merges the source branch into the dependent integration branch",
-            "single task-start authorization",
-            "do not dispatch any implementation conversation until one grant covers all required scope",
-            "do not request separate per-root grants",
-            "after approval, perform only the listed cross-root operations",
-            "dispatch planned work only after this limit is set and all required cross-root operations have succeeded",
-        ):
-            self.assertIn(detail, preparation)
+        self.assertTrue(sentence_with_concepts(
+            preparation, ("cross-root dependency",),
+            ("source-root-to-dependent-root", "source root to dependent root"),
+        ))
+        operation = sentence_with_concepts(
+            preparation, ("source root", "source-root"),
+            ("dependent root", "dependent-root"), ("destination",),
+            ("creates", "merges"),
+        )
+        self.assertTrue(operation)
+        self.assertTrue(mentions_concepts(
+            operation, ("branch",), ("worktree", "branch"),
+            ("ticket branch", "integration branch"),
+        ))
+        self.assertTrue(sentence_with_concepts(
+            preparation, ("ambiguous",), ("ask", "clarify"),
+            ("pause",), ("dependent root",),
+        ))
 
-        self.assertLess(
-            preparation.index("prepare or reconcile only worktrees"),
-            preparation.index("request the single task-start authorization defined by the main skill"),
+        worktree_prep = sentence_with_concepts(
+            preparation, ("worktrees",), ("cross-root operations",),
         )
-        self.assertLess(
-            preparation.index("request the single task-start authorization defined by the main skill"),
-            preparation.index("after approval, perform only the listed cross-root operations"),
+        authorization = sentence_with_concepts(
+            preparation, ("single", "one"), ("task-start authorization",),
+            ("frozen batch",),
         )
-        self.assertLess(
-            preparation.index("request the single task-start authorization defined by the main skill"),
-            preparation.index("dispatch planned work only after this limit is set"),
+        authorized_operations = sentence_with_concepts(
+            preparation, ("after approval",), ("only",), ("listed",),
+            ("cross-root operations",),
         )
+        dispatch = sentence_with_concepts(
+            preparation, ("dispatch",), ("limit",), ("operations",),
+            ("succeeded", "success"),
+        )
+        self.assertTrue(worktree_prep)
+        self.assertTrue(authorization)
+        self.assertTrue(authorized_operations)
+        self.assertTrue(dispatch)
+        self.assertLess(preparation.index(worktree_prep), preparation.index(authorization))
+        self.assertLess(preparation.index(authorization), preparation.index(authorized_operations))
+        self.assertLess(preparation.index(authorization), preparation.index(dispatch))
+        self.assertTrue(sentence_with_concepts(
+            preparation, ("per-root",), ("do not", "not request"),
+            ("authorization", "grant"),
+        ))
 
-        self.assertIn("task-start authorization covers only those listed cross-root operations for that batch", adr_text)
-        self.assertIn("source root and branch", adr_text)
-        self.assertIn("dependent root and exact destination branch or", adr_text)
-        self.assertIn("replaces repeated per-root authorization requests within the batch", adr_text)
-        self.assertNotIn("list every root/spec and repository", preparation)
+        batch_grant = sentence_with_concepts(
+            adr_text, ("grant",), ("only",), ("listed resources", "listed"),
+            ("categories", "actions"), ("batch",),
+        )
+        cross_root_scope = sentence_with_concepts(
+            adr_text, ("cross-root",), ("source root",), ("dependent root",),
+            ("destination",), ("operation", "branch"),
+        )
+        self.assertTrue(batch_grant)
+        self.assertTrue(cross_root_scope)
+        self.assertTrue(sentence_with_concepts(
+            adr_text, ("authorization",), ("only",),
+            ("listed cross-root operations",), ("batch",),
+        ))
+        self.assertTrue(sentence_with_concepts(
+            adr_text, ("per-root",), ("replaces", "one"),
+            ("authorization",), ("batch",),
+        ))
 
     def test_task_start_authorization_covers_frozen_scope_before_dispatch(self):
         plan = section(skill("spec-implement-loop").lower(), "## plan the graph and reusable worktree pool")
+        task_start = next(line for line in plan.splitlines() if line.strip().startswith("7."))
 
-        for detail in (
-            "request one task-start authorization for the batch before dispatching any implementation task",
-            "every root/spec",
-            "repository",
-            "integration branch and worktree",
-            "planned ticket assignment and worker branch/worktree",
-            "permitted git action categories and exact target refs",
-            "issue-write categories and exact issue targets",
-            "every planned cross-root operation",
-            "dispatch nothing until one grant covers all required scope",
-            "unlisted actions and resources remain gated",
-            "do not fall back to per-root authorization requests",
-            "pass the applicable grant with each worker assignment",
-        ):
-            self.assertIn(detail, plan)
+        self.assertTrue(mentions_concepts(
+            task_start, ("freeze", "frozen"), ("batch",), ("authorization",),
+            ("before",), ("dispatch",),
+        ))
+        self.assertTrue(mentions_concepts(
+            task_start, ("root",), ("repository",), ("integration branch",),
+            ("worktree",), ("ticket assignment",), ("action categories",),
+            ("issue targets",), ("cross-root operation",),
+        ))
+        gate = sentence_with_concepts(
+            task_start, ("grant",), ("required scope",), ("dispatch",),
+        )
+        self.assertTrue(gate)
+        self.assertRegex(gate, r"\b(?:until|only after|after)\b")
+        self.assertTrue(sentence_with_concepts(
+            task_start, ("pending",), ("declined",), ("incomplete",),
+            ("dispatch",), ("implementation conversation",),
+        ))
+        self.assertTrue(sentence_with_concepts(
+            task_start, ("worker",), ("only",), ("grant", "authorization"),
+            ("ticket",), ("resources",), ("actions", "categories"),
+        ))
+        self.assertTrue(sentence_with_concepts(
+            task_start, ("worker",), ("another ticket", "sibling ticket"),
+            ("authorization", "grant"), ("must not", "cannot"),
+        ))
+        self.assertTrue(sentence_with_concepts(
+            task_start, ("unlisted",), ("gated", "blocked"),
+            ("actions", "resources"),
+        ))
 
     def test_multi_root_scheduler_shares_limit_and_releases_safe_slots(self):
         reference = skill_reference("spec-implement-loop", "multi-root-coordination.md").lower().replace(chr(96), "")
@@ -1173,7 +1213,14 @@ class SpecImplementLoopBehaviorTests(unittest.TestCase):
         self.assertIn("before the first implementation conversation, ask once for a single batch-wide parallel limit", preparation)
         self.assertIn("apply that cap across roots to every dispatch and refill throughout the batch", preparation)
         self.assertIn("unlimited still cannot exceed the clean, available worker slots", preparation)
-        self.assertIn("pass the applicable task-start grant with each worker assignment", scheduling)
+        self.assertTrue(sentence_with_concepts(
+            scheduling, ("worker",), ("only",), ("grant", "authorization"),
+            ("ticket",),
+        ))
+        self.assertTrue(sentence_with_concepts(
+            scheduling, ("worker",), ("another ticket", "sibling ticket"),
+            ("authorization", "grant"), ("must not", "cannot"),
+        ))
         self.assertLess(
             preparation.index("before the first implementation conversation"),
             preparation.index("dispatch planned work only after this limit is set"),
@@ -1186,6 +1233,23 @@ class SpecImplementLoopBehaviorTests(unittest.TestCase):
         self.assertIn("reuse an idle slot only when it is safe and its workspace is clean", scheduling)
         self.assertIn("release its worker slot at root_checkpoint", acceptance)
         self.assertIn("lightweight wait for final user acceptance or closure does not consume an implementation slot", acceptance)
+
+    def test_manual_authorization_acceptance_covers_worker_scope_and_dispatch_gates(self):
+        manual = (ROOT / "tests" / "manual" / "spec-implement-loop.md").read_text(encoding="utf-8").lower()
+        scenario = section(manual, "## graph planning and reusable worktree pool")
+
+        self.assertTrue(sentence_with_concepts(
+            scenario, ("ticket a",), ("ticket b",), ("worker",), ("only",),
+            ("grant", "authorization"), ("resources",), ("actions",),
+        ))
+        self.assertTrue(sentence_with_concepts(
+            scenario, ("another ticket", "sibling ticket"), ("resources",),
+            ("actions",), ("blocked",),
+        ))
+        self.assertTrue(sentence_with_concepts(
+            scenario, ("pending",), ("declined",), ("incomplete",),
+            ("no worker", "no implementation conversation"), ("starts", "dispatch"),
+        ))
 
     def test_cross_root_prerequisites_are_resolved_and_integrated_before_dispatch(self):
         reference = skill_reference("spec-implement-loop", "multi-root-coordination.md").lower().replace(chr(96), "")
