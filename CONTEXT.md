@@ -48,8 +48,16 @@ Finding the skill package or tool that matches a prerequisite identity in the cu
 
 ### Multi-root implementation
 
+**Task-start authorization**:
+A one-time authorization requested by the root-level coordinator before it
+dispatches any implementation spec in a frozen batch. The request names the
+complete spec set, affected repositories and branches, and the Git and issue
+action categories it covers. It applies only to those listed resources and
+categories; if authorization is missing, the coordinator does not dispatch
+the batch. It does not replace root completion approval.
+
 **Batch-start approval**:
-A one-time authorization to begin a frozen multi-root implementation batch,
-with each root's task scope and permitted dependency-directed cross-root Git
+A task-start authorization for a frozen multi-root implementation batch, with
+each root's task scope and permitted dependency-directed cross-root Git
 operations named explicitly.
 _Avoid_: Batch approval (too broad; loses the explicit authorization boundary)
