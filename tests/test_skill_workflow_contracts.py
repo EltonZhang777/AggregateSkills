@@ -524,7 +524,7 @@ class RequirementsToSpecTicketsBehaviorTests(unittest.TestCase):
 
         template = skill_reference("requirements-to-spec-tickets", filename).lower().replace(chr(96), "")
         fill_instructions = section(template, "## fill instructions")
-        copy_ready = template[template.index("## copy-ready prompt"):]
+        copy_ready = template[template.index("# copy-ready prompt (below):"):]
         group = section(template, "## approved group")
         startup = section(template, "## first response and grilling gate")
         workflow = section(template, "## workflow gates")
@@ -808,8 +808,8 @@ class RequirementsToSpecTicketsBehaviorTests(unittest.TestCase):
             decision, ("status",), ("root",), ("repository",), ("ticket",), ("checkpoint",),
         ))
         self.assertTrue(sentence_with_concepts(
-            decision, ("not", "does not", "outside"), ("authorize", "permit"),
-            ("non-status",), ("write",),
+            decision, ("every other",), ("git",), ("github",), ("write",),
+            ("existing",), ("approval gate",),
         ))
         self.assertTrue(permission_clause(
             "Existing group authorization permits force-pushes to other branches.".lower(),
@@ -1088,56 +1088,121 @@ class SpecImplementLoopBehaviorTests(unittest.TestCase):
 
         self.assertIn("if the documents or skill instructions conflict, explain the conflict to the user and pause only affected roots", reference)
         self.assertIn("the caller must not edit skill documents during the run", reference)
-        self.assertIn("freeze that selected set at batch-start approval", selection)
-        self.assertIn("a newly discovered root stays out of the batch until the user approves the scope change and renewed batch start", selection)
+        self.assertIn("freeze the selected set for task-start authorization", selection)
+        self.assertIn("a newly discovered root stays out of the batch until the user approves the scope change and renewed task-start authorization", selection)
         self.assertIn("pause the affected root with the evidence and resume condition", listing)
         self.assertIn("continue safe independent roots", listing)
         self.assertIn("in-scope acceptance rework returns to the current batch and the same parallel limit", tracking)
-        self.assertIn("pause out-of-scope rework and scope expansion; present the proposed scope change to the user and resume only after renewed scope and authorization are approved", tracking)
+        self.assertIn("pause out-of-scope rework and scope expansion; present the proposed scope change to the user and resume only after renewed scope and task-start authorization are approved", tracking)
         self.assertIn("if a newly found root blocks only some selected roots, pause those roots and continue unaffected roots", tracking)
         self.assertIn("the batch stays open until every selected root has reached its completion checkpoint and root close", completion)
 
-    def test_multi_root_batch_approval_scopes_cross_root_operations(self):
+    def test_multi_root_task_start_authorization_scopes_cross_root_operations(self):
         reference = skill_reference("spec-implement-loop", "multi-root-coordination.md").lower()
         preparation = section(reference, "## 3. prepare and authorize the batch")
         adr_text = " ".join((
             ROOT / "docs" / "adr" / "0003-task-scoped-write-authorization.md"
         ).read_text(encoding="utf-8").lower().split())
 
-        for detail in (
-            "explicit prerequisite edges",
-            "confirm the existing task-scoped write authorization and record its exact scope",
-            "current integration branch and required worktree",
-            "graph width",
-            "size the stable worker slots to that width",
-            "prepare or reconcile only worktrees whose bases do not require cross-root operations",
-            "using coordinator-selected bases",
-            "before dependent work is dispatched, refresh a clean idle slot from the latest dependent integration branch",
-            "wait if no safe slot is available",
-            "ticket assignments",
-            "source root and branch",
-            "dependent root and exact destination branch or worktree",
-            "creates a dependent ticket branch from the source",
-            "merges the source branch into the dependent integration branch",
-            "each root's task-scoped write scope",
-            "do not create or start implementation conversations before this approval",
-            "after approval, perform only the listed cross-root operations, prepare all required worktrees on the bases recorded in the plan, and then create or start the planned conversations",
-        ):
-            self.assertIn(detail, preparation)
-
-        self.assertLess(
-            preparation.index("prepare or reconcile only worktrees"),
-            preparation.index("request one batch-start approval"),
+        self.assertTrue(sentence_with_concepts(
+            preparation, ("cross-root dependency",),
+            ("source-root-to-dependent-root", "source root to dependent root"),
+        ))
+        operation = sentence_with_concepts(
+            preparation, ("source root", "source-root"),
+            ("dependent root", "dependent-root"), ("destination",),
+            ("creates", "merges"),
         )
-        self.assertLess(
-            preparation.index("request one batch-start approval"),
-            preparation.index("after approval, perform only the listed cross-root operations"),
-        )
+        self.assertTrue(operation)
+        self.assertTrue(mentions_concepts(
+            operation, ("branch",), ("worktree", "branch"),
+            ("ticket branch", "integration branch"),
+        ))
+        self.assertTrue(sentence_with_concepts(
+            preparation, ("ambiguous",), ("ask", "clarify"),
+            ("pause",), ("dependent root",),
+        ))
 
-        self.assertIn("batch-start approval authorizes only those listed cross-root operations", adr_text)
-        self.assertIn("source root and branch", adr_text)
-        self.assertIn("dependent root and exact destination branch or", adr_text)
-        self.assertIn("existing per-root task-scoped grants", adr_text)
+        worktree_prep = sentence_with_concepts(
+            preparation, ("worktrees",), ("cross-root operations",),
+        )
+        authorization = sentence_with_concepts(
+            preparation, ("single", "one"), ("task-start authorization",),
+            ("frozen batch",),
+        )
+        authorized_operations = sentence_with_concepts(
+            preparation, ("after approval",), ("only",), ("listed",),
+            ("cross-root operations",),
+        )
+        dispatch = sentence_with_concepts(
+            preparation, ("dispatch",), ("limit",), ("operations",),
+            ("succeeded", "success"),
+        )
+        self.assertTrue(worktree_prep)
+        self.assertTrue(authorization)
+        self.assertTrue(authorized_operations)
+        self.assertTrue(dispatch)
+        self.assertLess(preparation.index(worktree_prep), preparation.index(authorization))
+        self.assertLess(preparation.index(authorization), preparation.index(authorized_operations))
+        self.assertLess(preparation.index(authorization), preparation.index(dispatch))
+        self.assertTrue(sentence_with_concepts(
+            preparation, ("per-root",), ("do not", "not request"),
+            ("authorization", "grant"),
+        ))
+
+        batch_grant = sentence_with_concepts(
+            adr_text, ("grant",), ("only",), ("listed resources", "listed"),
+            ("categories", "actions"), ("batch",),
+        )
+        cross_root_scope = sentence_with_concepts(
+            adr_text, ("cross-root",), ("source root",), ("dependent root",),
+            ("destination",), ("operation", "branch"),
+        )
+        self.assertTrue(batch_grant)
+        self.assertTrue(cross_root_scope)
+        self.assertTrue(sentence_with_concepts(
+            adr_text, ("authorization",), ("only",),
+            ("listed cross-root operations",), ("batch",),
+        ))
+        self.assertTrue(sentence_with_concepts(
+            adr_text, ("per-root",), ("replaces", "one"),
+            ("authorization",), ("batch",),
+        ))
+
+    def test_task_start_authorization_covers_frozen_scope_before_dispatch(self):
+        plan = section(skill("spec-implement-loop").lower(), "## plan the graph and reusable worktree pool")
+        task_start = next(line for line in plan.splitlines() if line.strip().startswith("7."))
+
+        self.assertTrue(mentions_concepts(
+            task_start, ("freeze", "frozen"), ("batch",), ("authorization",),
+            ("before",), ("dispatch",),
+        ))
+        self.assertTrue(mentions_concepts(
+            task_start, ("root",), ("repository",), ("integration branch",),
+            ("worktree",), ("ticket assignment",), ("action categories",),
+            ("issue targets",), ("cross-root operation",),
+        ))
+        gate = sentence_with_concepts(
+            task_start, ("grant",), ("required scope",), ("dispatch",),
+        )
+        self.assertTrue(gate)
+        self.assertRegex(gate, r"\b(?:until|only after|after)\b")
+        self.assertTrue(sentence_with_concepts(
+            task_start, ("pending",), ("declined",), ("incomplete",),
+            ("dispatch",), ("implementation conversation",),
+        ))
+        self.assertTrue(sentence_with_concepts(
+            task_start, ("worker",), ("only",), ("grant", "authorization"),
+            ("ticket",), ("resources",), ("actions", "categories"),
+        ))
+        self.assertTrue(sentence_with_concepts(
+            task_start, ("worker",), ("another ticket", "sibling ticket"),
+            ("authorization", "grant"), ("must not", "cannot"),
+        ))
+        self.assertTrue(sentence_with_concepts(
+            task_start, ("unlisted",), ("gated", "blocked"),
+            ("actions", "resources"),
+        ))
 
     def test_multi_root_scheduler_shares_limit_and_releases_safe_slots(self):
         reference = skill_reference("spec-implement-loop", "multi-root-coordination.md").lower().replace(chr(96), "")
@@ -1148,6 +1213,18 @@ class SpecImplementLoopBehaviorTests(unittest.TestCase):
         self.assertIn("before the first implementation conversation, ask once for a single batch-wide parallel limit", preparation)
         self.assertIn("apply that cap across roots to every dispatch and refill throughout the batch", preparation)
         self.assertIn("unlimited still cannot exceed the clean, available worker slots", preparation)
+        self.assertTrue(sentence_with_concepts(
+            scheduling, ("worker",), ("only",), ("grant", "authorization"),
+            ("ticket",),
+        ))
+        self.assertTrue(sentence_with_concepts(
+            scheduling, ("worker",), ("another ticket", "sibling ticket"),
+            ("authorization", "grant"), ("must not", "cannot"),
+        ))
+        self.assertLess(
+            preparation.index("before the first implementation conversation"),
+            preparation.index("dispatch planned work only after this limit is set"),
+        )
         self.assertIn("count active implementation conversations across all selected roots against the same limit", scheduling)
         self.assertIn("refill capacity as work completes without exceeding the shared limit or available slots", scheduling)
         self.assertIn("check for newly eligible work on the agreed 15-minute cadence", scheduling)
@@ -1157,6 +1234,23 @@ class SpecImplementLoopBehaviorTests(unittest.TestCase):
         self.assertIn("release its worker slot at root_checkpoint", acceptance)
         self.assertIn("lightweight wait for final user acceptance or closure does not consume an implementation slot", acceptance)
 
+    def test_manual_authorization_acceptance_covers_worker_scope_and_dispatch_gates(self):
+        manual = (ROOT / "tests" / "manual" / "spec-implement-loop.md").read_text(encoding="utf-8").lower()
+        scenario = section(manual, "## graph planning and reusable worktree pool")
+
+        self.assertTrue(sentence_with_concepts(
+            scenario, ("ticket a",), ("ticket b",), ("worker",), ("only",),
+            ("grant", "authorization"), ("resources",), ("actions",),
+        ))
+        self.assertTrue(sentence_with_concepts(
+            scenario, ("another ticket", "sibling ticket"), ("resources",),
+            ("actions",), ("blocked",),
+        ))
+        self.assertTrue(sentence_with_concepts(
+            scenario, ("pending",), ("declined",), ("incomplete",),
+            ("no worker", "no implementation conversation"), ("starts", "dispatch"),
+        ))
+
     def test_cross_root_prerequisites_are_resolved_and_integrated_before_dispatch(self):
         reference = skill_reference("spec-implement-loop", "multi-root-coordination.md").lower().replace(chr(96), "")
         preparation = section(reference, "## 3. prepare and authorize the batch")
@@ -1165,7 +1259,7 @@ class SpecImplementLoopBehaviorTests(unittest.TestCase):
         self.assertIn("if the required base or source branch is ambiguous, ask which existing branch to use or which source branch to merge", preparation)
         self.assertIn("pause only the affected dependent root until resolved", preparation)
         self.assertIn("do not infer a branch or merge operation", preparation)
-        self.assertIn("the plan and batch-start approval must explicitly name the source root branch and its merge into the dependent integration branch", preparation)
+        self.assertIn("the plan and task-start authorization must explicitly name the source root branch and its merge into the dependent integration branch", preparation)
         self.assertIn("creating a dependent ticket branch from the source does not substitute for or authorize that merge", preparation)
         self.assertIn("merge that branch into the dependent root as authorized; dispatch the dependent ticket only after the merge succeeds", scheduling)
         self.assertIn("do not wait for the source root's full queue or final acceptance", scheduling)
@@ -1173,7 +1267,7 @@ class SpecImplementLoopBehaviorTests(unittest.TestCase):
         self.assertIn("continue other roots with ready tickets", scheduling)
         self.assertLess(
             preparation.index("if the required base or source branch is ambiguous"),
-            preparation.index("request one batch-start approval"),
+            preparation.index("request the single task-start authorization defined by the main skill"),
         )
 
     def test_remediation_routes_only_when_final_review_finds_issues(self):
@@ -1196,6 +1290,17 @@ class SpecImplementLoopBehaviorTests(unittest.TestCase):
         authorization = section(text, "## plan the graph and reusable worktree pool")
         lifecycle = section(text, "## root-run lifecycle")
         issue_loop = section(text, "## issue loop")
+        status_retry_rule = next(
+            line for line in text.splitlines() if line.startswith("ticket and root status-sync writes")
+        )
+
+        for detail in (
+            "reconcile an uncertain outcome before retrying",
+            "retry only transient failures up to three total attempts",
+            "do not retry permanent failures",
+            "preserve confirmed independent status updates if a later status sync fails",
+        ):
+            self.assertIn(detail, status_retry_rule)
 
         self.assertFalse("issue #143" in text, "Issue #143 cannot provide reusable status authorization.")
         self.assertTrue(sentence_with_concepts(
@@ -1289,7 +1394,7 @@ class SpecImplementLoopBehaviorTests(unittest.TestCase):
             line for line in lifecycle.splitlines() if "| ticket_checkpoint |" in line
         )
         self.assertTrue(mentions_concepts(
-            ticket_checkpoint_rule, ("review",), ("pause",), ("approval",), ("status_sync",),
+            ticket_checkpoint_rule, ("review",), ("internally",), ("does not wait for human approval",), ("status_sync",),
         ))
         root_status_rule = next(line for line in lifecycle.splitlines() if "| root_status_sync |" in line)
         self.assertTrue(mentions_concepts(
@@ -1307,9 +1412,11 @@ class SpecImplementLoopBehaviorTests(unittest.TestCase):
 
         ticket_sync_rule = next(line for line in issue_loop.splitlines() if line.lstrip().startswith("6."))
         self.assertTrue(mentions_concepts(
-            ticket_sync_rule, ("ticket review checkpoint", "review checkpoint"),
-            ("confirmed push",), ("ticket's status", "ticket status"), ("without a separate approval",),
+            ticket_sync_rule, ("internal ticket review", "review checkpoint"),
+            ("confirmed authorized push", "confirmed push"), ("ticket's status", "ticket status"),
+            ("task-start grant", "batch grant"), ("does not wait for human approval",),
         ))
+        self.assertIn("apply the shared bounded retry rules to status sync", ticket_sync_rule)
         root_sync_rule = next(line for line in issue_loop.splitlines() if line.lstrip().startswith("7."))
         self.assertTrue(mentions_concepts(
             root_sync_rule, ("final verification",), ("root status",), ("before",),
