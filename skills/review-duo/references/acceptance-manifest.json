@@ -1,0 +1,69 @@
+{
+  "checks": [
+    {
+      "command": "not run",
+      "name": "repository tests",
+      "reason": "The synthetic patch is review-only and is not applied to a repository.",
+      "result": "not_run"
+    }
+  ],
+  "code_scope": {
+    "included_paths": [
+      "src/pricing.py"
+    ],
+    "kind": "synthetic patch",
+    "path": "references/acceptance-fixture.patch",
+    "sha256": "6f667e2413dc6081ec83ec81756fcfa3e15397922c4231cce942697a53b78c3f",
+    "size_bytes": 398
+  },
+  "hashing": {
+    "manifest_hash_input": "exact file bytes",
+    "patch_snapshot": "exact frozen file bytes without newline normalization",
+    "text_sha256": "UTF-8 bytes after normalizing CRLF or CR line endings to LF"
+  },
+  "package_resources": [
+    {
+      "path": "SKILL.md",
+      "review_input": true,
+      "role": "strict review workflow",
+      "sha256": "d4a9743f9527393a18e3175e9157b935ae2b7280fb87a1978c8ac00506505eea"
+    },
+    {
+      "path": "references/acceptance-fixture.patch",
+      "review_input": true,
+      "role": "synthetic implementation patch",
+      "sha256": "6f667e2413dc6081ec83ec81756fcfa3e15397922c4231cce942697a53b78c3f"
+    },
+    {
+      "path": "references/acceptance-requirements.md",
+      "review_input": true,
+      "role": "pinned requirements",
+      "sha256": "03216a79ee7aa4d2d8526977fcd89f02ef2c6b20d613959278fb01da398b7a23"
+    },
+    {
+      "path": "references/acceptance-scenario.md",
+      "review_input": false,
+      "role": "operator procedure with expected findings",
+      "sha256": "267b6b4eff8c1f311f25d95c65813838838d2480bf37c49184109c1e8c0f5742"
+    },
+    {
+      "path": "references/acceptance-standard.md",
+      "review_input": true,
+      "role": "pinned Decimal money standard",
+      "sha256": "a39387fd1195726d124eb259eba6fb23b836c7cf948804c09cbb3c73e6f67e19"
+    }
+  ],
+  "package_root": "directory containing SKILL.md; package resource paths are relative to this directory",
+  "runtime_context": {
+    "provider": "target repository at invocation time",
+    "source_hashing": "Pin selected paths and normalized-text hashes in the run-specific coverage manifest; never use copies from this package's repository as package resources.",
+    "supplied_separately": true
+  },
+  "runtime_dependencies": [
+    {
+      "name": "/code-review",
+      "resolution": "resolve in the current runtime",
+      "uri_and_hash": "record the resolved URI and normalized-text SHA-256 in the run-specific coverage manifest"
+    }
+  ]
+}

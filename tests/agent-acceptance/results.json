@@ -1,0 +1,94 @@
+{
+  "compression_mixed": {
+    "candidate": "# Language notes\nBefore saving, the service checks account status.\nThe account is suspended.\nTherefore, the service rejects the request.\n账户暂停时，系统会拒绝该请求。\n账户已暂停。\n因此，服务拒绝该请求。\nThe transition is unclear. 这句附近缺少语言线索。\n`Service.validate()`",
+    "report": "已压缩内容；文档仍兼有英文和中文，标题、代码及未明确语句保持原样。"
+  },
+  "compression_report": {
+    "candidate": "The guide centralizes user-visible labels in one map.",
+    "report": "已压缩英文原文，并按中文会话语言报告结果。",
+    "languages": {
+      "target": "Japanese",
+      "source": "English",
+      "conversation": "Chinese"
+    }
+  },
+  "compression_nonproject": {
+    "candidate": "缓存失效后，按序恢复各项设置。面向独立用户，不翻译。",
+    "report": "Shortened both sentences while preserving Chinese and the original meaning. No files were changed."
+  },
+  "project_text": {
+    "conventional-git-messages": {
+      "artifact": {
+        "title": "Preserve existing Chinese text in project documentation",
+        "body": "New or materially rewritten project text should be written in English, while existing text remains unchanged.\n\nAcceptance criteria:\n- New or materially rewritten project text is in English.\n- Preserve this existing text verbatim: 已有说明：保留这段中文。"
+      },
+      "report": "已拟定英文议题标题与正文，并原样保留指定中文说明。"
+    },
+    "grill-duo-with-docs": {
+      "artifact": "已有说明：保留这段中文。\n\nThe retry window is measured from the first failed request.",
+      "report": "已按根目录规则生成文本，并逐字保留指定段落。",
+      "languages": {
+        "target_root": "English",
+        "nested": "Chinese",
+        "conversation": "Chinese"
+      }
+    },
+    "pr-and-merge": {
+      "artifact": {
+        "title": "Apply the English authoring policy while preserving existing text",
+        "body": "## Summary\n- Use English for new or materially rewritten project text.\n- Preserve untouched existing text verbatim.\n- Ask before drafting when no dominant language is discernible.\n\n## Existing text retained\n已有说明：保留这段中文。",
+        "child_prompt": "For new or materially rewritten project text, use English. Preserve untouched existing text. Ask before drafting when no dominant language is discernible. Before writing in a different target repository, read and follow that repository's root rule."
+      },
+      "report": "已拟好 PR 标题与正文，未写入文件、未联系服务、未发布。"
+    },
+    "requirements-to-spec-tickets": {
+      "artifact": {
+        "title": "Preserve target repository language rules in specification handoffs",
+        "body": "## Context\nSpecification drafts and child prompts must follow the destination repository's language policy, even when the conversation is in another language.\n\n## Requirements\n- Write new or materially rewritten project text in English for this target.\n- Preserve existing text that is not being edited, including this passage verbatim:\n\n已有说明：保留这段中文。\n\n- Ask before drafting if the dominant language cannot be determined.\n- Carry the target's language rule into child prompts.\n- If work moves to another repository, read that repository's root AGENTS.md before writing and follow its rule.\n\n## Acceptance criteria\n- New project prose in the specification and handoff is in English.\n- The supplied existing passage remains unchanged.\n- The child prompt states the target language rule and the repository-specific reading instruction."
+      },
+      "child_prompt": "Prepare a simulated handoff for the proposed group: preserve target repository language rules in specification handoffs. The outcome is that specification drafts and child prompts follow the destination repository's language policy while preserving untouched text. This is a simulation: return drafts in chat only; do not create sessions, files, issues, contact services, or publish anything. Treat the group as pending review, and require explicit approval of the complete grouping before any real child session is created. The conversation is in Chinese. For this target, write new or materially rewritten project text in English, preserve untouched existing text, and ask before drafting if the dominant language is unclear. Preserve this supplied passage verbatim: 已有说明：保留这段中文。 Do not read or rely on the AggregateSkills source repository's AGENTS.md. If writing to a different target repository, first read that repository's root AGENTS.md and follow its rule. For any real continuation, reread and follow the dependency skills in the supplied workflow's order, preserve their clarification and approval gates, and do not answer user-facing questions on the user's behalf.",
+      "report": "已完成草案和提示的模拟，未创建会话、文件或议题。"
+    },
+    "spec-implement-loop": {
+      "artifact": {
+        "issue_status_comment": "Completed. The ticket's acceptance criteria have been met, and the required checks and review have passed.\n\n已有说明：保留这段中文。",
+        "child_prompt": "Before writing in a different target repository, read that repository's root rule. For new or materially rewritten project text, use English; preserve untouched existing text; ask before drafting when no dominant language is discernible."
+      },
+      "report": "已完成评论草拟，未更新事项或写入文件。"
+    }
+  },
+  "same_repo": {
+    "artifact": {
+      "title": "fix(service): handle requests rejected after retry window expires",
+      "body": "The service rejects requests after the retry window expires.\n\n已有说明：保留这段中文。"
+    },
+    "report": "草拟了服务在重试窗口过期后拒绝请求的问题，并原样保留了已有中文说明。",
+    "languages": {
+      "target": "English",
+      "skill_source": "English",
+      "conversation": "Chinese"
+    }
+  },
+  "ambiguous_policy": {
+    "conventional-git-messages": {
+      "artifact": "",
+      "question": "请问希望用哪种语言起草？"
+    },
+    "grill-duo-with-docs": {
+      "artifact": "",
+      "question": "这条已确认的项目陈述应使用哪种语言写入文档：英语还是简体中文？"
+    },
+    "pr-and-merge": {
+      "artifact": "",
+      "question": "PR 标题和正文请用哪种语言撰写：英文、中文，还是中英双语？"
+    },
+    "requirements-to-spec-tickets": {
+      "artifact": "",
+      "question": "规格说明 issue 和子会话提示词请用哪种语言撰写？A. 简体中文（推荐，符合当前对话语言）；B. English；C. 中英双语"
+    },
+    "spec-implement-loop": {
+      "artifact": "",
+      "question": "完成工单状态评论使用哪种语言：英文、简体中文，还是中英双语？"
+    }
+  }
+}

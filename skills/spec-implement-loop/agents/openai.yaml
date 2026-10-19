@@ -1,0 +1,5 @@
+interface:
+  display_name: "Spec Implement Loop"
+  short_description: "Run a root spec through verified delivery"
+policy:
+  allow_implicit_invocation: false
