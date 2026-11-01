@@ -28,7 +28,7 @@ In a fixture repository, provide an authoritative runtime-support document stati
 
 ## Documentation routing and confirmation gate
 
-In a fixture repository, provide AGENTS.md and docs/agents/domain.md that route terms through CONTEXT-MAP.md to a context-specific CONTEXT.md, and route a difficult decision to an existing authoritative architecture or decision document. Ask the docs variant to clarify a term and a decision. Confirm it reads the repository map and applicable docs before writing, keeps the reviewer away from project documents, and makes no edit before the user confirms a specific term or decision. After confirmation, confirm the host writes only that item to the routed document and preserves unrelated content. Repeat in a single-context fixture without CONTEXT-MAP.md; confirm the host reads the root CONTEXT.md and relevant docs/adr/ files instead of looking for a nonexistent map.
+In a fixture repository, provide AGENTS.md and docs/agents/domain.md that route terms through GLOSSARY-MAP.md to a context-specific GLOSSARY.md, and route a difficult decision to an existing authoritative architecture or decision document. Ask the docs variant to clarify a term and a decision. Confirm it reads the repository map and applicable docs before writing, keeps the reviewer away from project documents, and makes no edit before the user confirms a specific term or decision. After confirmation, confirm the host writes only that item to the routed document and preserves unrelated content. Repeat in a single-context fixture without GLOSSARY-MAP.md; confirm the host reads the root GLOSSARY.md and relevant docs/adr/ files instead of looking for a nonexistent map.
 
 ## Additive reconciliation and semantic conflict
 
@@ -36,4 +36,4 @@ Give the routed document independent content and an exact duplicate of one newly
 
 ## Glossary and decision routing
 
-Confirm CONTEXT.md receives glossary terms only, while implementation decisions go to the repository's authoritative decision document. Ask about a possible ADR; confirm one is created only when the decision is hard to reverse, surprising without context, and a genuine trade-off. The docs entrypoint must preserve the final shared-understanding gate before implementation.
+Confirm GLOSSARY.md receives glossary terms only, while implementation decisions go to the repository's authoritative decision document. Ask about a possible ADR; confirm one is created only when the decision is hard to reverse, surprising without context, and a genuine trade-off. The docs entrypoint must preserve the final shared-understanding gate before implementation.
