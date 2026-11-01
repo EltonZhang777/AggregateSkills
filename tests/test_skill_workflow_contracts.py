@@ -429,6 +429,55 @@ class PrAndMergeBehaviorTests(unittest.TestCase):
         self.assertIn("separately from pr merge status", verification)
         self.assertIn("single-pr flow", verification)
 
+    def test_multi_pr_post_merge_verification_tracks_each_confirmed_base_separately(self):
+        text = skill_reference("pr-and-merge", "multi-pr-batch.md").lower().replace(chr(96), "")
+        verification = section(text, "## verify the merged base")
+
+        for requirement in (
+            "when a batch targets multiple base refs",
+            "group entries by their exact resolved target base ref",
+            "each distinct base with at least one confirmed merged pr",
+            "create a separate new retained worktree for each resulting base commit",
+            "run the batch's confirmed test set separately in each eligible base worktree",
+            "if a command's applicability to a base is unclear, ask the user before running it for that base",
+            "report that base's verification as incomplete until applicability is resolved",
+            "report the base ref, tested commit oid, retained worktree path, and each test outcome",
+            "mark overall coverage as partial",
+            "identify every unresolved entry",
+        ):
+            self.assertIn(requirement, verification)
+
+    def test_multi_pr_multi_base_verification_resumes_only_new_or_retryable_results(self):
+        text = skill_reference("pr-and-merge", "multi-pr-batch.md").lower().replace(chr(96), "")
+        verification = section(text, "## verify the merged base")
+
+        self.assertIn("record completed multi-base validation results by base ref, commit oid, and test command", verification)
+        self.assertIn("when a resumed batch adds a confirmed merge", verification)
+        self.assertIn("verify the new resulting base oid in a separate retained worktree", verification)
+        self.assertIn("do not rerun a completed validation for the same base ref and commit oid solely because the batch resumed", verification)
+        self.assertIn("retry a blocked or interrupted attempt only after its cause is resolved", verification)
+
+    def test_manual_multi_base_verification_covers_partial_progress_and_resume(self):
+        manual = (ROOT / "tests" / "manual" / "pr-and-merge.md").read_text(encoding="utf-8").lower()
+        scenario = section(manual, "## multi-pr batch: multiple target bases")
+
+        for requirement in (
+            "disposable repository",
+            "two distinct target bases",
+            "at least two prs for each of two distinct target bases",
+            "separate retained worktree for each base",
+            "mark overall coverage as partial",
+            "asks before running a test command when its applicability to a base is unclear",
+            "exact command and observed exit status",
+            "failed command includes a concise relevant output excerpt when available",
+            "reason for every test not run",
+            "passed only after observing a successful exit status",
+            "resume the batch",
+            "new resulting base commit",
+            "completed same-base and same-oid validation is not rerun",
+        ):
+            self.assertIn(requirement, scenario)
+
     def test_multi_pr_post_merge_verification_asks_before_running_without_test_commands(self):
         text = skill_reference("pr-and-merge", "multi-pr-batch.md").lower().replace(chr(96), "")
         verification = section(text, "## verify the merged base")

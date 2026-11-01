@@ -52,7 +52,7 @@ Finding the skill package or tool that matches a prerequisite identity in the cu
 One execution of an authorized batch's ordered merge sequence, from its first merge attempt until all eligible merges are handled or the workflow pauses or stops.
 
 **Post-merge verification**:
-An assessment of the target-base commit produced by a single-base batch merge pass with at least one confirmed merge. Coverage is partial while batch entries remain unresolved.
+An assessment of each distinct target-base commit produced by a batch merge pass with at least one confirmed merge to that base.
 
 ### Multi-root implementation
 

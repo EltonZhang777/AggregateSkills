@@ -132,6 +132,14 @@ In a disposable repository, prepare two or more clean PRs that target the same b
 
 Repeat the same single-base batch with no test commands. Confirm the workflow asks before running any test command, runs no inferred default command, and keeps the confirmed PR merge outcome separate from the missing-test-command decision.
 
+## Multi-PR batch: multiple target bases
+
+In a disposable repository, prepare at least two PRs for each of two distinct target bases, such as `main` and `release`, and specify one test command confirmed to apply to both. In the first merge pass, confirm one PR targeting each base is merged while other entries remain pending or blocked. Fetch each base from its remote, record each `FETCH_HEAD` OID, and create a separate retained worktree for each base at its resulting commit. Run the confirmed command separately in both worktrees. Report each base ref, tested commit OID, worktree path, exact command and observed exit status; mark overall coverage as partial and identify every unresolved entry.
+
+Repeat with the command's applicability to `release` unclear. Confirm the workflow asks before running a test command when its applicability to a base is unclear, records the not-run reason, and does not report that base as passed. Confirm each failed command includes a concise relevant output excerpt when available; give a reason for every test not run, and report a test as passed only after observing a successful exit status.
+
+Resume the batch and merge one more entry for each base. Confirm each new resulting base commit is fetched and verified in its own new retained worktree. Confirm a completed same-base and same-OID validation is not rerun solely because the batch resumed; allow a same-commit rerun only on explicit user request or to retry a blocked or interrupted attempt after its cause is resolved. Keep verification results separate from PR merge states. Do not execute this scenario outside a disposable repository.
+
 ## Complete batch outcome summary
 
 In a disposable repository, supply six entries in one batch: A's repository, source branch, and resolved base exactly match an already merged PR, and A's current source OID matches that PR's head OID; B and E are independent open PRs with passing checks; C has a failing required check; D's exact existing PR targets C; and F is a closed unmerged PR. In the initial scope report, confirm A and F are report-only with no planned writes. At the batch authorization plan, confirm B and E are pending and C and D are blocked. List B's exact PR/head/base merge in the plan and authorize that write set once; leave E's merge unapproved. Execute B's listed merge without a second approval prompt, then inspect the final stop summary: A and B are completed, F remains report-only, E is pending, and C and D remain blocked.
