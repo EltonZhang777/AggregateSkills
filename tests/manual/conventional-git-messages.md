@@ -8,7 +8,9 @@ returned text and confirm no Git operation runs.
 
 Ask for a commit message for a new `GET /users/:id/profile` endpoint. Supply
 the rationale that the mobile client needs profile data without the full
-user payload, plus `Closes #128`. Supply project guidance that summaries use
+user payload, plus `closes #128` because this change resolves issue 128 and
+should close on merge, and `refs #129` because the change is related to issue
+129 but does not resolve it. Supply project guidance that summaries use
 lowercase after the colon and a recent lowercase commit subject as context.
 
 Confirm:
@@ -18,7 +20,10 @@ Confirm:
 - The subject is concise (preferably at or below 50 characters) and never
   exceeds 72 characters.
 - The body contains the useful rationale, wraps at 72 columns, and ends with
-  `Closes #128`.
+  `closes #128` and `refs #129` after the rationale.
+- The output uses `closes #128` only for the resolved issue, `refs #129` for the
+  related issue, and invents no issue number beyond the supplied `#128` and
+  `#129`.
 
 ## Conflicting capitalization examples
 
@@ -134,6 +139,17 @@ without truncating it at a commit-message limit.
 
 Then make an explicit title-only request for the same change. Confirm the
 skill returns only a title, with no description.
+
+Then repeat the PR-body request for the same change, supplying `closes #128`
+because the change resolves issue 128 and should close on merge, and `refs #129`
+because it is related to issue 129 but does not resolve it. Invoke `/pr` so the
+body uses its existing template.
+
+Confirm the complete supplied issue-reference block appears first, before the
+template's `## Summary`, `## Evidence`, and `## Merge Danger` headings. Confirm
+the body preserves those headings in that order, uses `closes #128` only for
+the resolved issue and `refs #129` for the related issue, and invents no issue
+number beyond the supplied `#128` and `#129`.
 
 ## Full descriptions for important changes
 
