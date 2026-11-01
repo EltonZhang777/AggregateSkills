@@ -396,6 +396,87 @@ class PrAndMergeBehaviorTests(unittest.TestCase):
         self.assertIn("stage only the approved files", merge)
         self.assertIn("if it differs from the approved diff", merge)
 
+    def test_multi_pr_post_merge_verification_uses_the_confirmed_single_base_result(self):
+        text = skill_reference("pr-and-merge", "multi-pr-batch.md").lower().replace(chr(96), "")
+        verification = section(text, "## verify the merged base")
+
+        self.assertIn("single-base multi-pr batch", verification)
+        self.assertIn("a merge pass is one execution of its authorized ordered merge sequence", verification)
+        self.assertIn("until all eligible merges are handled or the workflow pauses or stops", verification)
+        self.assertIn("at the end of each merge pass", verification)
+        self.assertIn("at least one pr targeting the base is confirmed", verification)
+        self.assertIn("even if other batch entries remain unresolved", verification)
+        self.assertIn("fetch the resolved target base branch from its remote", verification)
+        self.assertIn("git fetch remote base_branch", verification)
+        self.assertIn("fetched oid from fetch_head", verification)
+        self.assertIn("do not use a stale local base ref", verification)
+        self.assertIn("mark verification coverage as partial", verification)
+        self.assertIn("record the fetched oid from fetch_head", verification)
+        self.assertIn("create a new worktree", verification)
+        self.assertIn("at that exact oid", verification)
+        self.assertIn("track completed results by base ref and commit oid", verification)
+        self.assertIn("do not rerun a completed result for the same base ref and commit oid solely because the batch resumed", verification)
+        self.assertIn("user's explicit request", verification)
+        self.assertIn("previously blocked or interrupted attempt after its cause is resolved", verification)
+        self.assertIn("when a resumed batch produces a new resulting base commit", verification)
+        self.assertIn("retain", verification)
+        self.assertIn("only the test commands specified for the batch", verification)
+        self.assertIn("base", verification)
+        self.assertIn("tested commit", verification)
+        self.assertIn("worktree path", verification)
+        self.assertIn("exact command", verification)
+        self.assertIn("exit status", verification)
+        self.assertIn("separately from pr merge status", verification)
+        self.assertIn("single-pr flow", verification)
+
+    def test_multi_pr_post_merge_verification_asks_before_running_without_test_commands(self):
+        text = skill_reference("pr-and-merge", "multi-pr-batch.md").lower().replace(chr(96), "")
+        verification = section(text, "## verify the merged base")
+
+        self.assertIn("if no test commands are specified", verification)
+        self.assertIn("ask before running any test command", verification)
+        self.assertIn("do not infer a default test suite", verification)
+
+        manual = (ROOT / "tests" / "manual" / "pr-and-merge.md").read_text(encoding="utf-8").lower()
+        scenario = section(manual, "## multi-pr batch: post-merge verification")
+        self.assertIn("one pull request is confirmed as merged", scenario)
+        self.assertIn("another remains pending or blocked", scenario)
+        self.assertIn("at the end of that pass", scenario)
+        self.assertIn("fetch the target branch from its remote", scenario)
+        self.assertIn("fetched base oid", scenario)
+        self.assertIn("label coverage as partial", scenario)
+        self.assertIn("resume the batch without another merge", scenario)
+        self.assertIn("completed result for that base ref and oid is not rerun", scenario)
+        self.assertIn("new resulting base commit is fetched and verified separately", scenario)
+        self.assertIn("specified test command", scenario)
+        self.assertIn("no test commands", scenario)
+        self.assertIn("asks before running any test command", scenario)
+
+    def test_multi_pr_post_merge_verification_reports_failed_output_and_unrun_reasons(self):
+        text = skill_reference("pr-and-merge", "multi-pr-batch.md").lower().replace(chr(96), "")
+        verification = section(text, "## verify the merged base")
+
+        self.assertIn("failed test command", verification)
+        self.assertIn("concise relevant output excerpt", verification)
+        self.assertIn("when available", verification)
+        self.assertIn("reason for every test not run", verification)
+
+        manual = (ROOT / "tests" / "manual" / "pr-and-merge.md").read_text(encoding="utf-8").lower()
+        scenario = section(manual, "## multi-pr batch: post-merge verification")
+        self.assertIn("failed commands", scenario)
+        self.assertIn("relevant output excerpt", scenario)
+        self.assertIn("reason for every test not run", scenario)
+
+    def test_multi_pr_post_merge_verification_only_reports_passed_after_success(self):
+        text = skill_reference("pr-and-merge", "multi-pr-batch.md").lower().replace(chr(96), "")
+        verification = section(text, "## verify the merged base")
+
+        self.assertIn("do not report verification as passed unless a successful exit status was observed", verification)
+
+        manual = (ROOT / "tests" / "manual" / "pr-and-merge.md").read_text(encoding="utf-8").lower()
+        scenario = section(manual, "## multi-pr batch: post-merge verification")
+        self.assertIn("passed only after observing a successful exit status", scenario)
+
     def test_pr_text_gate_follows_push_classification_and_precedes_writes(self):
         text = skill("pr-and-merge").lower().replace(chr(96), "")
         reuse = section(text, "## reuse or prepare the pr")
