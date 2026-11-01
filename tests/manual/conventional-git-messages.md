@@ -50,6 +50,13 @@ generally, with no subsystem scope that adds useful context.
 Confirm the skill omits the scope and body, returning a concise subject such
 as `fix: reject empty input`.
 
+Repeat the request with `closes #130` supplied because this change resolves
+issue 130 and should close on merge.
+
+Confirm the skill keeps the concise subject, includes a body because the
+reference was supplied, and ends that body with `closes #130`. Confirm it
+introduces no issue number beyond the supplied `#130`.
+
 ## Mandatory body cases
 
 Run once for each supplied change: a breaking API change, a security fix,
