@@ -681,6 +681,85 @@ class RequirementsToSpecTicketsBehaviorTests(unittest.TestCase):
             ("artifacts", "outputs"), ("blockers",),
         ))
 
+    def test_local_artifact_document_integration_handoff_is_scoped(self):
+        workflow = skill("requirements-to-spec-tickets").lower().replace(chr(96), "")
+        prompt = skill_reference(
+            "requirements-to-spec-tickets", "child-session-initial-prompt.md",
+        ).lower().replace(chr(96), "")
+        manual = (
+            ROOT / "tests" / "manual" / "requirements-to-spec-tickets.md"
+        ).read_text(encoding="utf-8").lower()
+        workflow_handoff = section(workflow, "### optional document integration follow-up")
+        prompt_handoff = section(prompt, "### optional document integration follow-up")
+        scenario = section(manual, "## optional post-workflow document integration")
+        overwrite_guard = (("do not overwrite", "never overwrite"), ("destination work",))
+        push_guard = (
+            ("still requires",),
+            ("separate explicit confirmation",),
+            ("grilling confirmation", "existing grilling step"),
+        )
+
+        for handoff in (workflow_handoff, prompt_handoff):
+            self.assertTrue(sentence_with_concepts(
+                handoff, ("summary",), ("task branch",), ("exact document paths",),
+                ("proposed destination branch",), ("before",), ("ask", "asking"),
+            ))
+            self.assertTrue(sentence_with_concepts(
+                handoff, ("approved generated document set",), ("only",),
+            ))
+            self.assertTrue(sentence_with_concepts(
+                handoff, ("affirmative",), ("authorizes",), ("only",),
+                ("listed documents",), ("named destination branch",),
+                ("focused local commit",), ("does not extend", "doesn't extend"),
+                ("task-branch grant",),
+            ))
+            self.assertTrue(sentence_with_concepts(
+                handoff, ("declining", "decline"), ("no clear authorization",),
+                ("destination unchanged",), ("task branch",),
+            ))
+            self.assertTrue(sentence_with_concepts(
+                handoff, ("same host agent",), ("same conversation",),
+                ("do not", "never"), ("new conversation",), ("subagent",),
+            ))
+            self.assertTrue(sentence_with_concepts(
+                handoff, ("destination is unclear",), ("unrelated changes",),
+                ("conflicts",), ("stop",), ("overwrite",),
+            ))
+            self.assertTrue(sentence_with_concepts(handoff, *overwrite_guard))
+            self.assertTrue(sentence_with_concepts(
+                handoff, ("destination push", "pushing the destination branch"), ("separate",),
+                ("explicit",), ("grilling confirmation", "confirmation from the existing grilling step"),
+            ))
+            self.assertTrue(sentence_with_concepts(handoff, *push_guard))
+
+        self.assertFalse(sentence_with_concepts("do overwrite destination work", *overwrite_guard))
+        self.assertFalse(sentence_with_concepts(
+            "the integration authorization does not authorize pushing the destination branch; pushing it does not require the separate explicit confirmation from the existing grilling step",
+            *push_guard,
+        ))
+        self.assertTrue(sentence_with_concepts(
+            workflow_handoff, ("does not authorize pushing the destination branch",),
+        ))
+
+        self.assertTrue(sentence_with_concepts(
+            workflow_handoff, ("issue-only",), ("application-code branch policy",),
+            ("unchanged",),
+        ))
+        self.assertTrue(sentence_with_concepts(
+            scenario, ("disposable repository",), ("authorized",), ("declined",),
+        ))
+        self.assertTrue(sentence_with_concepts(
+            scenario, ("commit",), ("dev",), ("only the listed documents",),
+            ("task branch",), ("sentinel",),
+        ))
+        self.assertTrue(sentence_with_concepts(
+            scenario, ("issue-only",), ("application-code branch policy",), ("unchanged",),
+        ))
+        self.assertTrue(mentions_concepts(
+            scenario, ("unclear", "no uniquely identified destination"),
+            ("unrelated changes",), ("conflicts",), ("stop",),
+        ))
+
     def test_complete_group_approval_starts_documentation_phase(self):
         text = skill("requirements-to-spec-tickets").lower().replace(chr(96), "")
         grouping = section(text, "## 2. turn the request into groups")
