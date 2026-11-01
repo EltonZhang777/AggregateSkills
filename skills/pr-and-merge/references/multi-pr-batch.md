@@ -48,6 +48,15 @@ Run the batch's confirmed test set separately in each eligible base worktree. If
 
 Record completed multi-base validation results by base ref, commit OID, and test command. When a resumed batch adds a confirmed merge that advances a base, verify the new resulting base OID in a separate retained worktree. Do not rerun a completed validation for the same base ref and commit OID solely because the batch resumed. Retry a blocked or interrupted attempt only after its cause is resolved; an explicit user request may rerun a completed same-commit validation.
 
+### Isolate post-merge validation failures
+
+Classify failures from observed runner output and setup evidence; do not infer scope. Keep validation outcomes separate from every PR's merge outcome.
+
+- **Ordinary test failure:** After a confirmed test runner reports an ordinary test failure, record the failed command and continue with every remaining confirmed test command for that base and every other independent base eligible for validation.
+- **Base-local setup failure:** If verification worktree creation or test preparation fails and evidence confirms the cause is local to one base, report that base as `validation_blocked`. List each affected confirmed command under `tests_not_run` with the reason. Continue validation on other independent bases.
+- **Known shared failure:** When evidence confirms a shared failure, stop starting validations on all bases. Let already-running commands finish or time out, then report each command's outcome and every confirmed test not run with its reason.
+- **Unknown-scope failure:** When the failure scope is unknown, pause all new validations, including on independent bases. Report the uncertainty, evidence needed to classify it, commands still running, and confirmed tests not started. Start no validation until an operator classifies the failure. If it is shared, wait until the failure is cleared; if it is local to one base, continue unaffected bases and retry that base only after its cause is resolved.
+
 ## Gate conflict resolution
 
 When an authorized merge encounters a conflict, reuse a worktree only when its repository identity resolves to the operation's exact repository (`OWNER/REPO`) and its current branch is the exact source branch. Verify with `git rev-parse --show-toplevel`, `git remote -v`, and `git branch --show-current`. Before reuse, require `git status --porcelain=v1 --untracked-files=all` to be empty; any output means a dirty worktree blocks the affected operation. Never clean a worktree to proceed. Create a worktree under the repository root's `.wt` directory only when needed. Use the main skill's conflict-resolution procedure and run the required checks on the resolved worktree.

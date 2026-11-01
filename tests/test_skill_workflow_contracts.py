@@ -526,6 +526,63 @@ class PrAndMergeBehaviorTests(unittest.TestCase):
         scenario = section(manual, "## multi-pr batch: post-merge verification")
         self.assertIn("passed only after observing a successful exit status", scenario)
 
+    def test_multi_pr_post_merge_verification_isolates_failures_by_scope(self):
+        text = skill_reference("pr-and-merge", "multi-pr-batch.md").lower().replace(chr(96), "")
+        isolation = section(text, "### isolate post-merge validation failures")
+
+        for requirement in (
+            "ordinary test failure",
+            "continue with every remaining confirmed test command for that base",
+            "every other independent base eligible for validation",
+            "if verification worktree creation or test preparation fails",
+            "confirms the cause is local to one base",
+            "validation_blocked",
+            "tests_not_run",
+            "when evidence confirms a shared failure",
+            "stop starting validations on all bases",
+            "already-running commands finish or time out",
+            "when the failure scope is unknown",
+            "pause all new validations",
+            "evidence needed to classify it",
+            "commands still running",
+            "confirmed tests not started",
+            "start no validation until an operator classifies the failure",
+            "if it is local to one base, continue unaffected bases and retry that base only after its cause is resolved",
+            "if it is shared, wait until the failure is cleared",
+            "keep validation outcomes separate from every pr's merge outcome",
+        ):
+            self.assertIn(requirement, isolation)
+
+        manual = (ROOT / "tests" / "manual" / "pr-and-merge.md").read_text(encoding="utf-8").lower()
+        scenario = section(manual, "## multi-pr batch: post-merge validation failure isolation")
+        for requirement in (
+            "disposable repository",
+            "ordinary test failure",
+            "remaining confirmed command for that base",
+            "independent base",
+            "worktree creation to fail locally",
+            "validation_blocked",
+            "tests_not_run",
+            "test-preparation failure",
+            "shared runner or setup failure",
+            "already-running commands finish or time out",
+            "unknown-scope",
+            "evidence needed to classify",
+            "commands still running",
+            "confirmed tests not started",
+            "operator classifies",
+            "classified as local to one base",
+            "resume validation on unaffected bases",
+            "retry that base only after its cause is resolved",
+            "wait until the shared failure is cleared",
+            "merge outcomes",
+        ):
+            self.assertIn(requirement, scenario)
+
+        glossary = (ROOT / "GLOSSARY.md").read_text(encoding="utf-8").lower()
+        self.assertIn("**validation-blocked base**", glossary)
+        self.assertIn("confirmed local to that base", glossary)
+
     def test_pr_text_gate_follows_push_classification_and_precedes_writes(self):
         text = skill("pr-and-merge").lower().replace(chr(96), "")
         reuse = section(text, "## reuse or prepare the pr")

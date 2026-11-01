@@ -140,6 +140,16 @@ Repeat with the command's applicability to `release` unclear. Confirm the workfl
 
 Resume the batch and merge one more entry for each base. Confirm each new resulting base commit is fetched and verified in its own new retained worktree. Confirm a completed same-base and same-OID validation is not rerun solely because the batch resumed; allow a same-commit rerun only on explicit user request or to retry a blocked or interrupted attempt after its cause is resolved. Keep verification results separate from PR merge states. Do not execute this scenario outside a disposable repository.
 
+## Multi-PR batch: post-merge validation failure isolation
+
+In a disposable repository, prepare merged PRs on two independent bases and specify multiple test commands confirmed to apply to both. Make one command report an ordinary test failure on one base. Confirm the failed command and relevant output are recorded, while every remaining confirmed command for that base and validations on the other independent base continue.
+
+In a separate run, cause verification worktree creation to fail locally for one base. Confirm that base is reported as `validation_blocked`, each affected command is listed under `tests_not_run` with its reason, and validation continues on the other base. Repeat with a test-preparation failure confirmed local to one base.
+
+In another run, simulate a known shared runner or setup failure after validation has started. Confirm no new validations start, already-running commands finish or time out, and the report includes their outcomes and every test not run with its reason.
+
+In a separate unknown-scope run, confirm new validations pause across all bases. The report must include the uncertainty, evidence needed to classify it, commands still running, and confirmed tests not started. Start no validation until an operator classifies the failure; if classified as local to one base, resume validation on unaffected bases and retry that base only after its cause is resolved; if classified as shared, wait until the shared failure is cleared. In every run, keep validation outcomes separate from PR merge outcomes.
+
 ## Complete batch outcome summary
 
 In a disposable repository, supply six entries in one batch: A's repository, source branch, and resolved base exactly match an already merged PR, and A's current source OID matches that PR's head OID; B and E are independent open PRs with passing checks; C has a failing required check; D's exact existing PR targets C; and F is a closed unmerged PR. In the initial scope report, confirm A and F are report-only with no planned writes. At the batch authorization plan, confirm B and E are pending and C and D are blocked. List B's exact PR/head/base merge in the plan and authorize that write set once; leave E's merge unapproved. Execute B's listed merge without a second approval prompt, then inspect the final stop summary: A and B are completed, F remains report-only, E is pending, and C and D remain blocked.
