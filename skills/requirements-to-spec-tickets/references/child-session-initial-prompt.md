@@ -50,6 +50,14 @@ Use the target repository's root `AGENTS.md` language rule for new or materially
 
 Before `/to-spec` or `/to-tickets` drafts a GitHub issue title or body, re-read the original `/conventional-git-messages` `SKILL.md` and invoke it with the known facts and target repository language rule. Follow the approved group's shared workspace and write-authorization rules; stop for user input whenever a required decision or authorization is missing.
 
+### Optional document integration follow-up
+
+For a local-artifact group, offer this follow-up only for the group's approved generated document set; do not include the workflow's own skill, tests, manuals, or other implementation files. After task-branch publication and applicable issue/status checkpoints, provide a summary naming the task branch, exact document paths, and proposed destination branch before asking whether the user wants to start the integration. State that accepting will create one focused local commit containing only those documents on the destination branch. Use only a destination established by user-confirmed context or repository guidance; if it is unclear, ask the user to name it and pause without integrating.
+
+An affirmative response authorizes only that focused local commit of the listed documents on the named destination branch and does not extend the task-branch grant in ADR-0003. Continue with the same host agent in the same conversation; do not create a new conversation or subagent. Stop if the destination is unclear, unrelated changes are present, or conflicts occur; do not overwrite destination work or include unrelated changes.
+
+Declining or giving no clear authorization leaves the documents on the task branch and the destination unchanged. Pushing the destination branch still requires the separate explicit confirmation from the existing grilling step.
+
 ## Boundaries and completion
 
 Never answer user-facing questions on the user's behalf; present them and wait. The parent retains readiness, handoff, retry, and resumption responsibilities. This prompt or a child-session identifier alone does not establish readiness.
