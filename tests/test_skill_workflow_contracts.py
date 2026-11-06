@@ -338,6 +338,156 @@ class SpecReviewBehaviorTests(unittest.TestCase):
             with self.subTest(rule=rule):
                 self.assertIn(rule, acceptance)
 
+    def test_candidate_batch_binds_exact_edits_source_version_and_destination(self):
+        text = skill("spec-review").lower().replace(chr(96), "")
+        batch = section(text, "## candidate batch and approval")
+
+        for rule in (
+            "one exact candidate batch",
+            "stable identifier",
+            "group the proposed edit hunks for each named source into one complete candidate draft",
+            "exact source path and frozen sha-256",
+            "unambiguous source span or insertion anchor",
+            "exact replacement or insertion text",
+            "affected draft section",
+            "unique proposed destination path",
+            "preserve all source text outside the proposed edit hunks",
+            "never write to or replace the source path",
+            "multiple candidate destinations as one resulting draft input set",
+            "scope- or seam-changing proposals out of the approvable batch",
+            "read-only until the user approves the exact candidate batch",
+            "separately authorizes creation at its exact destination",
+            "bind both decisions to the batch identifier",
+            "every exact edit",
+            "each source path and frozen sha-256",
+            "each unique destination",
+            "preserve those decisions in the task progress summary",
+            "if any edit text, source version, destination, or batch membership changes",
+            "obtain approval and write authorization for the new exact tuple",
+            "a finding's disposition or review pass does not itself authorize a candidate write",
+        ):
+            with self.subTest(rule=rule):
+                self.assertIn(rule, batch)
+
+    def test_candidate_write_obeys_cycle_budget_and_new_cycle_revalidation(self):
+        text = skill("spec-review").lower().replace(chr(96), "")
+        batch = section(text, "## candidate batch and approval")
+
+        for rule in (
+            "before applying an approved batch, verify that the named cycle has a review round remaining",
+            "if none remains, apply nothing",
+            "record not_applied",
+            "present the cycle-limit handoff",
+            "explicitly authorizes a new named cycle",
+            "after explicit new-cycle authorization",
+            "prior exact batch approval and destination authorization still match",
+            "source version is unchanged",
+            "destination remains unused",
+            "review a candidate applied under the new cycle as round 1",
+            "preserve the previous cycle history",
+        ):
+            with self.subTest(rule=rule):
+                self.assertIn(rule, batch)
+
+    def test_candidate_bytes_and_prepared_operation_are_derived_from_frozen_snapshot(self):
+        text = skill("spec-review").lower().replace(chr(96), "")
+        writes = section(text, "## candidate creation and reconciliation")
+
+        for rule in (
+            "frozen bytes as an immutable byte snapshot",
+            "read the source once into the snapshot",
+            "verify its sha-256 matches the candidate's frozen hash",
+            "derive candidate bytes only from that snapshot plus the approved edits",
+            "preserve untouched bytes",
+            "compute the expected sha-256 from the exact resulting bytes",
+            "cannot be applied unambiguously",
+            "stop before writing",
+            "for each candidate destination, before its creation persist in the task progress summary one unique candidate-write operation id",
+            "batch and destination identity",
+            "source path and frozen hash",
+            "exact expected candidate bytes",
+            "expected sha-256",
+            "prepared status",
+            "serialize candidate-write operations for the same source path",
+            "stable source-scoped lock where supported",
+            "hold it through final source checks and destination creation",
+            "do not run overlapping writes for a source",
+        ):
+            with self.subTest(rule=rule):
+                self.assertIn(rule, writes)
+
+    def test_candidate_creation_is_create_new_and_source_races_preserve_files(self):
+        text = skill("spec-review").lower().replace(chr(96), "")
+        writes = section(text, "## candidate creation and reconciliation")
+
+        for rule in (
+            "immediately before exclusive destination creation",
+            "hash the current source path and require the frozen hash",
+            "mark the operation stale",
+            "immediately after successful creation, hash the source path again",
+            "preserve both source and destination",
+            "stop before review",
+            "create the destination with create-new semantics only",
+            "never overwrite",
+            "an existing destination or failed create-new means not_applied",
+            "do not silently choose another path",
+        ):
+            with self.subTest(rule=rule):
+                self.assertIn(rule, writes)
+
+    def test_candidate_destination_verification_and_resume_reconcile_without_overwrite(self):
+        text = skill("spec-review").lower().replace(chr(96), "")
+        writes = section(text, "## candidate creation and reconciliation")
+
+        for rule in (
+            "after creation, reread the destination",
+            "byte-for-byte equality with the expected candidate snapshot",
+            "sha-256 with the expected hash",
+            "before marking the operation applied",
+            "needs-reconcile",
+            "preserve both files and stop before review",
+            "batch remains incomplete",
+            "every approved destination is verified",
+            "on resume, treat an existing destination as applied only when",
+            "matching operation id",
+            "destination bytes and hash exactly match the persisted expected candidate",
+            "otherwise mark needs-reconcile",
+            "never overwrite",
+            "infer success from path existence alone",
+            "do not create a second operation",
+        ):
+            with self.subTest(rule=rule):
+                self.assertIn(rule, writes)
+
+    def test_verified_candidate_starts_fresh_same_cycle_review_and_keeps_scope_gates(self):
+        text = skill("spec-review").lower().replace(chr(96), "")
+        post_edit = section(text, "## post-edit review and completion")
+
+        for rule in (
+            "freeze all verified resulting bytes and hashes together as the next round's draft input set",
+            "start the next numbered round in the same named cycle",
+            "fresh primary invocation for all triggered non-adversarial lenses",
+            "fresh invocations for every required adversarial slot",
+            "count that review against the cycle's existing three-round budget",
+            "stale, not_applied, or needs-reconcile candidate does not start",
+            "candidate that changes scope or seams",
+            "requirements-workflow seam confirmation",
+            "seam confirmation alone grants no write permission",
+            "exact revised draft text and a unique proposed temporary path",
+            "explicit approval of that text and authorization for that path",
+            "recheck the named-cycle round budget before writing",
+            "if no round remains, apply nothing and use the cycle-limit handoff",
+            "same candidate creation safeguards",
+            "keep the existing round budget unless the user explicitly authorizes a new named cycle",
+            "does not constitute final specification approval or publication",
+            "do not publish an issue in this workflow",
+        ):
+            with self.subTest(rule=rule):
+                self.assertIn(rule, post_edit)
+
+        record = section(text, "## named cycles and resumable state")
+        self.assertIn("candidate-write operation records and statuses", record)
+
     def test_finding_gates_require_evidence_severity_disposition_and_scope(self):
         text = skill("spec-review").lower().replace(chr(96), "")
         gates = section(text, "## finding and scope gates")
@@ -555,6 +705,43 @@ class SpecReviewBehaviorTests(unittest.TestCase):
             "expand scope only when new evidence implicates another approved requirement",
             "scope or crosses a seam",
             "requirements workflow",
+            "one candidate batch with a stable batch id",
+            "source path and frozen sha-256",
+            "exact source span or insertion anchor",
+            "exact replacement or insertion text",
+            "affected section",
+            "unique proposed destination",
+            "original source is unchanged",
+            "approve the exact batch and authorize its destination",
+            "batch id, edit text, source version, and destination",
+            "third round with a candidate batch ready",
+            "applies nothing",
+            "records `not_applied`",
+            "revalidates the exact batch, source version, and unused authorized destination",
+            "reviews the candidate as round 1",
+            "preserves all prior reports and findings as history",
+            "immutable byte snapshot",
+            "derive the exact candidate bytes only from that snapshot and approved edits",
+            "unique operation id",
+            "exact expected bytes and hash",
+            "`prepared` status",
+            "writes for one source are serialized",
+            "stable source lock where supported",
+            "change the source before the pre-create hash check",
+            "immediately after exclusive creation",
+            "both files are preserved",
+            "existing destination and a failed create-new operation",
+            "reread the destination and compare its bytes and sha-256",
+            "needs-reconcile",
+            "operation id and exact expected bytes and hash match",
+            "all approved destinations verify",
+            "next numbered round in the same named cycle",
+            "one fresh primary for all triggered non-adversarial lenses",
+            "fresh invocations for every required adversarial slot",
+            "seam confirmation alone grants no write permission",
+            "explicit text approval",
+            "path authorization",
+            "candidate review completion remains separate from final specification approval and publication",
         ):
             with self.subTest(phrase=phrase):
                 self.assertIn(phrase, manual)

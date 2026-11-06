@@ -13,7 +13,7 @@ This workflow has no direct skill prerequisites. Its two isolated reviewer invoc
 
 ## Activation Criteria & Objective
 
-Use `/spec-review` to review a named staged specification against business intent, engineering and test decisions, affected-codebase evidence, and independent challenge. Identify its target repository before inspecting code. The workflow is read-only: it returns a review report and does not edit or publish the specification.
+Use `/spec-review` to review a named staged specification against business intent, engineering and test decisions, affected-codebase evidence, and independent challenge. Identify its target repository before inspecting code. Return candidate edits without changing the source draft; create a uniquely named candidate draft only after the user approves the exact batch and authorizes that destination. Review completion remains separate from final specification approval and publication.
 
 ## Review triggers
 
@@ -102,7 +102,35 @@ When the three-round limit is reached and the review has not passed, present the
 
 A new named cycle preserves prior reports and findings as history while receiving its fresh three-round budget. Append the new cycle to the resumable record; do not reset or mutate prior cycle history.
 
-Preserve a resumable cycle record in the task progress summary: the named cycle and current round, round/attempt counts including per-assignment attempt counts, active and superseded invocation and host IDs, frozen draft and manifest hashes, user decisions, finding dispositions, and prior cycle reports and findings. On resume, reconcile that record with authoritative host or invocation evidence before continuing; keep prior IDs and dispositions, and never reuse an invocation ID. Missing or conflicting state leaves the review `incomplete` or `needs-reconcile` and blocks pass. Do not create a separate local authoritative database.
+Preserve a resumable cycle record in the task progress summary: the named cycle and current round, round/attempt counts including per-assignment attempt counts, active and superseded invocation and host IDs, frozen draft and manifest hashes, user decisions, finding dispositions, candidate-write operation records and statuses, and prior cycle reports and findings. On resume, reconcile that record with authoritative host or invocation evidence before continuing; keep prior IDs and dispositions, and never reuse an invocation ID. Missing or conflicting state leaves the review `incomplete` or `needs-reconcile` and blocks pass. Do not create a separate local authoritative database.
+
+## Candidate batch and approval
+
+After reporting findings, return proposed edits as one exact candidate batch. Assign the batch a stable identifier. Group the proposed edit hunks for each named source into one complete candidate draft. For every candidate, show the exact source path and frozen SHA-256, an unambiguous source span or insertion anchor, the exact replacement or insertion text, the affected draft section, and a unique proposed destination path that does not reuse the source or another candidate destination. Preserve all source text outside the proposed edit hunks, and never write to or replace the source path. Treat multiple candidate destinations as one resulting draft input set for the next review round. Keep scope- or seam-changing proposals out of the approvable batch and report them separately under the requirements-workflow seam-confirmation gate.
+
+Keep the workflow read-only until the user approves the exact candidate batch and separately authorizes creation at its exact destination. Bind both decisions to the batch identifier, every exact edit, each source path and frozen SHA-256, and each unique destination, and preserve those decisions in the task progress summary. If any edit text, source version, destination, or batch membership changes, present the changed batch and obtain approval and write authorization for the new exact tuple. A finding's disposition or review pass does not itself authorize a candidate write.
+
+Before applying an approved batch, verify that the named cycle has a review round remaining for the resulting draft. If none remains, apply nothing, record `not_applied`, present the cycle-limit handoff, and ask whether the user explicitly authorizes a new named cycle or wants another action. After explicit new-cycle authorization, apply only if the prior exact batch approval and destination authorization still match, the source version is unchanged, and the destination remains unused; otherwise return for fresh approval and authorization. Review a candidate applied under the new cycle as round 1, and preserve the previous cycle history.
+
+## Candidate creation and reconciliation
+
+Use the named source's frozen bytes as an immutable byte snapshot; if those bytes are not retained, read the source once into the snapshot and verify its SHA-256 matches the candidate's frozen hash before deriving any output. Derive candidate bytes only from that snapshot plus the approved edits, preserve untouched bytes, and compute the expected SHA-256 from the exact resulting bytes. If the edits cannot be applied unambiguously to those bytes, stop before writing and report the candidate as not applied.
+
+For each candidate destination, before its creation persist in the task progress summary one unique candidate-write operation ID, the batch and destination identity, source path and frozen hash, exact expected candidate bytes, expected SHA-256, and `prepared` status. Serialize candidate-write operations for the same source path; use a stable source-scoped lock where supported and hold it through final source checks and destination creation. Do not run overlapping writes for a source when a lock is unavailable.
+
+Immediately before exclusive destination creation, hash the current source path and require the frozen hash. If it differs, mark the operation `stale`, preserve the source, and stop before creation and review. Create the destination with create-new semantics only; never overwrite. For a fresh operation, an existing destination or failed create-new means `not_applied`; do not silently choose another path because authorization names the exact destination. Immediately after successful creation, hash the source path again. If it changed, mark the operation `stale`, preserve both source and destination, and stop before review.
+
+After creation, reread the destination and verify byte-for-byte equality with the expected candidate snapshot and equality of its SHA-256 with the expected hash before marking the operation `applied`. A mismatch or failed verification is `needs-reconcile`: preserve both files and stop before review. If a batch has multiple candidate writes, the batch remains incomplete and no post-edit review starts until every approved destination is verified; preserve any destination already created if a later write fails.
+
+On resume, treat an existing destination as `applied` only when the resumable record has the matching operation ID and the destination bytes and hash exactly match the persisted expected candidate. Otherwise mark `needs-reconcile`; never overwrite or infer success from path existence alone. Reconcile a `prepared` operation before continuing and do not create a second operation for the same authorized candidate.
+
+## Post-edit review and completion
+
+After every approved candidate destination is verified, freeze all verified resulting bytes and hashes together as the next round's draft input set. Start the next numbered round in the same named cycle, with a fresh primary invocation for all triggered non-adversarial lenses and fresh invocations for every required adversarial slot. Count that review against the cycle's existing three-round budget. A stale, `not_applied`, or `needs-reconcile` candidate does not start the post-edit review.
+
+For a candidate that changes scope or seams, report the proposed change separately and return it to requirements-workflow seam confirmation. Seam confirmation alone grants no write permission. After confirmation, show the exact revised draft text and a unique proposed temporary path, then obtain explicit approval of that text and authorization for that path. Recheck the named-cycle round budget before writing; if no round remains, apply nothing and use the cycle-limit handoff. Apply the same candidate creation safeguards, freeze and review the revised draft, and keep the existing round budget unless the user explicitly authorizes a new named cycle.
+
+Completing a review loop or verifying a candidate write does not constitute final specification approval or publication. Keep those decisions separate and do not publish an Issue in this workflow.
 
 ## Technical-stack checklist triggers
 
@@ -126,4 +154,4 @@ Missing required coverage must never count as passed. Report the review as passe
 
 ## Report
 
-Return a report that identifies the selected trigger branch, the reviewed specification scope, affected stacks and checklist decisions, every lens with its coverage state and evidence, each primary per-lens result, all required adversary-slot results, and the final coverage decision. For a re-review, also identify which prior review observations the approved edits address and which still need attention. Keep the report evidence-based and do not claim a pass when any required coverage is incomplete.
+Return a report that identifies the selected trigger branch, the reviewed specification scope, affected stacks and checklist decisions, every lens with its coverage state and evidence, each primary per-lens result, all required adversary-slot results, and the final coverage decision. For a re-review, also identify which prior review observations the approved edits address and which still need attention. Present proposed edits as one exact candidate batch with the required source, change, section, and destination details. Keep the report evidence-based and do not claim a pass when any required coverage is incomplete.
