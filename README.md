@@ -32,6 +32,7 @@ After installation, follow your coding agent's skill workflow to activate a skil
 - [review-duo](skills/review-duo/SKILL.md) runs a strict code review across independent review axes.
 - [skill-scout](skills/skill-scout/SKILL.md) finds and compares skills, with optional discovery through a local SkillRoute catalog.
 - [spec-implement-loop](skills/spec-implement-loop/SKILL.md) carries an explicitly approved spec or ticket tree through implementation, verification, and bounded review remediation.
+- [spec-review](skills/spec-review/SKILL.md) reviews staged specifications through required business, technical, codebase, and adversarial coverage lenses.
 
 ## Develop and test
 

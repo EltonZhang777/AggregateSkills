@@ -31,7 +31,7 @@ def section(text, heading):
 class SkillPrerequisiteInvocationTests(unittest.TestCase):
     def test_all_entrypoints_put_the_bounded_invocation_rule_first(self):
         entrypoints = sorted((ROOT / "skills").glob("*/SKILL.md"))
-        self.assertEqual(10, len(entrypoints))
+        self.assertEqual(11, len(entrypoints))
 
         for path in entrypoints:
             with self.subTest(skill=path.parent.name):
@@ -74,6 +74,64 @@ class SkillPrerequisiteInvocationTests(unittest.TestCase):
             with self.subTest(skill=name):
                 policy = (ROOT / "skills" / name / "agents" / "openai.yaml").read_text(encoding="utf-8")
                 self.assertIn("allow_implicit_invocation: false", policy)
+
+
+class SpecReviewBehaviorTests(unittest.TestCase):
+    def test_entrypoint_has_distinct_model_invocation_branches(self):
+        path = ROOT / "skills" / "spec-review" / "SKILL.md"
+        self.assertTrue(path.is_file())
+        text = path.read_text(encoding="utf-8")
+        frontmatter = text.split("---", 2)[1].lower()
+
+        self.assertIn("name: spec-review", frontmatter)
+        self.assertIn("initial review", frontmatter)
+        self.assertIn("re-review after approved edits", frontmatter)
+        self.assertNotIn("disable-model-invocation: true", frontmatter)
+        self.assertNotIn("allow_implicit_invocation: false", text.lower())
+        dependencies = section(text.lower(), "## dependencies")
+        self.assertIn("no direct skill prerequisites", dependencies)
+
+        policy = ROOT / "skills" / "spec-review" / "agents" / "openai.yaml"
+        if policy.exists():
+            self.assertNotIn("allow_implicit_invocation: false", policy.read_text(encoding="utf-8").lower())
+
+        workflow = text.lower()
+        self.assertIn("## review triggers", workflow)
+        self.assertIn("initial review", workflow)
+        self.assertIn("re-review after approved edits", workflow)
+        self.assertIn("named staged specification", workflow)
+        self.assertIn("identify its target repository", workflow)
+
+    def test_review_lenses_and_conditional_triggers_are_declared(self):
+        text = skill("spec-review").lower().replace(chr(96), "")
+
+        for required in (
+            "business scope",
+            "engineering and test decisions",
+            "affected-codebase evidence",
+            "fresh isolated primary invocation",
+            "independent adversary-a invocation",
+            "for every affected technical stack",
+            "root instructions, domain documents, and stack-specific checklist sources",
+            "domain checklist triggers",
+            "not applicable",
+            "trigger is ambiguous",
+            "coverage is incomplete",
+            "developer-experience review",
+            "cli/api/config/comparable developer-facing interface changes",
+            "do not request cross-model opinions",
+        ):
+            with self.subTest(required=required):
+                self.assertIn(required, text)
+
+    def test_coverage_states_gate_a_pass(self):
+        text = skill("spec-review").lower().replace(chr(96), "")
+
+        for state in ("covered", "not applicable", "incomplete"):
+            with self.subTest(state=state):
+                self.assertIn(state, text)
+        self.assertIn("missing required coverage must never count as passed", text)
+        self.assertIn("report the review as passed only when", text)
 def mentions_concepts(text, *concepts):
     return all(any(term in text for term in alternatives) for alternatives in concepts)
 
@@ -1781,6 +1839,9 @@ class ConventionalGitMessagesBehaviorTests(unittest.TestCase):
 class ReadmeBehaviorTests(unittest.TestCase):
     def test_generic_skill_install_command_remains(self):
         self.assertIn("npx skills@latest add EltonZhang777/AggregateSkills", (ROOT / "README.md").read_text(encoding="utf-8"))
+
+    def test_spec_review_is_in_the_skill_catalog(self):
+        self.assertIn("- [spec-review](skills/spec-review/SKILL.md)", (ROOT / "README.md").read_text(encoding="utf-8"))
 
 
 if __name__ == "__main__":
