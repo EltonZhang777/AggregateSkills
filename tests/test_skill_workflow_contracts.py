@@ -132,6 +132,256 @@ class SpecReviewBehaviorTests(unittest.TestCase):
                 self.assertIn(state, text)
         self.assertIn("missing required coverage must never count as passed", text)
         self.assertIn("report the review as passed only when", text)
+        self.assertIn("result is valid, complete, and recorded", text)
+        self.assertIn("invocation or result is unavailable, partial, or abstains", text)
+        self.assertIn("host identity or isolation cannot be verified", text)
+        self.assertIn("all required invocations completed without a partial or abstaining result", text)
+
+    def test_round_inputs_are_frozen_and_hashed_in_a_canonical_manifest(self):
+        text = skill("spec-review").lower().replace(chr(96), "")
+        freeze = section(text, "## freeze the round inputs")
+        manifest = section(text, "## canonical manifest")
+
+        self.assertIn("at round start, freeze draft bytes", freeze)
+        for source in (
+            "target-repository snapshot",
+            "scope/exclusions",
+            "requirements",
+            "applicable domain and decision documents",
+            "relevant implementation, tests, configuration",
+            "checks",
+        ):
+            with self.subTest(source=source):
+                self.assertIn(source, freeze)
+        for identity in ("stable source identifier", "exact byte size", "sha-256"):
+            with self.subTest(identity=identity):
+                self.assertIn(identity, freeze)
+        for representation in (
+            "immutable repository or file revision identifier",
+            "without copying an entire repository snapshot",
+            "for each source whose bytes are read",
+            "exact source bytes",
+            "do not use a hash of the revision-id string as a substitute for a source-content hash",
+        ):
+            with self.subTest(representation=representation):
+                self.assertIn(representation, freeze)
+
+        for rule in (
+            "canonical utf-8 json",
+            "recursively sorted object keys",
+            "include every frozen source in the sources array",
+            "ensure_ascii: false",
+            "compact separators",
+            "deterministically by stable source identifier",
+            "hash the exact manifest bytes with sha-256",
+            "manifest hash outside the manifest",
+            "identical byte-based frozen inputs",
+            "identical byte-based frozen inputs or the same immutable revision identifiers",
+        ):
+            with self.subTest(rule=rule):
+                self.assertIn(rule, manifest)
+
+        for field in (
+            "decide the complete required assignment set",
+            "draft hash",
+            "repository snapshot identity",
+            "source_hashes",
+            "checks",
+            "required_assignments",
+            "unique initial invocation id",
+            "before hashing or freezing the manifest",
+            "adversary-b",
+            "single primary assignment's lens set",
+            "every triggered non-adversarial lens",
+            "high_risk_decision",
+            "every trigger considered",
+            "met, absent, or uncertain",
+            "resulting required adversarial slots",
+            "validate that required_assignments exactly matches that recorded decision before launching",
+        ):
+            with self.subTest(field=field):
+                self.assertIn(field, manifest)
+
+    def test_invocation_envelope_binds_assignments_to_host_identity(self):
+        text = skill("spec-review").lower().replace(chr(96), "")
+        envelope = section(text, "## invocation envelope and host identity")
+
+        for field in (
+            "canonical utf-8 json invocation envelope",
+            "manifest sha-256",
+            "exact request identifier",
+            "request sha-256",
+            "cycle identifier",
+            "round identifier",
+            "exact assigned lens set",
+            "adversarial slot",
+            "unique invocation id",
+            "reserved initial invocation id",
+            "current active invocation id",
+            "authorized retry",
+            "unique active replacement id",
+            "mark the prior id superseded",
+            "recorded active id",
+            "envelope bytes with sha-256",
+            "identical frozen inputs and manifest",
+            "host-returned session id",
+            "matching host invocation and session binding",
+            "self-reported invocation id",
+        ):
+            with self.subTest(field=field):
+                self.assertIn(field, envelope)
+
+    def test_risk_classification_selects_adversarial_slots(self):
+        text = skill("spec-review").lower().replace(chr(96), "")
+        risk = section(text, "## risk and adversarial slots")
+
+        self.assertIn("launch adversary-a in every round", risk)
+        for trigger in (
+            "security/privacy",
+            "data loss/destructive behavior",
+            "financial/charged data",
+            "irreversible publication/ticket change",
+            "review/approval gate",
+            "core acceptance path",
+        ):
+            with self.subTest(trigger=trigger):
+                self.assertIn(trigger, risk)
+        self.assertIn("high-risk trigger is met or cannot be ruled out", risk)
+        self.assertIn("require adversary-b", risk)
+        self.assertIn("record the trigger and its evidence", risk)
+        self.assertIn("do not launch adversary-b", risk)
+        self.assertIn("separate fresh isolated invocations", risk)
+        self.assertIn("neither adversary sees primary findings or the other adversary's findings", risk)
+
+    def test_primary_is_one_invocation_for_all_triggered_non_adversarial_lenses(self):
+        text = skill("spec-review").lower().replace(chr(96), "").replace("*", "")
+        for phrase in (
+            "exactly one fresh isolated primary invocation",
+            "single primary assignment containing every triggered non-adversarial lens",
+            "do not start one primary invocation per lens",
+        ):
+            with self.subTest(phrase=phrase):
+                self.assertIn(phrase, text)
+
+    def test_results_require_complete_matching_attestations(self):
+        text = skill("spec-review").lower().replace(chr(96), "")
+        attestation = section(text, "## result attestation")
+
+        for field in (
+            "primary invocation returns one distinct result for each lens",
+            "all those per-lens results share that invocation's id, envelope hash, and host session binding",
+            "each adversarial invocation returns its own result",
+            "result lens or adversarial slot",
+            "manifest, draft, and envelope sha-256 values",
+            "checked source's stable identifier and sha-256",
+            "unchecked source's stable identifier with a reason",
+            "partition the manifest's frozen sources",
+            "each source id appears exactly once",
+            "with none omitted",
+            "host-returned session binding to each result",
+            "reject a result with a missing or mismatched attestation as stale or incomplete",
+            "host session",
+            "assignment",
+            "checked source id/hash",
+            "unchecked source id is absent from the frozen sources",
+            "lacks a non-empty reason",
+            "source lists omit, duplicate, or overlap a frozen source",
+            "cannot make a lens covered",
+        ):
+            with self.subTest(field=field):
+                self.assertIn(field, attestation)
+
+    def test_cross_result_acceptance_keeps_retry_compatibility_without_retry_policy(self):
+        text = skill("spec-review").lower().replace(chr(96), "")
+        acceptance = section(text, "## cross-result acceptance")
+
+        for rule in (
+            "initialize each assignment's active invocation id to its reserved initial id",
+            "for an authorized retry, register one unique active replacement id",
+            "mark the prior id superseded",
+            "accept only the recorded active id",
+            "never rewrite the frozen manifest",
+            "supersede all of that invocation's lens results",
+            "a late result from a superseded invocation id is rejected or excluded",
+            "late result from a superseded invocation id",
+            "rejected or excluded from the active result set",
+            "retaining that rejected result with superseded status in history does not invalidate",
+            "duplicate result slots",
+            "superseded result presented or used as active leaves coverage incomplete",
+            "does not define retry counts, retry limits, or review-cycle policy",
+        ):
+            with self.subTest(rule=rule):
+                self.assertIn(rule, acceptance)
+
+    def test_cross_result_acceptance_requires_one_host_matched_result_per_manifest_slot(self):
+        text = skill("spec-review").lower().replace(chr(96), "")
+        acceptance = section(text, "## cross-result acceptance")
+
+        for rule in (
+            "expand the primary assignment into one result slot per assigned lens",
+            "one result slot for each adversarial assignment",
+            "key a result slot by its exact assignment and result lens or adversarial slot",
+            "all per-lens results from the same primary invocation intentionally share one invocation id",
+            "an invocation id must remain unique to its manifest assignment",
+            "duplicate result slots",
+            "swapped lenses or assignments",
+            "result slots absent from the manifest",
+            "extra results",
+            "superseded invocation ids",
+            "repeated invocation ids are valid only across distinct per-lens results",
+            "reject reuse across assignments",
+            "every derived result slot has exactly one active, host-matched result",
+            "without an unavailable, partial, or abstaining result",
+            "stale or incomplete",
+            "does not define retry counts, retry limits, or review-cycle policy",
+        ):
+            with self.subTest(rule=rule):
+                self.assertIn(rule, acceptance)
+
+    def test_manual_spec_review_covers_frozen_evidence_and_adversarial_slots(self):
+        manual = (ROOT / "tests" / "manual" / "spec-review.md").read_text(encoding="utf-8").lower()
+        for phrase in (
+            "at round start",
+            "stable source identifier",
+            "immutable repository or file revision identifiers",
+            "for each source whose bytes are read",
+            "exact source bytes",
+            "do not use a hash of the revision-id string",
+            "canonical utf-8 json",
+            "manifest sha-256",
+            "host-returned session id",
+            "adversary-a launches every round",
+            "high-risk",
+            "adversary-b",
+            "missing or mismatched attestation",
+            "stale or incomplete",
+            "required_assignments",
+            "initial invocation id",
+            "duplicate result slots",
+            "swapped lenses or assignments",
+            "extra results",
+            "superseded invocation ids",
+            "exactly one active, host-matched result",
+            "high_risk_decision",
+            "every trigger considered",
+            "met`, `absent`, or `uncertain",
+            "required adversarial slots",
+            "exactly one primary assignment",
+            "every triggered non-adversarial lens",
+            "unchecked source ids",
+            "unchecked sources carrying reasons",
+            "authorized retry",
+            "active replacement id",
+            "late result from the superseded invocation id",
+            "rejected or excluded from the active result set",
+            "retain it in history with superseded status",
+            "later complete active result set still passes",
+            "duplicate result slots",
+            "superseded result presented or used as active",
+        ):
+            with self.subTest(phrase=phrase):
+                self.assertIn(phrase, manual)
+
 def mentions_concepts(text, *concepts):
     return all(any(term in text for term in alternatives) for alternatives in concepts)
 
