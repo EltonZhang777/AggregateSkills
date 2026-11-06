@@ -145,6 +145,7 @@ class SpecReviewBehaviorTests(unittest.TestCase):
         self.assertIn("at round start, freeze draft bytes", freeze)
         for source in (
             "target-repository snapshot",
+            "root agents.md",
             "scope/exclusions",
             "requirements",
             "applicable domain and decision documents",
@@ -157,8 +158,14 @@ class SpecReviewBehaviorTests(unittest.TestCase):
             with self.subTest(identity=identity):
                 self.assertIn(identity, freeze)
         for representation in (
+            "canonical target-repository-relative posix path",
+            "normalized uri for external sources",
+            "each stable_source_id must appear exactly once in the sources array",
+            "when one source serves multiple roles, merge them into one record",
+            "list each role once in lexicographic order",
             "immutable repository or file revision identifier",
             "without copying an entire repository snapshot",
+            "separately as source revision metadata",
             "for each source whose bytes are read",
             "exact source bytes",
             "do not use a hash of the revision-id string as a substitute for a source-content hash",
@@ -172,7 +179,8 @@ class SpecReviewBehaviorTests(unittest.TestCase):
             "include every frozen source in the sources array",
             "ensure_ascii: false",
             "compact separators",
-            "deterministically by stable source identifier",
+            "order it lexicographically by its canonical path or normalized uri",
+            "because each stable_source_id is unique, this is a total order",
             "hash the exact manifest bytes with sha-256",
             "manifest hash outside the manifest",
             "identical byte-based frozen inputs",
@@ -495,17 +503,19 @@ class SpecReviewBehaviorTests(unittest.TestCase):
         for rule in (
             "evidence-based failure, not a preference",
             "name the affected draft section",
-            "cite supporting evidence",
+            "cite supporting evidence at at least one frozen source path and line or exact symbol",
+            "generic evidence without a source location is insufficient",
             "practical impact",
             "smallest exact change",
             "preference without a concrete failure, evidence, and impact is not a finding",
             "p0/p1/p2-or-lower definitions",
             "repository's p0/p1/p2-or-lower definitions",
             "preserve each reported severity and rationale",
-            "a p0/p1 finding blocks early exit only when it cites an approved acceptance clause and shows a reproducible failure",
+            "a p0/p1 finding blocks early exit, pass, and publication only when it cites an approved acceptance clause and shows a reproducible failure",
             "retain the original rating and rationale as an unverified observation",
             "not an established blocker",
             "do not downgrade it solely to satisfy the exit gate",
+            "an unverified observation does not block those gates",
             "approved acceptance clause",
             "reproducible failure",
             "lack of safety proof alone does not establish a blocker",
@@ -521,6 +531,11 @@ class SpecReviewBehaviorTests(unittest.TestCase):
         ):
             with self.subTest(rule=rule):
                 self.assertIn(rule, gates)
+
+        manual = (ROOT / "tests" / "manual" / "spec-review.md").read_text(encoding="utf-8").lower()
+        self.assertIn("unverified observation alone does not block early exit, pass, or publication", manual)
+        self.assertIn("frozen source path and line or exact symbol", manual)
+        self.assertIn("generic evidence without a source location", manual)
 
     def test_invalid_execution_retries_are_bounded_and_leave_unresolved_coverage_incomplete(self):
         text = skill("spec-review").lower().replace(chr(96), "")
@@ -554,10 +569,10 @@ class SpecReviewBehaviorTests(unittest.TestCase):
 
         for rule in (
             "at most three numbered rounds, including the initial round",
-            "end a cycle early only when no p0/p1 finding remains",
+            "end a cycle early only when no established p0/p1 blocker remains",
             "every p2-or-lower finding is fixed or explicitly disposed of by the user with a reason",
             "pending user decision",
-            "incomplete coverage blocks early exit, pass, and publication",
+            "an established p0/p1 blocker, an undisposed lower-severity finding, a pending user decision, an unresolved timeout, or incomplete coverage blocks early exit, pass, and publication",
             "starting another named cycle requires the user's explicit authorization",
             "fresh three-round budget",
             "do not reset a round or attempt counter",
@@ -597,6 +612,11 @@ class SpecReviewBehaviorTests(unittest.TestCase):
             with self.subTest(rule=rule):
                 self.assertIn(rule, cycles)
 
+        self.assertIn(
+            "a p0/p1 finding blocks early exit, pass, and publication only when it cites an approved acceptance clause and shows a reproducible failure",
+            text,
+        )
+
     def test_rereview_scope_stays_on_approved_edits_and_affected_criteria(self):
         text = skill("spec-review").lower().replace(chr(96), "")
         triggers = section(text, "## review triggers")
@@ -614,7 +634,11 @@ class SpecReviewBehaviorTests(unittest.TestCase):
         manual = (ROOT / "tests" / "manual" / "spec-review.md").read_text(encoding="utf-8").lower()
         for phrase in (
             "at round start",
-            "stable source identifier",
+            "root `agents.md` is a required frozen source",
+            "its absence leaves the review incomplete",
+            "stable id as its canonical repository-relative posix path",
+            "appears once under its canonical path or normalized uri",
+            "every `stable_source_id` is unique",
             "immutable repository or file revision identifiers",
             "for each source whose bytes are read",
             "exact source bytes",
@@ -652,10 +676,10 @@ class SpecReviewBehaviorTests(unittest.TestCase):
             "superseded result presented or used as active",
             "evidence-based failure",
             "draft section",
-            "supporting evidence",
+            "frozen source path and line or exact symbol",
             "practical impact",
             "smallest exact proposed change",
-            "preference alone is not a finding",
+            "preference alone are not findings",
             "p0/p1",
             "approved acceptance clause",
             "reproducible failure",
@@ -672,7 +696,8 @@ class SpecReviewBehaviorTests(unittest.TestCase):
             "reconcile or cancel",
             "unresolved status leaves coverage incomplete",
             "at most three rounds per named cycle",
-            "end a cycle early only",
+            "end a cycle early only with no established p0/p1 blocker",
+            "unverified p0/p1 observations alone do not block early exit, pass, or publication",
             "explicit user authorization",
             "fresh three-round budget",
             "resumable cycle record",
@@ -2025,6 +2050,33 @@ class RequirementsToSpecTicketsBehaviorTests(unittest.TestCase):
         self.assertIn("track a unique operation id and cumulative attempt state for each label operation", claims)
         self.assertIn("reconcile ambiguous label results by reading the label and issue back", claims)
         self.assertIn("spec publication is successful only after the exact issue and all required labels are verified by read-back", claims)
+
+    def test_requirements_workflow_pins_github_operations_to_the_canonical_repository(self):
+        workflow = skill("requirements-to-spec-tickets").lower().replace(chr(96), "")
+        protocol = section(workflow, "## 4. child-session protocol")
+        claims = section(protocol, "### exclusive github writer claim and publication recovery")
+        template = skill_reference(
+            "requirements-to-spec-tickets", "child-session-initial-prompt.md",
+        ).lower().replace(chr(96), "")
+        linking = section(template, "### native ticket linking")
+        manual = (ROOT / "tests" / "manual" / "requirements-to-spec-tickets.md").read_text(encoding="utf-8").lower().replace(chr(96), "")
+        scenario = section(manual, "## publication recovery and exclusive writer claims")
+
+        for rule in (
+            "before every github list, read, create, edit, label, or link operation",
+            "pass --repo <owner>/<repo> to every gh command that supports it",
+            "explicit repos/<owner>/<repo>/... path for every gh api endpoint",
+            "never rely on gh's configured default repository",
+            "immediately before and after each write, verify every involved issue belongs to that canonical repository",
+            "stop before writing if the target or repository cannot be established",
+        ):
+            with self.subTest(rule=rule):
+                self.assertIn(rule, claims)
+                self.assertIn(rule, template)
+        self.assertIn("gh issue edit <spec-number> --add-sub-issue <ticket-number> --repo <owner>/<repo>", linking)
+        self.assertIn("configure gh's default repository to a second disposable repository", scenario)
+        self.assertIn("every gh command that supports --repo passes --repo <owner>/<repo>", scenario)
+        self.assertIn("every gh api endpoint uses an explicit repos/<owner>/<repo>/... path", scenario)
 
     def test_ticket_reconciliation_binds_exact_payload_graph_and_stops_on_drift(self):
         text = skill("requirements-to-spec-tickets").lower().replace(chr(96), "")

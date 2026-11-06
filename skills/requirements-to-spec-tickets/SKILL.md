@@ -92,6 +92,8 @@ Immediately before `/to-spec` or `/to-tickets` drafts an Issue title or body, in
 
 ### Exclusive GitHub writer claim and publication recovery
 
+Before every GitHub list, read, create, edit, label, or link operation, explicitly select the canonical owner/repository. Pass `--repo <owner>/<repo>` to every `gh` command that supports it, and use an explicit `repos/<owner>/<repo>/...` path for every `gh api` endpoint. Never rely on `gh`'s configured default repository. Immediately before and after each write, verify every involved Issue belongs to that canonical repository; stop before writing if the target or repository cannot be established.
+
 Before every GitHub Issue create/edit, repository-label create, Issue-label change, or ticket-link write, obtain and verify an atomic exclusive writer claim. Key the claim by the canonical owner/repository and the exact approved spec-publication tuple, exact ticket payload, or exact ticket relationship graph and link delta, as applicable. Record the claim owner's host/session ID, unique operation ID, key, and operation/attempt state in the task progress summary before the external write. The summary is a record, not a substitute for an atomic claim. If the host cannot verify the exclusive claim, stop before writing.
 
 No second session may write while a claim or any operation for that key is active or unresolved. Release a claim only after terminal read-back reconciliation. Permit takeover only after the prior owner has stopped and every operation it owns has been reconciled. Do not start a second create while an earlier create may have succeeded.

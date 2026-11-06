@@ -113,6 +113,8 @@ publish the spec.
 
 ## Publication recovery and exclusive writer claims
 
+Configure `gh`'s default repository to a second disposable repository, then exercise Issue listing, reads, creation, edits, label changes, and ticket linking for the approved repository. Confirm every `gh` command that supports `--repo` passes `--repo <owner>/<repo>` and every `gh api` endpoint uses an explicit `repos/<owner>/<repo>/...` path. Confirm no operation uses the mismatched default and every write verifies all involved Issues' repositories immediately before and after; stop before writing if the target cannot be verified.
+
 In the disposable GitHub issue tree, record the claim owner's host/session ID,
 exact key, operation ID, and attempt state before each Issue or label write.
 Have one session hold a verified atomic claim and make a second session attempt
