@@ -1430,11 +1430,12 @@ class RequirementsToSpecTicketsBehaviorTests(unittest.TestCase):
             ("wait",), ("confirmation",),
         ))
 
-        phases = ("/grill-duo-with-docs", "/to-spec", "/to-tickets")
+        phases = ("/grill-duo-with-docs", "/to-spec", "/spec-review", "/to-tickets")
         for phase in phases:
             self.assertIn(phase, workflow)
         self.assertLess(workflow.index(phases[0]), workflow.index(phases[1]))
         self.assertLess(workflow.index(phases[1]), workflow.index(phases[2]))
+        self.assertLess(workflow.index(phases[2]), workflow.index(phases[3]))
         self.assertTrue(sentence_with_concepts(
             workflow, ("re-read", "reread"), ("source",), ("each phase",), ("before",),
         ))
@@ -1456,6 +1457,9 @@ class RequirementsToSpecTicketsBehaviorTests(unittest.TestCase):
         ))
         self.assertTrue(sentence_with_concepts(
             workflow, ("to-spec",), ("seam",), ("confirmation", "gate"),
+        ))
+        self.assertTrue(sentence_with_concepts(
+            workflow, ("spec-review",), ("staged",), ("before",), ("issue publication",),
         ))
         self.assertTrue(sentence_with_concepts(
             workflow, ("to-tickets",), ("ticket-granularity", "granularity"),
@@ -1643,11 +1647,13 @@ class RequirementsToSpecTicketsBehaviorTests(unittest.TestCase):
             ("shared-understanding", "summary"), ("wait", "pause"), ("confirmation", "confirm"),
         ))
         sequence = sentence_with_concepts(
-            protocol, ("grill-duo-with-docs",), ("to-spec",), ("to-tickets",),
+            protocol, ("grill-duo-with-docs",), ("to-spec",), ("spec-review",), ("to-tickets",),
             ("first", "before", "prior"), ("then", "next", "order"),
         )
         self.assertTrue(sequence)
         self.assertLess(sequence.index("grill-duo-with-docs"), sequence.index("to-spec"))
+        self.assertLess(sequence.index("to-spec"), sequence.index("spec-review"))
+        self.assertLess(sequence.index("spec-review"), sequence.index("to-tickets"))
         self.assertLess(sequence.index("to-spec"), sequence.index("to-tickets"))
         self.assertTrue(sentence_with_concepts(git, ("approval", "authorize"), ("group",), ("commit",)))
         self.assertTrue(sentence_with_concepts(documents, ("user-confirmed",), ("project documents",)))
@@ -1959,6 +1965,295 @@ class RequirementsToSpecTicketsBehaviorTests(unittest.TestCase):
             "Group B may write under A's approval.".lower(),
             ("group b",), ("under a's approval",), ("write",),
         ))
+
+
+    def test_spec_publication_stages_reviews_and_binds_both_approvals_to_exact_tuple(self):
+        text = skill("requirements-to-spec-tickets").lower().replace(chr(96), "")
+        dependencies = section(text, "## dependencies")
+        protocol = section(text, "## 4. child-session protocol")
+        workflow = protocol
+
+        self.assertIn("| /spec-review | skill |", dependencies)
+        self.assertIn("if /to-spec can reliably stop before creating or publishing an issue", workflow)
+        self.assertIn("if it cannot reliably stop, use its seam-confirmation criteria and draft template without invoking its publishing step", workflow)
+        self.assertIn("exact draft text and a unique temporary path", workflow)
+        self.assertIn("approval of that text and authorization for that path", workflow)
+        self.assertIn("stage it with create-new semantics", workflow)
+        self.assertLess(workflow.index("after seam confirmation"), workflow.index("run /spec-review"))
+        self.assertLess(workflow.index("run /spec-review"), workflow.index("before publication"))
+        self.assertIn("run /spec-review on the staged bytes before any issue publication", workflow)
+        self.assertIn("a candidate is applied only after approval of the exact batch, source version, and unique destination", workflow)
+        self.assertIn("run fresh review in the same named cycle", workflow)
+        self.assertIn("at most three numbered rounds", workflow)
+        self.assertIn("review pass, candidate approval, and staging approval do not approve the final spec", workflow)
+        self.assertIn("the issue body must be byte-identical to the frozen draft", workflow)
+        self.assertIn("obtain final specification approval and publication authorization as separate user decisions", workflow)
+        self.assertIn("publish only after both approval records are present and still match that tuple", workflow)
+        for tuple_field in ("title", "draft sha-256", "canonical owner/repository", "required labels"):
+            with self.subTest(tuple_field=tuple_field):
+                self.assertIn(tuple_field, workflow)
+        self.assertIn("any body-byte change requires a fresh review round and new approvals", workflow)
+        self.assertIn("any title, target, or required-label change invalidates both approvals", workflow)
+        self.assertIn("do not invoke /to-tickets until review coverage passed, both exact final approvals were recorded, and spec publication succeeded", workflow)
+
+    def test_issue_and_label_publication_requires_writer_claim_and_terminal_reconciliation(self):
+        text = skill("requirements-to-spec-tickets").lower().replace(chr(96), "")
+        protocol = section(text, "## 4. child-session protocol")
+        claims = section(protocol, "### exclusive github writer claim and publication recovery")
+
+        for write in ("issue create/edit", "repository-label create", "issue-label change", "ticket-link write"):
+            with self.subTest(write=write):
+                self.assertIn(write, claims)
+        for claim_fact in (
+            "atomic exclusive writer claim", "canonical owner/repository", "exact approved spec-publication tuple",
+            "exact ticket payload", "exact ticket relationship graph", "claim owner's host/session id",
+            "unique operation id", "task progress summary before the external write",
+            "no second session may write", "active or unresolved", "release a claim only after terminal read-back reconciliation",
+            "takeover only after the prior owner has stopped", "every operation it owns has been reconciled",
+        ):
+            with self.subTest(claim_fact=claim_fact):
+                self.assertIn(claim_fact, claims)
+        self.assertIn("summary is a record, not a substitute for an atomic claim", claims)
+        self.assertIn("verify the canonical target immediately before writing", claims)
+        self.assertIn("fully paginate issues across all states, exclude pull requests", claims)
+        self.assertIn("accept only one unique issue whose target, title, and body bytes match", claims)
+        self.assertIn("retry only a confirmed transient failure after a complete listing proves no issue was created", claims)
+        self.assertIn("at most three total attempts across resumes", claims)
+        self.assertIn("keep at most one unresolved issue-create operation per canonical target and approved tuple", claims)
+        self.assertIn("after issue read-back, create and verify required repository labels", claims)
+        self.assertIn("with ready-for-agent last", claims)
+        self.assertIn("track a unique operation id and cumulative attempt state for each label operation", claims)
+        self.assertIn("reconcile ambiguous label results by reading the label and issue back", claims)
+        self.assertIn("spec publication is successful only after the exact issue and all required labels are verified by read-back", claims)
+
+    def test_ticket_reconciliation_binds_exact_payload_graph_and_stops_on_drift(self):
+        text = skill("requirements-to-spec-tickets").lower().replace(chr(96), "")
+        protocol = section(text, "## 4. child-session protocol")
+        reconciliation = section(protocol, "### ticket reconciliation and native links")
+        template = skill_reference(
+            "requirements-to-spec-tickets", "child-session-initial-prompt.md",
+        ).lower().replace(chr(96), "")
+        linking = section(template, "### native ticket linking")
+
+        self.assertIn("obtain the user's explicit authorization for ticket reconciliation", reconciliation)
+        self.assertIn("do not invoke /to-tickets until review coverage passed, both exact final approvals were recorded, and spec publication succeeded", reconciliation)
+        self.assertIn("reconcile existing spec-review tickets by exact known issue ids", reconciliation)
+        for field in ("title", "body", "state", "labels", "parent", "blocking edges"):
+            with self.subTest(field=field):
+                self.assertIn(field, reconciliation)
+        for disposition in ("unchanged", "revised", "superseded", "new"):
+            with self.subTest(disposition=disposition):
+                self.assertIn(disposition, reconciliation)
+        self.assertIn("obtain separate approval for each later ticket-payload or graph/link delta", reconciliation)
+        for bound_value in ("parent spec issue id", "exact approved body sha-256", "canonical owner/repository", "exact ticket payload", "graph/link delta"):
+            with self.subTest(bound_value=bound_value):
+                self.assertIn(bound_value, reconciliation)
+        self.assertIn("bind both records to the parent spec issue id", reconciliation)
+        self.assertIn("bound to the same parent issue id, body hash, and canonical target", reconciliation)
+        self.assertIn("ticket-set approval alone authorizes no write", reconciliation)
+        self.assertIn("ticket-set approval alone authorizes no write: create only after the separate issue-creation authorization", reconciliation)
+        self.assertIn("on the safe /to-tickets path, its publication confirmation serves as the separate issue-creation authorization", reconciliation)
+        self.assertIn("in the template fallback, obtain this explicit authorization directly", reconciliation)
+        self.assertIn("before any native link write, present the exact proposed edges and canonical target", reconciliation)
+        self.assertIn("obtain separate explicit link authorization, distinct from both ticket-set approval and issue-creation authorization", reconciliation)
+        self.assertIn("bind it to the parent spec issue id, exact approved body sha-256, canonical target, and exact graph", reconciliation)
+        self.assertIn("issue-creation authorization never permits links; if only it exists, do not link", reconciliation)
+        self.assertIn("every affected ticket-payload or graph/link-delta approval, and any independent link-write authorization", reconciliation)
+        self.assertIn("re-preview the exact publication tuple, affected ticket proposal, and exact edges plus canonical target", reconciliation)
+        self.assertIn("explicit link authorization bound to the parent issue id, body hash, canonical target, and exact graph as applicable", reconciliation)
+        self.assertIn("each write also requires its own writer claim and applicable publication or relationship gate", reconciliation)
+        self.assertIn("create only tickets confirmed missing by exact-id reconciliation and covered by the exact ticket-set approval and separate issue-creation authorization", reconciliation)
+        self.assertIn("start native sub-issue linking only after every planned ticket exists", reconciliation)
+        self.assertIn("before every ticket create, edit, label change, or link write, re-read the parent spec issue", reconciliation)
+        self.assertIn("re-read the parent spec issue using its exact approved issue id", reconciliation)
+        self.assertIn("if any differs, stop and invalidate both final spec approvals", reconciliation)
+        self.assertIn("require that round to pass before re-previewing or requesting, binding, or recording any replacement approval or write authorization", reconciliation)
+        self.assertIn("read the ticket immediately before writing and compare its exact current state", reconciliation)
+        self.assertIn("drift stops the write until the new exact delta is approved", reconciliation)
+        self.assertIn("verify the repository of every involved issue", reconciliation)
+        self.assertIn("immediately before each write", reconciliation)
+        self.assertIn("immediately after each write", reconciliation)
+        self.assertIn("read every involved issue back immediately after each write", reconciliation)
+        self.assertIn("approval of a planned ticket set alone authorizes no issue creation, edit, label change, or link", linking)
+        self.assertIn("issue-creation authorization alone never permits a link", linking)
+        self.assertIn("any independent link-write authorization", template)
+        self.assertIn("explicit link authorization bound to the parent issue id, body hash, canonical target, and exact graph as applicable", template)
+        self.assertIn("atomic writer claim for the exact approved graph/link delta", linking)
+        self.assertNotIn("approval of the planned ticket set authorizes only these routine associations", text + template)
+
+        manual = " ".join(
+            (ROOT / "tests" / "manual" / "requirements-to-spec-tickets.md")
+            .read_text(encoding="utf-8").lower().split()
+        )
+        for heading in (
+            "## staged spec review and final publication gates",
+            "## publication recovery and exclusive writer claims",
+            "## exact-id ticket reconciliation and link approvals",
+        ):
+            with self.subTest(heading=heading):
+                self.assertIn(heading, manual)
+        for scenario in (
+            "second session", "lost create response", "exact body bytes", "ticket-payload batch",
+            "relationship graph", "approved body sha-256", "immediately before and after each write",
+            "all required labels are confirmed by read-back", "separate explicit link authorization",
+            "link authorization is bound to the parent spec issue id", "issue-creation authorization alone never permits links",
+            "independent link-write authorization is invalidated", "re-present the exact edges and canonical target",
+            "fresh link authorization bound to the parent issue id/hash/target/graph before any link",
+        ):
+            with self.subTest(scenario=scenario):
+                self.assertIn(scenario, manual)
+
+
+    def test_to_tickets_requires_safe_pause_or_nonpublishing_ticket_set_staging(self):
+        text = skill("requirements-to-spec-tickets").lower().replace(chr(96), "")
+        protocol = section(text, "## 4. child-session protocol")
+        reconciliation = section(protocol, "### ticket reconciliation and native links")
+        template = skill_reference(
+            "requirements-to-spec-tickets", "child-session-initial-prompt.md",
+        ).lower().replace(chr(96), "")
+        template_gates = section(template, "## workflow gates")
+        manual = " ".join(
+            (ROOT / "tests" / "manual" / "requirements-to-spec-tickets.md")
+            .read_text(encoding="utf-8").lower().split()
+        )
+
+        self.assertIn("prove that the workflow can return its ticket plan and reliably stop before any issue create, edit, label, or link write", reconciliation)
+        self.assertIn("if it cannot, do not invoke its publishing step", reconciliation)
+        self.assertIn("use its existing ticket-granularity, blocking-edge criteria, and template", reconciliation)
+        self.assertIn("freeze the same proposal in task progress without publishing", reconciliation)
+        for proposal_field in ("each proposed title", "body", "canonical target", "required labels", "exact blocking edges"):
+            with self.subTest(proposal_field=proposal_field):
+                self.assertIn(proposal_field, reconciliation)
+        self.assertIn("obtain exact ticket-set approval, then separately obtain explicit issue-creation authorization", reconciliation)
+        for bound_value in ("parent spec issue id", "exact approved body sha-256", "canonical owner/repository target", "exact ticket payload plus graph"):
+            with self.subTest(bound_value=bound_value):
+                self.assertIn(bound_value, reconciliation)
+        self.assertIn("prove it can return the ticket plan and reliably stop before any issue write", template_gates)
+        self.assertIn("if it cannot, do not invoke its publishing step", template_gates)
+        self.assertIn("use its existing criteria and template to prepare and freeze the exact ticket set", template_gates)
+        self.assertIn("exact ticket-set approval, then separately obtain explicit issue-creation authorization", template)
+        self.assertIn("bind both records to the parent spec issue id", template)
+        for manual_fact in (
+            "prove it can stop before any issue write", "stage the exact ticket set in task progress",
+            "separately obtain explicit issue-creation authorization", "ticket-payload batch plus relationship graph",
+        ):
+            with self.subTest(manual_fact=manual_fact):
+                self.assertIn(manual_fact, manual)
+
+    def test_parent_drift_invalidates_ticket_gates_and_field_edge_writes_are_reconciled(self):
+        text = skill("requirements-to-spec-tickets").lower().replace(chr(96), "")
+        protocol = section(text, "## 4. child-session protocol")
+        reconciliation = section(protocol, "### ticket reconciliation and native links")
+        template = skill_reference(
+            "requirements-to-spec-tickets", "child-session-initial-prompt.md",
+        ).lower().replace(chr(96), "")
+        workflow = section(template, "## workflow gates")
+        manual = " ".join(
+            (ROOT / "tests" / "manual" / "requirements-to-spec-tickets.md")
+            .read_text(encoding="utf-8").lower().split()
+        )
+
+        for invalidated in (
+            "both final spec approvals", "ticket-set approval", "separate issue-creation authorization",
+            "every affected ticket-payload or graph/link-delta approval", "any independent link-write authorization",
+        ):
+            with self.subTest(invalidated=invalidated):
+                self.assertIn(invalidated, reconciliation)
+        self.assertIn("re-preview the exact publication tuple, affected ticket proposal, and exact edges plus canonical target", reconciliation)
+        self.assertIn("explicit link authorization bound to the parent issue id, body hash, canonical target, and exact graph as applicable", reconciliation)
+        self.assertIn("verify the returned id, approved title, canonical owner/repository, exact approved body bytes and their sha-256, that every approved required label is present, and that the current required-label tuple matches the approved tuple", reconciliation)
+        body_drift = reconciliation.index("if the exact body bytes are not byte-identical or the sha-256 differs")
+        review_pass = reconciliation.index("require that round to pass before re-previewing or requesting")
+        repreview = reconciliation.index("only after the new review passes, re-preview")
+        replacement_approvals = reconciliation.index("obtain fresh applicable final spec approvals")
+        self.assertLess(body_drift, review_pass)
+        self.assertLess(review_pass, repreview)
+        self.assertLess(repreview, replacement_approvals)
+        self.assertIn("no replacement approval or write authorization may exist before that pass", reconciliation)
+        metadata_drift = reconciliation.index("if body bytes and sha-256 remain identical but only the parent issue id, title, canonical owner/repository, or required-label presence/tuple differs")
+        metadata_preview = reconciliation.index("re-preview the exact affected publication tuple", metadata_drift)
+        metadata_approvals = reconciliation.index("re-obtain every invalidated applicable approval and authorization", metadata_drift)
+        publication_confirm = reconciliation.index("restore or reconfirm successful publication against that tuple", metadata_drift)
+        self.assertLess(metadata_drift, metadata_preview)
+        self.assertLess(metadata_preview, metadata_approvals)
+        self.assertLess(metadata_approvals, publication_confirm)
+        metadata_recovery = reconciliation[metadata_drift:]
+        for replacement_gate in (
+            "final specification approval", "publication authorization", "ticket-set approval",
+            "separate issue-creation authorization", "affected ticket-payload or graph/link-delta approval",
+            "any applicable independent write authorization", "explicit link-write authorization for affected graph changes",
+        ):
+            with self.subTest(replacement_gate=replacement_gate):
+                self.assertIn(replacement_gate, metadata_recovery)
+        self.assertIn("metadata-only drift does not require or imply a new /spec-review round solely because of that drift", reconciliation)
+        self.assertIn("no ticket write may proceed until applicable approvals are fresh and successful publication is reconfirmed", reconciliation)
+        self.assertIn("for each existing-ticket field or edge change, issue one field or edge write at a time", reconciliation)
+        self.assertIn("record a unique operation id and cumulative attempt state for that individual write", reconciliation)
+        self.assertIn("compare its exact current state with the approved baseline or last verified state and the exact expected pre-write state", reconciliation)
+        self.assertIn("reconcile it before advancing", reconciliation)
+        self.assertIn("for an ambiguous response, read back and reconcile before any retry", reconciliation)
+        self.assertIn("retry only when a clearly transient failure is confirmed and read-back proves that exact operation is missing", reconciliation)
+        self.assertIn("at most three attempts per write across resumes", reconciliation)
+        self.assertIn("missing or conflicting operation history stops the workflow without retry", reconciliation)
+        metadata_manual = manual[
+            manual.index("if body bytes and hash remain identical but only"):
+            manual.index("for title-only drift")
+        ]
+        for replacement_authorization in (
+            "final spec approval", "publication authorization", "ticket-set approval",
+            "separate issue-creation authorization", "affected payload/graph approvals",
+            "independent link-write authorization",
+        ):
+            with self.subTest(replacement_authorization=replacement_authorization):
+                self.assertIn(replacement_authorization, metadata_manual)
+        self.assertIn(
+            "bind renewed records to the updated parent tuple and exact payload/graph delta",
+            metadata_manual,
+        )
+        publication_restore = metadata_manual.index("restore or reconfirm successful publication")
+        labels_verified = metadata_manual.index("verify all required labels by read-back")
+        ticket_writes_resume = metadata_manual.index("before resuming ticket writes")
+        self.assertLess(publication_restore, labels_verified)
+        self.assertLess(labels_verified, ticket_writes_resume)
+        self.assertIn("verify all required labels by read-back before resuming ticket writes", metadata_manual)
+        for template_fact in (
+            "both final spec approvals", "ticket-set approval", "separate issue-creation authorization",
+            "any independent link-write authorization", "exact edges plus canonical target",
+            "explicit link authorization bound to the parent issue id, body hash, canonical target, and exact graph as applicable",
+            "approved title", "exact approved body bytes", "every approved required label is present",
+            "current required-label tuple matches the approved tuple",
+            "one field or edge write at a time", "compare the immediate pre-read state",
+            "at most three attempts per write across resumes", "missing or conflicting history stops without retry",
+            "require that round to pass before re-previewing or requesting",
+            "no replacement approval or write authorization may exist before that pass",
+            "only after the new review passes, re-preview",
+            "body bytes and sha-256 remain identical but only the parent issue id, title, canonical owner/repository, or required-label presence/tuple differs",
+            "re-obtain every invalidated applicable approval and authorization",
+            "final specification approval, publication authorization, ticket-set approval",
+            "separate issue-creation authorization", "affected ticket-payload or graph/link-delta approval",
+            "any applicable independent write authorization", "explicit link-write authorization for affected graph changes",
+            "metadata-only drift does not require or imply a new /spec-review round solely because of that drift",
+            "restore or reconfirm successful publication against that tuple",
+        ):
+            with self.subTest(template_fact=template_fact):
+                self.assertIn(template_fact, workflow)
+
+        for manual_fact in (
+            "both final spec approvals", "affected ticket approvals",
+            "independent link-write authorization is invalidated", "re-present the exact edges and canonical target",
+            "fresh link authorization bound to the parent issue id/hash/target/graph before any link",
+            "require the fresh review to pass before re-previewing or requesting, binding, or recording replacement approvals",
+            "no replacement approval or write authorization exists while the fresh review is pending or failed",
+            "for title-only drift, hold body bytes/hash, target, and labels constant",
+            "attempt a ticket write and confirm it is refused before reapproval",
+            "repeat separately for label-only drift with the title and body unchanged",
+            "neither metadata-only case starts a fresh body review",
+            "pending or failed review leaves all ticket writes blocked",
+            "one write at a time", "exact approved baseline", "ambiguous response and reconcile it before retrying",
+            "at most three attempts per write across resumes", "missing or conflicting operation history stops",
+        ):
+            with self.subTest(manual_fact=manual_fact):
+                self.assertIn(manual_fact, manual)
 
 
 class SpecImplementLoopBehaviorTests(unittest.TestCase):

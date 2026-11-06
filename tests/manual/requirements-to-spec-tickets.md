@@ -90,6 +90,134 @@ Complete one group before failing another; confirm the workflow preserves
 the first group's artifacts, commits, remote branch, and created issues
 without deletion or rollback.
 
+## Staged spec review and final publication gates
+
+In a disposable repository, exercise both `/to-spec` behaviors. When it can
+reliably stop before Issue publication, confirm it stops after seam confirmation
+and drafting. When it cannot, confirm the workflow uses its seam criteria and
+template without invoking its publishing step. After seam confirmation, require
+the exact draft text and a unique temporary path to be approved before
+create-new staging; verify the staged bytes and SHA-256. Run `/spec-review` on
+those bytes before any Issue creation. Confirm an unapproved candidate batch is
+not applied, and an approved batch receives a fresh review round in the same
+named cycle.
+
+For a passing review, present the exact Issue title and body, canonical
+owner/repository, required labels, and exact body SHA-256. Confirm the Issue body
+is byte-identical to the reviewed draft. Obtain final specification approval
+and publication authorization separately, each bound to that tuple. Change the
+title, target, or label set and verify both approvals are invalidated. Change a
+body byte and verify a fresh review round and both approvals are required.
+Confirm review pass, candidate approval, and staging approval alone never
+publish the spec.
+
+## Publication recovery and exclusive writer claims
+
+In the disposable GitHub issue tree, record the claim owner's host/session ID,
+exact key, operation ID, and attempt state before each Issue or label write.
+Have one session hold a verified atomic claim and make a second session attempt
+the same target and approved tuple; confirm the second session cannot write
+while the claim or operation is active or unresolved. Simulate a host without a
+verifiable atomic claim and confirm the workflow stops before sending a request.
+For an interrupted owner, confirm takeover waits until that owner has stopped
+and all owned operations reach terminal read-back reconciliation; only then may
+the claim be released.
+
+Inject a lost create response. Confirm the workflow fully paginates all Issue
+states, excludes pull requests, reads back the exact candidate, and accepts
+only one unique Issue with the approved target, title, and exact body bytes.
+Incomplete listings, duplicate matches, mismatches, and unknown outcomes must
+stop without a second create. Inject a confirmed transient failure with a
+complete listing showing no Issue; confirm retry state is recorded before each
+attempt and the limit remains three total across resumes. After Issue read-back,
+confirm required labels are created and verified, then applied with
+`ready-for-agent` last, with per-label operation state and read-back recovery.
+Count spec publication as successful only after the Issue and all required
+labels are confirmed by read-back.
+
+## Exact-ID ticket reconciliation and link approvals
+
+Only after spec review coverage, both final approvals, successful spec
+publication, and explicit authorization for reconciliation, inspect existing
+tickets by exact Issue ID. Before invoking `/to-tickets`, prove it can stop
+before any Issue write. If it can, invoke it in plan-only mode and confirm it
+pauses before the first create, edit, label, or link. If it cannot, use its
+existing criteria and template to stage the exact ticket set in task progress
+without publishing. Show every title, body, canonical target, required label
+set, and blocking edge. Obtain
+exact ticket-set approval, then separately obtain explicit Issue-creation authorization;
+bind both to the parent spec Issue ID, its exact approved body SHA-256, canonical
+target, and exact ticket-payload batch plus relationship graph. Approval of the ticket set alone cannot
+create or edit Issues, change labels, or add links. Bind later ticket-payload
+batch and graph/link-delta approvals to the same parent Issue ID/hash/target
+plus the exact delta.
+
+Before linking, present the exact proposed edges and canonical target, then
+obtain separate explicit link authorization, distinct from ticket-set approval
+and Issue-creation authorization. Link authorization is bound to the parent spec Issue ID, exact
+approved body SHA-256, canonical target, and exact graph. Confirm that
+Issue-creation authorization alone never permits links and that no link occurs
+when only that authorization exists.
+
+Before every ticket create, edit, label change, or link, re-read the parent spec
+Issue by its exact approved ID. Verify the returned ID, approved title, canonical
+owner/repository, exact approved body bytes and SHA-256, that every approved
+required label is present, and that the current required-label tuple matches the
+approved tuple. If any differs,
+stop before the ticket write and invalidate both final spec approvals,
+publication authorization, ticket-set approval, create authorization, affected
+ticket approvals, and independent link-write authorization. Confirm affected
+ticket approvals are invalidated, and confirm the independent link-write
+authorization is invalidated. If body bytes are
+not identical or the SHA-256 differs, freeze the newly read body and run a fresh
+`/spec-review` round. Require the fresh review to pass before re-previewing or requesting,
+binding, or recording replacement approvals or write authorizations; verify no
+replacement approval or write authorization exists while the fresh review is
+pending or failed. Only after the review passes, re-preview the exact publication tuple,
+affected ticket proposal, and exact edges plus canonical target, then obtain
+fresh applicable final spec approvals, publication authorization, ticket-set
+approval, separate create authorization, affected ticket approval, and explicit
+link authorization bound to the parent Issue ID/body hash/target/graph as
+applicable. If body bytes and hash remain identical but only the parent Issue
+ID, title, canonical target, or required-label presence/tuple changed, re-preview
+the affected tuple and proposals, and explicitly re-obtain each invalidated
+approval and write authorization: final spec approval, publication
+authorization, ticket-set approval, separate Issue-creation authorization,
+affected payload/graph approvals, and independent link-write authorization when
+affected. Bind renewed records to the updated parent tuple and exact
+payload/graph delta. Restore or reconfirm successful publication and verify all
+required labels by read-back before resuming ticket writes. Metadata-only drift
+does not require a new `/spec-review` round solely because of that drift. No
+ticket write proceeds until applicable approvals are fresh and publication is
+reconfirmed.
+
+For title-only drift, hold body bytes/hash, target, and labels constant; attempt a
+ticket write and confirm it is refused before reapproval. Re-preview and approve
+the affected publication tuple and ticket gates, then restore/reconfirm
+publication before retrying. Repeat separately for label-only drift with the
+title and body unchanged; confirm the write is also refused before reapproval.
+Neither metadata-only case starts a fresh body review. For body-byte/hash drift,
+confirm review must pass on the new frozen body before any re-preview or new
+approval, and a pending or failed review leaves all ticket writes blocked.
+
+Confirm the independent link-write authorization was invalidated: re-present the
+exact edges and canonical target and obtain fresh link authorization bound to the
+parent Issue ID/hash/target/graph before any link. Issue-creation authorization
+alone does not allow linking. For an existing-ticket field or edge
+change, issue one write at a time and record its unique operation ID and attempt
+state first. Read the ticket immediately before each write and compare the exact
+current state with the exact approved baseline or last verified state and expected
+pre-write state. Inject drift and confirm the write stops until the exact delta
+is re-approved. Verify every involved Issue's repository immediately before and
+after each write, then read back and verify that write before advancing. Inject
+an ambiguous response and reconcile it before retrying; retry only after a
+clearly transient failure and read-back proves the exact operation is missing,
+with at most three attempts per write across resumes. Missing or conflicting
+operation history stops without retry. For links, verify both parent and
+paginated sub-issues reads before writing and again afterward; claim each exact
+approved graph delta atomically and preserve successful links when another
+operation is unresolved.
+
 ## Optional post-workflow document integration
 
 In a disposable repository, exercise the authorized path, the declined path, no clear authorization, and the stop cases below. Use a local `task-branch` with two generated documents and a `dev` destination branch with an unrelated sentinel file; do not configure a remote.
