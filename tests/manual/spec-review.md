@@ -6,11 +6,31 @@ Run these through the user-visible skill invocation in a disposable repository w
 
 Stage a named specification in a repository with a documented API surface and an applicable stack-specific checklist. Request its initial review. Confirm `/spec-review` selects the initial-review branch, identifies the target repository, and reports business scope, engineering and test decisions, affected-codebase evidence, the checklist decision, developer-experience coverage for the API change, one fresh isolated primary invocation, and one separate adversary-A invocation. Confirm the primary returns a distinct result for each assigned lens while all those results share its invocation ID, envelope hash, and host session binding. Confirm every lens has a coverage state and a missing required result cannot produce a passed review.
 
-Present an edited staged specification with prior review context and state that the edits were approved. Request a re-review. Confirm it selects the approved-edit re-review branch, starts fresh primary and adversary-A invocations, rechecks every required lens against the edited draft, and reports which prior observations are addressed or still need attention. Confirm the workflow reports findings and coverage without editing or publishing the draft.
+Present an edited staged specification with prior review context and state that the edits were approved. Request a re-review. Confirm it selects the approved-edit re-review branch, starts fresh primary and adversary-A invocations, and rechecks every required lens against the edited draft. Confirm the re-review focuses on the approved edits and directly affected criteria; expand scope only when new evidence implicates another approved requirement. Evidence changing scope or seams remains separately routed through the requirements workflow's seam-confirmation gate. Confirm the workflow reports which prior observations are addressed or still need attention without editing or publishing the draft.
 
 ## Domain checklist coverage states
 
 Review a named draft affecting a stack for which no applicable checklist triggers. Confirm the report names the stack, records `not applicable`, and explains why no checklist triggers. In separate runs, make the trigger ambiguous or make an applicable checklist unavailable. Confirm the affected required coverage is `incomplete`, the review is not passed, and the workflow does not substitute cross-model opinions or omit the gap.
+
+## Finding severity, disposition, and scope gates
+
+Create a concrete failure in a named draft section. Confirm the finding is an evidence-based failure, names the draft section, cites supporting evidence, states the practical impact, and proposes the smallest exact proposed change; preference alone is not a finding. Use a P1 with an approved acceptance clause and a reproducible failure and confirm it blocks early exit. Submit a reported P1 without either condition and confirm the original rating and rationale remain visible as an unverified observation, it is not treated as an established blocker, and it is not downgraded just to satisfy the exit gate. Confirm lack of safety proof alone does not establish a blocker. Use a P2-or-lower finding and confirm it is fixed or explicitly declined, deferred, or otherwise resolved by the user with a reason. Create duplicate failures; the workflow must merge duplicate findings. Reopen a resolved or rejected finding only after new evidence or a changed approved requirement.
+
+Present evidence that a proposed change changes the requested scope or crosses a seam. Confirm the workflow routes it back to the requirements workflow for seam confirmation instead of silently expanding this review.
+
+## Invalid execution retries
+
+Inject source, hash, manifest, file-access, host-attribution, and truncated-invocation failures. Confirm these are invalid executions, not product findings; a truncated invocation is not a valid partial review or abstention. Retry the failed assignment in the same round with a new invocation ID and confirm the initial attempt plus retries are limited to at most three attempts per assignment per round. Make a timeout unresolved and confirm the host must reconcile or cancel it before retrying; unresolved status leaves coverage incomplete. After three failed or invalid attempts, confirm automatic retries stop and the user is asked what to do next.
+
+## Named cycle and resumption
+
+Run a named cycle through its initial and numbered follow-up rounds. Confirm there are at most three rounds per named cycle, including the initial round, and that the workflow can end a cycle early only with no P0/P1 finding and every lower-severity finding explicitly disposed of. Confirm pending decisions or incomplete coverage block pass and publication. Start another named cycle only after explicit user authorization and confirm it receives a fresh three-round budget.
+
+Interrupt and resume the cycle. Confirm the resumable cycle record preserves round/attempt counts, including per-assignment attempt counts, active and superseded invocation and host IDs, frozen draft and manifest hashes, user decisions, and finding dispositions; confirm counters and invocation IDs are not reset or reused.
+
+Return a valid partial review or abstention and confirm it consumes its numbered round and is not an invalid-execution retry. Supply missing evidence and confirm supplying missing evidence does not reopen that round. If the named cycle has a round remaining, incorporate the evidence into a new frozen manifest and start the next numbered round on the unchanged draft with a fresh primary and every required adversarial invocation. If no round remains, use the cycle-limit handoff.
+
+When the three-round limit is reached and the review has not passed, exercise both unresolved-findings and coverage-only-incomplete cases. Present the current frozen draft and every unresolved finding, incomplete lens or slot, pending user decision, and unresolved execution reconciliation; state that the review has not passed; and ask whether the user authorizes another named cycle or wants another action. Confirm this handoff is not final approval or publication. A new named cycle preserves prior reports and findings as history while receiving a fresh three-round budget; append the new cycle to the resumable record and do not reset or mutate prior cycle history.
 
 ## Frozen round inputs and canonical manifest
 

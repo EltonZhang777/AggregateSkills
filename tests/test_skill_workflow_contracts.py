@@ -338,6 +338,128 @@ class SpecReviewBehaviorTests(unittest.TestCase):
             with self.subTest(rule=rule):
                 self.assertIn(rule, acceptance)
 
+    def test_finding_gates_require_evidence_severity_disposition_and_scope(self):
+        text = skill("spec-review").lower().replace(chr(96), "")
+        gates = section(text, "## finding and scope gates")
+
+        for rule in (
+            "evidence-based failure, not a preference",
+            "name the affected draft section",
+            "cite supporting evidence",
+            "practical impact",
+            "smallest exact change",
+            "preference without a concrete failure, evidence, and impact is not a finding",
+            "p0/p1/p2-or-lower definitions",
+            "repository's p0/p1/p2-or-lower definitions",
+            "preserve each reported severity and rationale",
+            "a p0/p1 finding blocks early exit only when it cites an approved acceptance clause and shows a reproducible failure",
+            "retain the original rating and rationale as an unverified observation",
+            "not an established blocker",
+            "do not downgrade it solely to satisfy the exit gate",
+            "approved acceptance clause",
+            "reproducible failure",
+            "lack of safety proof alone does not establish a blocker",
+            "p2-or-lower finding must be fixed",
+            "explicitly declined, deferred, or otherwise resolved by the user",
+            "recorded reason",
+            "merge duplicate findings",
+            "new evidence or a changed approved requirement",
+            "within the approved scope and acceptance criteria",
+            "changes the requested scope or crosses a seam",
+            "route it back to the requirements workflow",
+            "seam-confirmation gate",
+        ):
+            with self.subTest(rule=rule):
+                self.assertIn(rule, gates)
+
+    def test_invalid_execution_retries_are_bounded_and_leave_unresolved_coverage_incomplete(self):
+        text = skill("spec-review").lower().replace(chr(96), "")
+        retries = section(text, "## execution validity and retries")
+
+        for rule in (
+            "source, hash, manifest, file-access, and host-attribution failures",
+            "invalid executions, not product findings",
+            "truncated invocation is also an invalid execution",
+            "never a valid partial review or abstention",
+            "retry counts against the same-round attempt limit",
+            "does not satisfy its assignment",
+            "same round",
+            "fresh invocation and a new invocation id",
+            "complete assigned lens set as one assignment",
+            "initial invocation and each retry as attempts",
+            "at most three attempts per assignment per round",
+            "reconcile or cancel",
+            "status remains unresolved",
+            "leave the assignment and review coverage incomplete",
+            "after three failed or invalid attempts",
+            "stop automatic retries",
+            "without changing those rules",
+        ):
+            with self.subTest(rule=rule):
+                self.assertIn(rule, retries)
+
+    def test_named_cycles_preserve_limits_resumable_state_and_incomplete_gates(self):
+        text = skill("spec-review").lower().replace(chr(96), "")
+        cycles = section(text, "## named cycles and resumable state")
+
+        for rule in (
+            "at most three numbered rounds, including the initial round",
+            "end a cycle early only when no p0/p1 finding remains",
+            "every p2-or-lower finding is fixed or explicitly disposed of by the user with a reason",
+            "pending user decision",
+            "incomplete coverage blocks early exit, pass, and publication",
+            "starting another named cycle requires the user's explicit authorization",
+            "fresh three-round budget",
+            "do not reset a round or attempt counter",
+            "preserve a resumable cycle record",
+            "round/attempt counts",
+            "including per-assignment attempt counts",
+            "active and superseded invocation and host ids",
+            "frozen draft and manifest hashes",
+            "user decisions",
+            "finding dispositions",
+            "reconcile that record with authoritative host or invocation evidence",
+            "never reuse an invocation id",
+            "missing or conflicting state",
+            "needs-reconcile",
+            "do not create a separate local authoritative database",
+            "valid partial review or abstention consumes its numbered round",
+            "is not an invalid-execution retry",
+            "supplying missing evidence does not reopen that round",
+            "if the named cycle has a round remaining",
+            "incorporate the evidence into a new frozen manifest",
+            "next numbered round on the unchanged draft",
+            "fresh primary and every required adversarial invocation",
+            "if no round remains, use the cycle-limit handoff",
+            "three-round limit is reached and the review has not passed",
+            "present the current frozen draft and every unresolved finding",
+            "every unresolved finding, incomplete lens or slot",
+            "pending user decision",
+            "unresolved execution reconciliation",
+            "review has not passed",
+            "ask whether the user authorizes another named cycle or wants another action",
+            "not final approval or publication",
+            "new named cycle preserves prior reports and findings as history",
+            "append the new cycle to the resumable record",
+            "do not reset or mutate prior cycle history",
+            "prior cycle reports and findings",
+        ):
+            with self.subTest(rule=rule):
+                self.assertIn(rule, cycles)
+
+    def test_rereview_scope_stays_on_approved_edits_and_affected_criteria(self):
+        text = skill("spec-review").lower().replace(chr(96), "")
+        triggers = section(text, "## review triggers")
+
+        for rule in (
+            "focus the re-review on the approved edits and directly affected criteria",
+            "expand scope only when new evidence implicates another approved requirement",
+            "evidence that changes scope or crosses a seam remains separate",
+            "requirements workflow's seam-confirmation gate",
+        ):
+            with self.subTest(rule=rule):
+                self.assertIn(rule, triggers)
+
     def test_manual_spec_review_covers_frozen_evidence_and_adversarial_slots(self):
         manual = (ROOT / "tests" / "manual" / "spec-review.md").read_text(encoding="utf-8").lower()
         for phrase in (
@@ -378,6 +500,61 @@ class SpecReviewBehaviorTests(unittest.TestCase):
             "later complete active result set still passes",
             "duplicate result slots",
             "superseded result presented or used as active",
+            "evidence-based failure",
+            "draft section",
+            "supporting evidence",
+            "practical impact",
+            "smallest exact proposed change",
+            "preference alone is not a finding",
+            "p0/p1",
+            "approved acceptance clause",
+            "reproducible failure",
+            "lack of safety proof alone",
+            "p2-or-lower",
+            "declined, deferred, or otherwise resolved",
+            "merge duplicate findings",
+            "new evidence or a changed approved requirement",
+            "changes the requested scope or crosses a seam",
+            "requirements workflow",
+            "invalid executions, not product findings",
+            "new invocation id",
+            "at most three attempts per assignment per round",
+            "reconcile or cancel",
+            "unresolved status leaves coverage incomplete",
+            "at most three rounds per named cycle",
+            "end a cycle early only",
+            "explicit user authorization",
+            "fresh three-round budget",
+            "resumable cycle record",
+            "round/attempt counts",
+            "active and superseded invocation and host ids",
+            "frozen draft and manifest hashes",
+            "user decisions",
+            "finding dispositions",
+            "pending decisions or incomplete coverage block pass and publication",
+            "valid partial review or abstention",
+            "consumes its numbered round",
+            "not an invalid-execution retry",
+            "supplying missing evidence does not reopen that round",
+            "new frozen manifest",
+            "next numbered round on the unchanged draft",
+            "fresh primary and every required adversarial invocation",
+            "cycle-limit handoff",
+            "three-round limit is reached",
+            "current frozen draft and every unresolved finding",
+            "incomplete lens or slot",
+            "pending user decision",
+            "unresolved execution reconciliation",
+            "review has not passed",
+            "another action",
+            "not final approval or publication",
+            "prior reports and findings as history",
+            "append the new cycle",
+            "do not reset or mutate prior cycle history",
+            "re-review focuses on the approved edits and directly affected criteria",
+            "expand scope only when new evidence implicates another approved requirement",
+            "scope or crosses a seam",
+            "requirements workflow",
         ):
             with self.subTest(phrase=phrase):
                 self.assertIn(phrase, manual)
