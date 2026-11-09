@@ -89,3 +89,23 @@ failures are not retried, and uncertain results block until reconciled.
 Complete one group before failing another; confirm the workflow preserves
 the first group's artifacts, commits, remote branch, and created issues
 without deletion or rollback.
+
+## Optional post-workflow document integration
+
+In a disposable repository, exercise the authorized path, the declined path, no clear authorization, and the stop cases below. Use a local `task-branch` with two generated documents and a `dev` destination branch with an unrelated sentinel file; do not configure a remote.
+
+### Authorized integration
+
+At the final handoff, confirm the summary names the task branch, each exact document path, and `dev` before asking, and says the operation will create one focused local commit. Authorize the operation and verify that the same host agent and conversation continue without creating a new conversation or subagent. Confirm the commit on `dev` contains only the listed documents, the task branch remains available, and the unrelated sentinel is unchanged. The workflow must not push `dev` without the separate explicit grilling confirmation.
+
+### Declined or unclear authorization
+
+Decline, then repeat with an ambiguous answer. Confirm the generated documents remain on `task-branch`, the `dev` branch and its files remain unchanged, and no integration starts.
+
+### Unclear destination, unrelated changes, or conflicts
+
+Repeat with no uniquely identified destination, with unrelated destination changes, and with a conflicting document. Each case must stop before overwriting destination work or including unrelated changes; preserve both branches and report the reason.
+
+### Unchanged paths
+
+Confirm issue-only behavior and application-code branch policy remain unchanged.

@@ -46,6 +46,16 @@ The stable name and publishing source that distinguish the intended prerequisite
 **Prerequisite resolution**:
 Finding the skill package or tool that matches a prerequisite identity in the current runtime.
 
+### Multi-PR batches
+
+**Merge pass**:
+One execution of an authorized batch's ordered merge sequence, from its first merge attempt until all eligible merges are handled or the workflow pauses or stops.
+
+**Post-merge verification**:
+An assessment of each distinct target-base commit produced by a batch merge pass with at least one confirmed merge to that base.
+
+**Validation-blocked base**: A target base whose post-merge verification cannot proceed because a preparation failure is confirmed local to that base.
+
 ### Multi-root implementation
 
 **Task-start authorization**:

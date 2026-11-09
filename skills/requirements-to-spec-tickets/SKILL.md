@@ -108,6 +108,16 @@ Decide from the approved group whether it changes files inside this repository:
 
 An issue-only group completes without any Git operation. A local-artifact group is not complete until its approved artifacts are committed and pushed and the group's existing issue-publication steps finish. Do not use a successful push as approval for any issue or status write.
 
+### Optional document integration follow-up
+
+After a local-artifact group has completed its task-branch publication and its issue/status checkpoints, offer a separate integration only for the group's approved generated document set; do not include the workflow's own skill, tests, manuals, or other implementation files. Before asking, provide a summary that names the task branch, exact document paths, and proposed destination branch, and state that accepting will create one focused local commit containing only those documents on the destination branch. Use a destination only when user-confirmed context or repository guidance identifies it unambiguously; otherwise ask the user to name the branch and pause without integrating.
+
+Ask whether to start the integration. An affirmative response authorizes only that focused local commit of the listed documents on the named destination branch; it does not extend the task-branch grant in ADR-0003. Continue with the same host agent in the same conversation; do not create a new conversation or subagent.
+
+Before changing the destination, confirm it has no unrelated changes and check for conflicts. Stop if the destination is unclear, unrelated changes are present, or conflicts occur; do not overwrite destination work or include unrelated changes. Declining or giving no clear authorization leaves the documents on the task branch and the destination unchanged.
+
+The integration authorization does not authorize pushing the destination branch; pushing it still requires the separate explicit confirmation from the existing grilling step. Issue-only behavior and application-code branch policy remain unchanged.
+
 ## 6. Shared workspace and document writes
 
 All child sessions use the current shared working directory. Keep spec-specific documents and ticket files uniquely named by feature slug. Follow existing repository conventions and the live dependency skills for document locations and tracker publication.

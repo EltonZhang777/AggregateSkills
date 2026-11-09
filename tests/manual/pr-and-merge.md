@@ -100,6 +100,93 @@ In separate runs, change the PR head and base after approval; confirm each
 time it refreshes the diff and checks and asks for renewed approval before
 merging.
 
+## Base-repository permission gate immediately before merge
+
+Run these cases through the user-visible `/pr-and-merge` invocation in a
+disposable GitHub repository. For positive cases, provide explicit approval
+for the exact PR; the skill may merge it after all live gates pass. Confirm
+the permission lookup uses `base.repo.full_name` from the PR API and the login
+from `gh api user`, then queries
+`repos/BASE_OWNER/BASE_REPO/collaborators/USERNAME/permission` immediately
+before the merge command.
+
+- Fork base: create a PR from a disposable fork into its upstream repository.
+  Give the current `gh` user WRITE on the fork but only READ or TRIAGE on the
+  upstream base. Confirm the permission lookup uses `.base.repo.full_name`
+  and that the base role blocks the PR without invoking `gh pr merge`; this
+  must fail if the lookup uses the head repo or local remote.
+- Positive: in separate runs return `permission=write, role_name=write`
+  (WRITE), `permission=write, role_name=maintain` (MAINTAIN),
+  `permission=admin, role_name=admin` (ADMIN), and `permission=write` with a
+  custom `role_name`. Confirm each positive result allows the documented
+  merge method only with that PR's explicit approval, and the post-merge
+  result is verified.
+- Denied: return `permission=read, role_name=read` and
+  `permission=read, role_name=triage` in separate runs. Confirm the result is
+  reported as READ or TRIAGE, the entry is blocked, and `gh pr merge` is never
+  invoked.
+- Inconclusive: return an empty or malformed permission response, omit
+  `base.repo.full_name` or the identity, return HTTP 404 or `permission=none`,
+  or use an unmappable custom value. Also test conflicting evidence
+  `permission=read, role_name=maintain`, and a recognized base permission
+  with an unrecognized custom role name as a valid mapping. Confirm each
+  inconclusive case pauses immediately and asks whether to retry or skip
+  without automatic retry; it is neither a denial nor approval and never
+  invokes `gh pr merge`.
+- Transient failure: return a recognizable timeout, connection reset, or
+  HTTP 408/429/500/502/503/504 before a positive response. Confirm at most
+  three started checks occur per automatic cycle, including the initial check;
+  waiting consumes no check. If any automatic check returns READ or TRIAGE,
+  including the third, confirm it is reported and blocked immediately without
+  another check or retry prompt. A later positive response is the only path to
+  merge. After the automatic budget is exhausted, confirm the skill pauses and
+  asks whether to authorize one check or skip instead of retrying indefinitely.
+  When a user selects one extra check and it returns READ or TRIAGE, confirm
+  the entry is denied and blocked. When it remains inconclusive, confirm the
+  skill pauses and asks again; each further user choice authorizes one check
+  only, and skipping never merges.
+- Rate limit at or below five minutes: return a primary or secondary limit
+  with `Retry-After` or `x-ratelimit-reset` no more than five minutes away.
+  Exercise each API step in separate runs: base-repository, identity, and
+  permission lookup.
+  Confirm the skill waits for the indicated safe time and refreshes all existing
+  pre-merge gates before retrying without counting the wait as an attempt. If
+  the third started check hits a rate limit, confirm it honors the safe wait but
+  starts no fourth automatic check; after the wait it pauses and asks whether to
+  authorize one check or skip. If a user-authorized check hits a rate limit,
+  confirm it honors the safe delay and pauses again; after that delay, no new
+  permission query starts until the user explicitly authorizes one check. If an
+  approval snapshot or OID changed, confirm
+  the existing refresh and renewed-approval rules are followed before retrying
+  permission.
+- Rate limit over five minutes: return a reset or retry time more than five
+  minutes away. Confirm the skill pauses, reports the earliest safe retry time,
+  and makes no permission or merge call before it. Resume at or after that
+  time; confirm it refreshes all existing pre-merge gates and permits exactly
+  one extra permission check, immediately before any merge.
+- Secondary limit without timing headers: return a secondary rate-limit
+  response with neither `Retry-After` nor `x-ratelimit-reset`. Confirm the
+  skill waits at least one minute and uses increasing backoff if the limit
+  recurs, while retaining the maximum of three started checks per automatic
+  cycle. Confirm a delay longer than five minutes pauses with the earliest
+  safe retry time, and any resumed check refreshes all existing pre-merge
+  gates before the permission check.
+- Authentication, configuration, or unexplained access failure: return a
+  401/403 without rate-limit evidence or make the identity/configuration
+  lookup fail. Confirm the skill asks whether to retry or skip; after a retry
+  choice, confirm existing pre-merge gates are refreshed before the single
+  extra permission check. A definite denial blocks immediately; an
+  inconclusive result pauses and asks again. Skipping never merges.
+- Batch isolation: run an independent positive entry B beside a denied or
+  inconclusive entry A and a dependent entry C stacked on A. Confirm A and C
+  are blocked, `gh pr merge` is never invoked for either, and B continues
+  through its own live gates and can merge when its permission check is
+  positive and B has explicit per-PR approval.
+
+For every denied or inconclusive result, confirm `gh pr merge` is never
+invoked, including after automatic retries, rate-limit waits, and skipped or
+inconclusive user-selected extra checks.
+
 ## Conflict resolution and second approval
 
 Create a branch that conflicts with its target. Prepare its PR, then approve
@@ -125,6 +212,30 @@ In a separate batch, select three independent PRs against the same base: A and B
 Confirm branch A merges under its listed batch authorization. Branch C is retargeted from A to A's former base, then its head and base OIDs, diff, mergeability, reviews, and required checks are refreshed. If the target base ref changes or new conflict-resolution work is required, confirm the workflow refreshes the plan and obtains renewed authorization before C's next write. Branch B remains independent and can proceed under the same batch authorization if it was listed and its live gates pass.
 
 In a separate batch, supply a dirty branch D, branch E explicitly stacked on D, and a clean independent branch F. Confirm D and dependent E are blocked without publishing them, while F continues through its own prechecks and PR preparation. Repeat with a required check failing for one entry if the test repository can configure that check; confirm only that entry and its dependents stop.
+
+## Multi-PR batch: post-merge verification
+
+In a disposable repository, prepare two or more clean PRs that target the same base and supply one specified test command for the batch. In the first merge pass, confirm one pull request is confirmed as merged while another remains pending or blocked. At the end of that pass, fetch the target branch from its remote and use the fetched base OID to create a new retained worktree; run only the specified test command there. The report must include the base ref, tested commit, retained worktree path, exact command, and observed exit status; label coverage as partial and identify the unresolved entry. Resume the batch without another merge and with the same base ref and OID; confirm the completed result for that base ref and OID is not rerun solely because the batch resumed. Then merge another PR in a later pass; confirm the new resulting base commit is fetched and verified separately in a new retained worktree. Keep each verification outcome separate from each PR's merge status. For failed commands, confirm it includes a concise relevant output excerpt when available and records a reason for every test not run. Report verification as passed only after observing a successful exit status.
+
+Repeat the same single-base batch with no test commands. Confirm the workflow asks before running any test command, runs no inferred default command, and keeps the confirmed PR merge outcome separate from the missing-test-command decision.
+
+## Multi-PR batch: multiple target bases
+
+In a disposable repository, prepare at least two PRs for each of two distinct target bases, such as `main` and `release`, and specify one test command confirmed to apply to both. In the first merge pass, confirm one PR targeting each base is merged while other entries remain pending or blocked. Fetch each base from its remote, record each `FETCH_HEAD` OID, and create a separate retained worktree for each base at its resulting commit. Run the confirmed command separately in both worktrees. Report each base ref, tested commit OID, worktree path, exact command and observed exit status; mark overall coverage as partial and identify every unresolved entry.
+
+Repeat with the command's applicability to `release` unclear. Confirm the workflow asks before running a test command when its applicability to a base is unclear, records the not-run reason, and does not report that base as passed. Confirm each failed command includes a concise relevant output excerpt when available; give a reason for every test not run, and report a test as passed only after observing a successful exit status.
+
+Resume the batch and merge one more entry for each base. Confirm each new resulting base commit is fetched and verified in its own new retained worktree. Confirm a completed same-base and same-OID validation is not rerun solely because the batch resumed; allow a same-commit rerun only on explicit user request or to retry a blocked or interrupted attempt after its cause is resolved. Keep verification results separate from PR merge states. Do not execute this scenario outside a disposable repository.
+
+## Multi-PR batch: post-merge validation failure isolation
+
+In a disposable repository, prepare merged PRs on two independent bases and specify multiple test commands confirmed to apply to both. Make one command report an ordinary test failure on one base. Confirm the failed command and relevant output are recorded, while every remaining confirmed command for that base and validations on the other independent base continue.
+
+In a separate run, cause verification worktree creation to fail locally for one base. Confirm that base is reported as `validation_blocked`, each affected command is listed under `tests_not_run` with its reason, and validation continues on the other base. Repeat with a test-preparation failure confirmed local to one base.
+
+In another run, simulate a known shared runner or setup failure after validation has started. Confirm no new validations start, already-running commands finish or time out, and the report includes their outcomes and every test not run with its reason.
+
+In a separate unknown-scope run, confirm new validations pause across all bases. The report must include the uncertainty, evidence needed to classify it, commands still running, and confirmed tests not started. Start no validation until an operator classifies the failure; if classified as local to one base, resume validation on unaffected bases and retry that base only after its cause is resolved; if classified as shared, wait until the shared failure is cleared. In every run, keep validation outcomes separate from PR merge outcomes.
 
 ## Complete batch outcome summary
 
