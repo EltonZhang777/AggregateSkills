@@ -31,7 +31,7 @@ def section(text, heading):
 class SkillPrerequisiteInvocationTests(unittest.TestCase):
     def test_all_entrypoints_put_the_bounded_invocation_rule_first(self):
         entrypoints = sorted((ROOT / "skills").glob("*/SKILL.md"))
-        self.assertEqual(10, len(entrypoints))
+        self.assertEqual(11, len(entrypoints))
 
         for path in entrypoints:
             with self.subTest(skill=path.parent.name):
@@ -74,6 +74,703 @@ class SkillPrerequisiteInvocationTests(unittest.TestCase):
             with self.subTest(skill=name):
                 policy = (ROOT / "skills" / name / "agents" / "openai.yaml").read_text(encoding="utf-8")
                 self.assertIn("allow_implicit_invocation: false", policy)
+
+
+class SpecReviewBehaviorTests(unittest.TestCase):
+    def test_entrypoint_has_distinct_model_invocation_branches(self):
+        path = ROOT / "skills" / "spec-review" / "SKILL.md"
+        self.assertTrue(path.is_file())
+        text = path.read_text(encoding="utf-8")
+        frontmatter = text.split("---", 2)[1].lower()
+
+        self.assertIn("name: spec-review", frontmatter)
+        self.assertIn("initial review", frontmatter)
+        self.assertIn("re-review after approved edits", frontmatter)
+        self.assertNotIn("disable-model-invocation: true", frontmatter)
+        self.assertNotIn("allow_implicit_invocation: false", text.lower())
+        dependencies = section(text.lower(), "## dependencies")
+        self.assertIn("no direct skill prerequisites", dependencies)
+
+        policy = ROOT / "skills" / "spec-review" / "agents" / "openai.yaml"
+        if policy.exists():
+            self.assertNotIn("allow_implicit_invocation: false", policy.read_text(encoding="utf-8").lower())
+
+        workflow = text.lower()
+        self.assertIn("## review triggers", workflow)
+        self.assertIn("initial review", workflow)
+        self.assertIn("re-review after approved edits", workflow)
+        self.assertIn("named staged specification", workflow)
+        self.assertIn("identify its target repository", workflow)
+
+    def test_review_lenses_and_conditional_triggers_are_declared(self):
+        text = skill("spec-review").lower().replace(chr(96), "")
+
+        for required in (
+            "business scope",
+            "engineering and test decisions",
+            "affected-codebase evidence",
+            "fresh isolated primary invocation",
+            "independent adversary-a invocation",
+            "for every affected technical stack",
+            "root instructions, domain documents, and stack-specific checklist sources",
+            "domain checklist triggers",
+            "not applicable",
+            "trigger is ambiguous",
+            "coverage is incomplete",
+            "developer-experience review",
+            "cli/api/config/comparable developer-facing interface changes",
+            "do not request cross-model opinions",
+        ):
+            with self.subTest(required=required):
+                self.assertIn(required, text)
+
+    def test_coverage_states_gate_a_pass(self):
+        text = skill("spec-review").lower().replace(chr(96), "")
+
+        for state in ("covered", "not applicable", "incomplete"):
+            with self.subTest(state=state):
+                self.assertIn(state, text)
+        self.assertIn("missing required coverage must never count as passed", text)
+        self.assertIn("report the review as passed only when", text)
+        self.assertIn("result is valid, complete, and recorded", text)
+        self.assertIn("invocation or result is unavailable, partial, or abstains", text)
+        self.assertIn("host identity or isolation cannot be verified", text)
+        self.assertIn("all required invocations completed without a partial or abstaining result", text)
+
+    def test_round_inputs_are_frozen_and_hashed_in_a_canonical_manifest(self):
+        text = skill("spec-review").lower().replace(chr(96), "")
+        freeze = section(text, "## freeze the round inputs")
+        manifest = section(text, "## canonical manifest")
+
+        self.assertIn("at round start, freeze draft bytes", freeze)
+        for source in (
+            "target-repository snapshot",
+            "root agents.md",
+            "scope/exclusions",
+            "requirements",
+            "applicable domain and decision documents",
+            "relevant implementation, tests, configuration",
+            "checks",
+        ):
+            with self.subTest(source=source):
+                self.assertIn(source, freeze)
+        for identity in ("stable source identifier", "exact byte size", "sha-256"):
+            with self.subTest(identity=identity):
+                self.assertIn(identity, freeze)
+        for representation in (
+            "canonical target-repository-relative posix path",
+            "normalized uri for external sources",
+            "each stable_source_id must appear exactly once in the sources array",
+            "when one source serves multiple roles, merge them into one record",
+            "list each role once in lexicographic order",
+            "immutable repository or file revision identifier",
+            "without copying an entire repository snapshot",
+            "separately as source revision metadata",
+            "for each source whose bytes are read",
+            "exact source bytes",
+            "do not use a hash of the revision-id string as a substitute for a source-content hash",
+        ):
+            with self.subTest(representation=representation):
+                self.assertIn(representation, freeze)
+
+        for rule in (
+            "canonical utf-8 json",
+            "recursively sorted object keys",
+            "include every frozen source in the sources array",
+            "ensure_ascii: false",
+            "compact separators",
+            "order it lexicographically by its canonical path or normalized uri",
+            "because each stable_source_id is unique, this is a total order",
+            "hash the exact manifest bytes with sha-256",
+            "manifest hash outside the manifest",
+            "identical byte-based frozen inputs",
+            "identical byte-based frozen inputs or the same immutable revision identifiers",
+        ):
+            with self.subTest(rule=rule):
+                self.assertIn(rule, manifest)
+
+        for field in (
+            "decide the complete required assignment set",
+            "draft hash",
+            "repository snapshot identity",
+            "source_hashes",
+            "checks",
+            "required_assignments",
+            "unique initial invocation id",
+            "before hashing or freezing the manifest",
+            "adversary-b",
+            "single primary assignment's lens set",
+            "every triggered non-adversarial lens",
+            "high_risk_decision",
+            "every trigger considered",
+            "met, absent, or uncertain",
+            "resulting required adversarial slots",
+            "validate that required_assignments exactly matches that recorded decision before launching",
+        ):
+            with self.subTest(field=field):
+                self.assertIn(field, manifest)
+
+    def test_invocation_envelope_binds_assignments_to_host_identity(self):
+        text = skill("spec-review").lower().replace(chr(96), "")
+        envelope = section(text, "## invocation envelope and host identity")
+
+        for field in (
+            "canonical utf-8 json invocation envelope",
+            "manifest sha-256",
+            "exact request identifier",
+            "request sha-256",
+            "cycle identifier",
+            "round identifier",
+            "exact assigned lens set",
+            "adversarial slot",
+            "unique invocation id",
+            "reserved initial invocation id",
+            "current active invocation id",
+            "authorized retry",
+            "unique active replacement id",
+            "mark the prior id superseded",
+            "recorded active id",
+            "envelope bytes with sha-256",
+            "identical frozen inputs and manifest",
+            "host-returned session id",
+            "matching host invocation and session binding",
+            "self-reported invocation id",
+        ):
+            with self.subTest(field=field):
+                self.assertIn(field, envelope)
+
+    def test_risk_classification_selects_adversarial_slots(self):
+        text = skill("spec-review").lower().replace(chr(96), "")
+        risk = section(text, "## risk and adversarial slots")
+
+        self.assertIn("launch adversary-a in every round", risk)
+        for trigger in (
+            "security/privacy",
+            "data loss/destructive behavior",
+            "financial/charged data",
+            "irreversible publication/ticket change",
+            "review/approval gate",
+            "core acceptance path",
+        ):
+            with self.subTest(trigger=trigger):
+                self.assertIn(trigger, risk)
+        self.assertIn("high-risk trigger is met or cannot be ruled out", risk)
+        self.assertIn("require adversary-b", risk)
+        self.assertIn("record the trigger and its evidence", risk)
+        self.assertIn("do not launch adversary-b", risk)
+        self.assertIn("separate fresh isolated invocations", risk)
+        self.assertIn("neither adversary sees primary findings or the other adversary's findings", risk)
+
+    def test_primary_is_one_invocation_for_all_triggered_non_adversarial_lenses(self):
+        text = skill("spec-review").lower().replace(chr(96), "").replace("*", "")
+        for phrase in (
+            "exactly one fresh isolated primary invocation",
+            "single primary assignment containing every triggered non-adversarial lens",
+            "do not start one primary invocation per lens",
+        ):
+            with self.subTest(phrase=phrase):
+                self.assertIn(phrase, text)
+
+    def test_results_require_complete_matching_attestations(self):
+        text = skill("spec-review").lower().replace(chr(96), "")
+        attestation = section(text, "## result attestation")
+
+        for field in (
+            "primary invocation returns one distinct result for each lens",
+            "all those per-lens results share that invocation's id, envelope hash, and host session binding",
+            "each adversarial invocation returns its own result",
+            "result lens or adversarial slot",
+            "manifest, draft, and envelope sha-256 values",
+            "checked source's stable identifier and sha-256",
+            "unchecked source's stable identifier with a reason",
+            "partition the manifest's frozen sources",
+            "each source id appears exactly once",
+            "with none omitted",
+            "host-returned session binding to each result",
+            "reject a result with a missing or mismatched attestation as stale or incomplete",
+            "host session",
+            "assignment",
+            "checked source id/hash",
+            "unchecked source id is absent from the frozen sources",
+            "lacks a non-empty reason",
+            "source lists omit, duplicate, or overlap a frozen source",
+            "cannot make a lens covered",
+        ):
+            with self.subTest(field=field):
+                self.assertIn(field, attestation)
+
+    def test_cross_result_acceptance_keeps_retry_compatibility_without_retry_policy(self):
+        text = skill("spec-review").lower().replace(chr(96), "")
+        acceptance = section(text, "## cross-result acceptance")
+
+        for rule in (
+            "initialize each assignment's active invocation id to its reserved initial id",
+            "for an authorized retry, register one unique active replacement id",
+            "mark the prior id superseded",
+            "accept only the recorded active id",
+            "never rewrite the frozen manifest",
+            "supersede all of that invocation's lens results",
+            "a late result from a superseded invocation id is rejected or excluded",
+            "late result from a superseded invocation id",
+            "rejected or excluded from the active result set",
+            "retaining that rejected result with superseded status in history does not invalidate",
+            "duplicate result slots",
+            "superseded result presented or used as active leaves coverage incomplete",
+            "does not define retry counts, retry limits, or review-cycle policy",
+        ):
+            with self.subTest(rule=rule):
+                self.assertIn(rule, acceptance)
+
+    def test_cross_result_acceptance_requires_one_host_matched_result_per_manifest_slot(self):
+        text = skill("spec-review").lower().replace(chr(96), "")
+        acceptance = section(text, "## cross-result acceptance")
+
+        for rule in (
+            "expand the primary assignment into one result slot per assigned lens",
+            "one result slot for each adversarial assignment",
+            "key a result slot by its exact assignment and result lens or adversarial slot",
+            "all per-lens results from the same primary invocation intentionally share one invocation id",
+            "an invocation id must remain unique to its manifest assignment",
+            "duplicate result slots",
+            "swapped lenses or assignments",
+            "result slots absent from the manifest",
+            "extra results",
+            "superseded invocation ids",
+            "repeated invocation ids are valid only across distinct per-lens results",
+            "reject reuse across assignments",
+            "every derived result slot has exactly one active, host-matched result",
+            "without an unavailable, partial, or abstaining result",
+            "stale or incomplete",
+            "does not define retry counts, retry limits, or review-cycle policy",
+        ):
+            with self.subTest(rule=rule):
+                self.assertIn(rule, acceptance)
+
+    def test_candidate_batch_binds_exact_edits_source_version_and_destination(self):
+        text = skill("spec-review").lower().replace(chr(96), "")
+        batch = section(text, "## candidate batch and approval")
+
+        for rule in (
+            "one exact candidate batch",
+            "stable identifier",
+            "group the proposed edit hunks for each named source into one complete candidate draft",
+            "exact source path and frozen sha-256",
+            "unambiguous source span or insertion anchor",
+            "exact replacement or insertion text",
+            "affected draft section",
+            "unique proposed destination path",
+            "preserve all source text outside the proposed edit hunks",
+            "never write to or replace the source path",
+            "multiple candidate destinations as one resulting draft input set",
+            "scope- or seam-changing proposals out of the approvable batch",
+            "read-only until the user approves the exact candidate batch",
+            "separately authorizes creation at its exact destination",
+            "bind both decisions to the batch identifier",
+            "every exact edit",
+            "each source path and frozen sha-256",
+            "each unique destination",
+            "preserve those decisions in the task progress summary",
+            "if any edit text, source version, destination, or batch membership changes",
+            "obtain approval and write authorization for the new exact tuple",
+            "a finding's disposition or review pass does not itself authorize a candidate write",
+        ):
+            with self.subTest(rule=rule):
+                self.assertIn(rule, batch)
+
+    def test_candidate_write_obeys_cycle_budget_and_new_cycle_revalidation(self):
+        text = skill("spec-review").lower().replace(chr(96), "")
+        batch = section(text, "## candidate batch and approval")
+
+        for rule in (
+            "before applying an approved batch, verify that the named cycle has a review round remaining",
+            "if none remains, apply nothing",
+            "record not_applied",
+            "present the cycle-limit handoff",
+            "explicitly authorizes a new named cycle",
+            "after explicit new-cycle authorization",
+            "prior exact batch approval and destination authorization still match",
+            "source version is unchanged",
+            "destination remains unused",
+            "review a candidate applied under the new cycle as round 1",
+            "preserve the previous cycle history",
+        ):
+            with self.subTest(rule=rule):
+                self.assertIn(rule, batch)
+
+    def test_candidate_bytes_and_prepared_operation_are_derived_from_frozen_snapshot(self):
+        text = skill("spec-review").lower().replace(chr(96), "")
+        writes = section(text, "## candidate creation and reconciliation")
+
+        for rule in (
+            "frozen bytes as an immutable byte snapshot",
+            "read the source once into the snapshot",
+            "verify its sha-256 matches the candidate's frozen hash",
+            "derive candidate bytes only from that snapshot plus the approved edits",
+            "preserve untouched bytes",
+            "compute the expected sha-256 from the exact resulting bytes",
+            "cannot be applied unambiguously",
+            "stop before writing",
+            "for each candidate destination, before its creation persist in the task progress summary one unique candidate-write operation id",
+            "batch and destination identity",
+            "source path and frozen hash",
+            "exact expected candidate bytes",
+            "expected sha-256",
+            "prepared status",
+            "serialize candidate-write operations for the same source path",
+            "stable source-scoped lock where supported",
+            "hold it through final source checks and destination creation",
+            "do not run overlapping writes for a source",
+        ):
+            with self.subTest(rule=rule):
+                self.assertIn(rule, writes)
+
+    def test_candidate_creation_is_create_new_and_source_races_preserve_files(self):
+        text = skill("spec-review").lower().replace(chr(96), "")
+        writes = section(text, "## candidate creation and reconciliation")
+
+        for rule in (
+            "immediately before exclusive destination creation",
+            "hash the current source path and require the frozen hash",
+            "mark the operation stale",
+            "immediately after successful creation, hash the source path again",
+            "preserve both source and destination",
+            "stop before review",
+            "create the destination with create-new semantics only",
+            "never overwrite",
+            "an existing destination or failed create-new means not_applied",
+            "do not silently choose another path",
+        ):
+            with self.subTest(rule=rule):
+                self.assertIn(rule, writes)
+
+    def test_candidate_destination_verification_and_resume_reconcile_without_overwrite(self):
+        text = skill("spec-review").lower().replace(chr(96), "")
+        writes = section(text, "## candidate creation and reconciliation")
+
+        for rule in (
+            "after creation, reread the destination",
+            "byte-for-byte equality with the expected candidate snapshot",
+            "sha-256 with the expected hash",
+            "before marking the operation applied",
+            "needs-reconcile",
+            "preserve both files and stop before review",
+            "batch remains incomplete",
+            "every approved destination is verified",
+            "on resume, treat an existing destination as applied only when",
+            "matching operation id",
+            "destination bytes and hash exactly match the persisted expected candidate",
+            "otherwise mark needs-reconcile",
+            "never overwrite",
+            "infer success from path existence alone",
+            "do not create a second operation",
+        ):
+            with self.subTest(rule=rule):
+                self.assertIn(rule, writes)
+
+    def test_verified_candidate_starts_fresh_same_cycle_review_and_keeps_scope_gates(self):
+        text = skill("spec-review").lower().replace(chr(96), "")
+        post_edit = section(text, "## post-edit review and completion")
+
+        for rule in (
+            "freeze all verified resulting bytes and hashes together as the next round's draft input set",
+            "start the next numbered round in the same named cycle",
+            "fresh primary invocation for all triggered non-adversarial lenses",
+            "fresh invocations for every required adversarial slot",
+            "count that review against the cycle's existing three-round budget",
+            "stale, not_applied, or needs-reconcile candidate does not start",
+            "candidate that changes scope or seams",
+            "requirements-workflow seam confirmation",
+            "seam confirmation alone grants no write permission",
+            "exact revised draft text and a unique proposed temporary path",
+            "explicit approval of that text and authorization for that path",
+            "recheck the named-cycle round budget before writing",
+            "if no round remains, apply nothing and use the cycle-limit handoff",
+            "same candidate creation safeguards",
+            "keep the existing round budget unless the user explicitly authorizes a new named cycle",
+            "does not constitute final specification approval or publication",
+            "do not publish an issue in this workflow",
+        ):
+            with self.subTest(rule=rule):
+                self.assertIn(rule, post_edit)
+
+        record = section(text, "## named cycles and resumable state")
+        self.assertIn("candidate-write operation records and statuses", record)
+
+    def test_finding_gates_require_evidence_severity_disposition_and_scope(self):
+        text = skill("spec-review").lower().replace(chr(96), "")
+        gates = section(text, "## finding and scope gates")
+
+        for rule in (
+            "evidence-based failure, not a preference",
+            "name the affected draft section",
+            "cite supporting evidence at at least one frozen source path and line or exact symbol",
+            "generic evidence without a source location is insufficient",
+            "practical impact",
+            "smallest exact change",
+            "preference without a concrete failure, evidence, and impact is not a finding",
+            "p0/p1/p2-or-lower definitions",
+            "repository's p0/p1/p2-or-lower definitions",
+            "preserve each reported severity and rationale",
+            "a p0/p1 finding blocks early exit, pass, and publication only when it cites an approved acceptance clause and shows a reproducible failure",
+            "retain the original rating and rationale as an unverified observation",
+            "not an established blocker",
+            "do not downgrade it solely to satisfy the exit gate",
+            "an unverified observation does not block those gates",
+            "approved acceptance clause",
+            "reproducible failure",
+            "lack of safety proof alone does not establish a blocker",
+            "p2-or-lower finding must be fixed",
+            "explicitly declined, deferred, or otherwise resolved by the user",
+            "recorded reason",
+            "merge duplicate findings",
+            "new evidence or a changed approved requirement",
+            "within the approved scope and acceptance criteria",
+            "changes the requested scope or crosses a seam",
+            "route it back to the requirements workflow",
+            "seam-confirmation gate",
+        ):
+            with self.subTest(rule=rule):
+                self.assertIn(rule, gates)
+
+        manual = (ROOT / "tests" / "manual" / "spec-review.md").read_text(encoding="utf-8").lower()
+        self.assertIn("unverified observation alone does not block early exit, pass, or publication", manual)
+        self.assertIn("frozen source path and line or exact symbol", manual)
+        self.assertIn("generic evidence without a source location", manual)
+
+    def test_invalid_execution_retries_are_bounded_and_leave_unresolved_coverage_incomplete(self):
+        text = skill("spec-review").lower().replace(chr(96), "")
+        retries = section(text, "## execution validity and retries")
+
+        for rule in (
+            "source, hash, manifest, file-access, and host-attribution failures",
+            "invalid executions, not product findings",
+            "truncated invocation is also an invalid execution",
+            "never a valid partial review or abstention",
+            "retry counts against the same-round attempt limit",
+            "does not satisfy its assignment",
+            "same round",
+            "fresh invocation and a new invocation id",
+            "complete assigned lens set as one assignment",
+            "initial invocation and each retry as attempts",
+            "at most three attempts per assignment per round",
+            "reconcile or cancel",
+            "status remains unresolved",
+            "leave the assignment and review coverage incomplete",
+            "after three failed or invalid attempts",
+            "stop automatic retries",
+            "without changing those rules",
+        ):
+            with self.subTest(rule=rule):
+                self.assertIn(rule, retries)
+
+    def test_named_cycles_preserve_limits_resumable_state_and_incomplete_gates(self):
+        text = skill("spec-review").lower().replace(chr(96), "")
+        cycles = section(text, "## named cycles and resumable state")
+
+        for rule in (
+            "at most three numbered rounds, including the initial round",
+            "end a cycle early only when no established p0/p1 blocker remains",
+            "every p2-or-lower finding is fixed or explicitly disposed of by the user with a reason",
+            "pending user decision",
+            "an established p0/p1 blocker, an undisposed lower-severity finding, a pending user decision, an unresolved timeout, or incomplete coverage blocks early exit, pass, and publication",
+            "starting another named cycle requires the user's explicit authorization",
+            "fresh three-round budget",
+            "do not reset a round or attempt counter",
+            "preserve a resumable cycle record",
+            "round/attempt counts",
+            "including per-assignment attempt counts",
+            "active and superseded invocation and host ids",
+            "frozen draft and manifest hashes",
+            "user decisions",
+            "finding dispositions",
+            "reconcile that record with authoritative host or invocation evidence",
+            "never reuse an invocation id",
+            "missing or conflicting state",
+            "needs-reconcile",
+            "do not create a separate local authoritative database",
+            "valid partial review or abstention consumes its numbered round",
+            "is not an invalid-execution retry",
+            "supplying missing evidence does not reopen that round",
+            "if the named cycle has a round remaining",
+            "incorporate the evidence into a new frozen manifest",
+            "next numbered round on the unchanged draft",
+            "fresh primary and every required adversarial invocation",
+            "if no round remains, use the cycle-limit handoff",
+            "three-round limit is reached and the review has not passed",
+            "present the current frozen draft and every unresolved finding",
+            "every unresolved finding, incomplete lens or slot",
+            "pending user decision",
+            "unresolved execution reconciliation",
+            "review has not passed",
+            "ask whether the user authorizes another named cycle or wants another action",
+            "not final approval or publication",
+            "new named cycle preserves prior reports and findings as history",
+            "append the new cycle to the resumable record",
+            "do not reset or mutate prior cycle history",
+            "prior cycle reports and findings",
+        ):
+            with self.subTest(rule=rule):
+                self.assertIn(rule, cycles)
+
+        self.assertIn(
+            "a p0/p1 finding blocks early exit, pass, and publication only when it cites an approved acceptance clause and shows a reproducible failure",
+            text,
+        )
+
+    def test_rereview_scope_stays_on_approved_edits_and_affected_criteria(self):
+        text = skill("spec-review").lower().replace(chr(96), "")
+        triggers = section(text, "## review triggers")
+
+        for rule in (
+            "focus the re-review on the approved edits and directly affected criteria",
+            "expand scope only when new evidence implicates another approved requirement",
+            "evidence that changes scope or crosses a seam remains separate",
+            "requirements workflow's seam-confirmation gate",
+        ):
+            with self.subTest(rule=rule):
+                self.assertIn(rule, triggers)
+
+    def test_manual_spec_review_covers_frozen_evidence_and_adversarial_slots(self):
+        manual = (ROOT / "tests" / "manual" / "spec-review.md").read_text(encoding="utf-8").lower()
+        for phrase in (
+            "at round start",
+            "root `agents.md` is a required frozen source",
+            "its absence leaves the review incomplete",
+            "stable id as its canonical repository-relative posix path",
+            "appears once under its canonical path or normalized uri",
+            "every `stable_source_id` is unique",
+            "immutable repository or file revision identifiers",
+            "for each source whose bytes are read",
+            "exact source bytes",
+            "do not use a hash of the revision-id string",
+            "canonical utf-8 json",
+            "manifest sha-256",
+            "host-returned session id",
+            "adversary-a launches every round",
+            "high-risk",
+            "adversary-b",
+            "missing or mismatched attestation",
+            "stale or incomplete",
+            "required_assignments",
+            "initial invocation id",
+            "duplicate result slots",
+            "swapped lenses or assignments",
+            "extra results",
+            "superseded invocation ids",
+            "exactly one active, host-matched result",
+            "high_risk_decision",
+            "every trigger considered",
+            "met`, `absent`, or `uncertain",
+            "required adversarial slots",
+            "exactly one primary assignment",
+            "every triggered non-adversarial lens",
+            "unchecked source ids",
+            "unchecked sources carrying reasons",
+            "authorized retry",
+            "active replacement id",
+            "late result from the superseded invocation id",
+            "rejected or excluded from the active result set",
+            "retain it in history with superseded status",
+            "later complete active result set still passes",
+            "duplicate result slots",
+            "superseded result presented or used as active",
+            "evidence-based failure",
+            "draft section",
+            "frozen source path and line or exact symbol",
+            "practical impact",
+            "smallest exact proposed change",
+            "preference alone are not findings",
+            "p0/p1",
+            "approved acceptance clause",
+            "reproducible failure",
+            "lack of safety proof alone",
+            "p2-or-lower",
+            "declined, deferred, or otherwise resolved",
+            "merge duplicate findings",
+            "new evidence or a changed approved requirement",
+            "changes the requested scope or crosses a seam",
+            "requirements workflow",
+            "invalid executions, not product findings",
+            "new invocation id",
+            "at most three attempts per assignment per round",
+            "reconcile or cancel",
+            "unresolved status leaves coverage incomplete",
+            "at most three rounds per named cycle",
+            "end a cycle early only with no established p0/p1 blocker",
+            "unverified p0/p1 observations alone do not block early exit, pass, or publication",
+            "explicit user authorization",
+            "fresh three-round budget",
+            "resumable cycle record",
+            "round/attempt counts",
+            "active and superseded invocation and host ids",
+            "frozen draft and manifest hashes",
+            "user decisions",
+            "finding dispositions",
+            "pending decisions or incomplete coverage block pass and publication",
+            "valid partial review or abstention",
+            "consumes its numbered round",
+            "not an invalid-execution retry",
+            "supplying missing evidence does not reopen that round",
+            "new frozen manifest",
+            "next numbered round on the unchanged draft",
+            "fresh primary and every required adversarial invocation",
+            "cycle-limit handoff",
+            "three-round limit is reached",
+            "current frozen draft and every unresolved finding",
+            "incomplete lens or slot",
+            "pending user decision",
+            "unresolved execution reconciliation",
+            "review has not passed",
+            "another action",
+            "not final approval or publication",
+            "prior reports and findings as history",
+            "append the new cycle",
+            "do not reset or mutate prior cycle history",
+            "re-review focuses on the approved edits and directly affected criteria",
+            "expand scope only when new evidence implicates another approved requirement",
+            "scope or crosses a seam",
+            "requirements workflow",
+            "one candidate batch with a stable batch id",
+            "source path and frozen sha-256",
+            "exact source span or insertion anchor",
+            "exact replacement or insertion text",
+            "affected section",
+            "unique proposed destination",
+            "original source is unchanged",
+            "approve the exact batch and authorize its destination",
+            "batch id, edit text, source version, and destination",
+            "third round with a candidate batch ready",
+            "applies nothing",
+            "records `not_applied`",
+            "revalidates the exact batch, source version, and unused authorized destination",
+            "reviews the candidate as round 1",
+            "preserves all prior reports and findings as history",
+            "immutable byte snapshot",
+            "derive the exact candidate bytes only from that snapshot and approved edits",
+            "unique operation id",
+            "exact expected bytes and hash",
+            "`prepared` status",
+            "writes for one source are serialized",
+            "stable source lock where supported",
+            "change the source before the pre-create hash check",
+            "immediately after exclusive creation",
+            "both files are preserved",
+            "existing destination and a failed create-new operation",
+            "reread the destination and compare its bytes and sha-256",
+            "needs-reconcile",
+            "operation id and exact expected bytes and hash match",
+            "all approved destinations verify",
+            "next numbered round in the same named cycle",
+            "one fresh primary for all triggered non-adversarial lenses",
+            "fresh invocations for every required adversarial slot",
+            "seam confirmation alone grants no write permission",
+            "explicit text approval",
+            "path authorization",
+            "candidate review completion remains separate from final specification approval and publication",
+        ):
+            with self.subTest(phrase=phrase):
+                self.assertIn(phrase, manual)
+
 def mentions_concepts(text, *concepts):
     return all(any(term in text for term in alternatives) for alternatives in concepts)
 
@@ -758,11 +1455,12 @@ class RequirementsToSpecTicketsBehaviorTests(unittest.TestCase):
             ("wait",), ("confirmation",),
         ))
 
-        phases = ("/grill-duo-with-docs", "/to-spec", "/to-tickets")
+        phases = ("/grill-duo-with-docs", "/to-spec", "/spec-review", "/to-tickets")
         for phase in phases:
             self.assertIn(phase, workflow)
         self.assertLess(workflow.index(phases[0]), workflow.index(phases[1]))
         self.assertLess(workflow.index(phases[1]), workflow.index(phases[2]))
+        self.assertLess(workflow.index(phases[2]), workflow.index(phases[3]))
         self.assertTrue(sentence_with_concepts(
             workflow, ("re-read", "reread"), ("source",), ("each phase",), ("before",),
         ))
@@ -784,6 +1482,9 @@ class RequirementsToSpecTicketsBehaviorTests(unittest.TestCase):
         ))
         self.assertTrue(sentence_with_concepts(
             workflow, ("to-spec",), ("seam",), ("confirmation", "gate"),
+        ))
+        self.assertTrue(sentence_with_concepts(
+            workflow, ("spec-review",), ("staged",), ("before",), ("issue publication",),
         ))
         self.assertTrue(sentence_with_concepts(
             workflow, ("to-tickets",), ("ticket-granularity", "granularity"),
@@ -971,11 +1672,13 @@ class RequirementsToSpecTicketsBehaviorTests(unittest.TestCase):
             ("shared-understanding", "summary"), ("wait", "pause"), ("confirmation", "confirm"),
         ))
         sequence = sentence_with_concepts(
-            protocol, ("grill-duo-with-docs",), ("to-spec",), ("to-tickets",),
+            protocol, ("grill-duo-with-docs",), ("to-spec",), ("spec-review",), ("to-tickets",),
             ("first", "before", "prior"), ("then", "next", "order"),
         )
         self.assertTrue(sequence)
         self.assertLess(sequence.index("grill-duo-with-docs"), sequence.index("to-spec"))
+        self.assertLess(sequence.index("to-spec"), sequence.index("spec-review"))
+        self.assertLess(sequence.index("spec-review"), sequence.index("to-tickets"))
         self.assertLess(sequence.index("to-spec"), sequence.index("to-tickets"))
         self.assertTrue(sentence_with_concepts(git, ("approval", "authorize"), ("group",), ("commit",)))
         self.assertTrue(sentence_with_concepts(documents, ("user-confirmed",), ("project documents",)))
@@ -1287,6 +1990,322 @@ class RequirementsToSpecTicketsBehaviorTests(unittest.TestCase):
             "Group B may write under A's approval.".lower(),
             ("group b",), ("under a's approval",), ("write",),
         ))
+
+
+    def test_spec_publication_stages_reviews_and_binds_both_approvals_to_exact_tuple(self):
+        text = skill("requirements-to-spec-tickets").lower().replace(chr(96), "")
+        dependencies = section(text, "## dependencies")
+        protocol = section(text, "## 4. child-session protocol")
+        workflow = protocol
+
+        self.assertIn("| /spec-review | skill |", dependencies)
+        self.assertIn("if /to-spec can reliably stop before creating or publishing an issue", workflow)
+        self.assertIn("if it cannot reliably stop, use its seam-confirmation criteria and draft template without invoking its publishing step", workflow)
+        self.assertIn("exact draft text and a unique temporary path", workflow)
+        self.assertIn("approval of that text and authorization for that path", workflow)
+        self.assertIn("stage it with create-new semantics", workflow)
+        self.assertLess(workflow.index("after seam confirmation"), workflow.index("run /spec-review"))
+        self.assertLess(workflow.index("run /spec-review"), workflow.index("before publication"))
+        self.assertIn("run /spec-review on the staged bytes before any issue publication", workflow)
+        self.assertIn("a candidate is applied only after approval of the exact batch, source version, and unique destination", workflow)
+        self.assertIn("run fresh review in the same named cycle", workflow)
+        self.assertIn("at most three numbered rounds", workflow)
+        self.assertIn("review pass, candidate approval, and staging approval do not approve the final spec", workflow)
+        self.assertIn("the issue body must be byte-identical to the frozen draft", workflow)
+        self.assertIn("obtain final specification approval and publication authorization as separate user decisions", workflow)
+        self.assertIn("publish only after both approval records are present and still match that tuple", workflow)
+        for tuple_field in ("title", "draft sha-256", "canonical owner/repository", "required labels"):
+            with self.subTest(tuple_field=tuple_field):
+                self.assertIn(tuple_field, workflow)
+        self.assertIn("any body-byte change requires a fresh review round and new approvals", workflow)
+        self.assertIn("any title, target, or required-label change invalidates both approvals", workflow)
+        self.assertIn("do not invoke /to-tickets until review coverage passed, both exact final approvals were recorded, and spec publication succeeded", workflow)
+
+    def test_issue_and_label_publication_requires_writer_claim_and_terminal_reconciliation(self):
+        text = skill("requirements-to-spec-tickets").lower().replace(chr(96), "")
+        protocol = section(text, "## 4. child-session protocol")
+        claims = section(protocol, "### exclusive github writer claim and publication recovery")
+
+        for write in ("issue create/edit", "repository-label create", "issue-label change", "ticket-link write"):
+            with self.subTest(write=write):
+                self.assertIn(write, claims)
+        for claim_fact in (
+            "atomic exclusive writer claim", "canonical owner/repository", "exact approved spec-publication tuple",
+            "exact ticket payload", "exact ticket relationship graph", "claim owner's host/session id",
+            "unique operation id", "task progress summary before the external write",
+            "no second session may write", "active or unresolved", "release a claim only after terminal read-back reconciliation",
+            "takeover only after the prior owner has stopped", "every operation it owns has been reconciled",
+        ):
+            with self.subTest(claim_fact=claim_fact):
+                self.assertIn(claim_fact, claims)
+        self.assertIn("summary is a record, not a substitute for an atomic claim", claims)
+        self.assertIn("verify the canonical target immediately before writing", claims)
+        self.assertIn("fully paginate issues across all states, exclude pull requests", claims)
+        self.assertIn("accept only one unique issue whose target, title, and body bytes match", claims)
+        self.assertIn("retry only a confirmed transient failure after a complete listing proves no issue was created", claims)
+        self.assertIn("at most three total attempts across resumes", claims)
+        self.assertIn("keep at most one unresolved issue-create operation per canonical target and approved tuple", claims)
+        self.assertIn("after issue read-back, create and verify required repository labels", claims)
+        self.assertIn("with ready-for-agent last", claims)
+        self.assertIn("track a unique operation id and cumulative attempt state for each label operation", claims)
+        self.assertIn("reconcile ambiguous label results by reading the label and issue back", claims)
+        self.assertIn("spec publication is successful only after the exact issue and all required labels are verified by read-back", claims)
+
+    def test_requirements_workflow_pins_github_operations_to_the_canonical_repository(self):
+        workflow = skill("requirements-to-spec-tickets").lower().replace(chr(96), "")
+        protocol = section(workflow, "## 4. child-session protocol")
+        claims = section(protocol, "### exclusive github writer claim and publication recovery")
+        template = skill_reference(
+            "requirements-to-spec-tickets", "child-session-initial-prompt.md",
+        ).lower().replace(chr(96), "")
+        linking = section(template, "### native ticket linking")
+        manual = (ROOT / "tests" / "manual" / "requirements-to-spec-tickets.md").read_text(encoding="utf-8").lower().replace(chr(96), "")
+        scenario = section(manual, "## publication recovery and exclusive writer claims")
+
+        for rule in (
+            "before every github list, read, create, edit, label, or link operation",
+            "pass --repo <owner>/<repo> to every gh command that supports it",
+            "explicit repos/<owner>/<repo>/... path for every gh api endpoint",
+            "never rely on gh's configured default repository",
+            "immediately before and after each write, verify every involved issue belongs to that canonical repository",
+            "stop before writing if the target or repository cannot be established",
+        ):
+            with self.subTest(rule=rule):
+                self.assertIn(rule, claims)
+                self.assertIn(rule, template)
+        self.assertIn("gh issue edit <spec-number> --add-sub-issue <ticket-number> --repo <owner>/<repo>", linking)
+        self.assertIn("configure gh's default repository to a second disposable repository", scenario)
+        self.assertIn("every gh command that supports --repo passes --repo <owner>/<repo>", scenario)
+        self.assertIn("every gh api endpoint uses an explicit repos/<owner>/<repo>/... path", scenario)
+
+    def test_ticket_reconciliation_binds_exact_payload_graph_and_stops_on_drift(self):
+        text = skill("requirements-to-spec-tickets").lower().replace(chr(96), "")
+        protocol = section(text, "## 4. child-session protocol")
+        reconciliation = section(protocol, "### ticket reconciliation and native links")
+        template = skill_reference(
+            "requirements-to-spec-tickets", "child-session-initial-prompt.md",
+        ).lower().replace(chr(96), "")
+        linking = section(template, "### native ticket linking")
+
+        self.assertIn("obtain the user's explicit authorization for ticket reconciliation", reconciliation)
+        self.assertIn("do not invoke /to-tickets until review coverage passed, both exact final approvals were recorded, and spec publication succeeded", reconciliation)
+        self.assertIn("reconcile existing spec-review tickets by exact known issue ids", reconciliation)
+        for field in ("title", "body", "state", "labels", "parent", "blocking edges"):
+            with self.subTest(field=field):
+                self.assertIn(field, reconciliation)
+        for disposition in ("unchanged", "revised", "superseded", "new"):
+            with self.subTest(disposition=disposition):
+                self.assertIn(disposition, reconciliation)
+        self.assertIn("obtain separate approval for each later ticket-payload or graph/link delta", reconciliation)
+        for bound_value in ("parent spec issue id", "exact approved body sha-256", "canonical owner/repository", "exact ticket payload", "graph/link delta"):
+            with self.subTest(bound_value=bound_value):
+                self.assertIn(bound_value, reconciliation)
+        self.assertIn("bind both records to the parent spec issue id", reconciliation)
+        self.assertIn("bound to the same parent issue id, body hash, and canonical target", reconciliation)
+        self.assertIn("ticket-set approval alone authorizes no write", reconciliation)
+        self.assertIn("ticket-set approval alone authorizes no write: create only after the separate issue-creation authorization", reconciliation)
+        self.assertIn("on the safe /to-tickets path, its publication confirmation serves as the separate issue-creation authorization", reconciliation)
+        self.assertIn("in the template fallback, obtain this explicit authorization directly", reconciliation)
+        self.assertIn("before any native link write, present the exact proposed edges and canonical target", reconciliation)
+        self.assertIn("obtain separate explicit link authorization, distinct from both ticket-set approval and issue-creation authorization", reconciliation)
+        self.assertIn("bind it to the parent spec issue id, exact approved body sha-256, canonical target, and exact graph", reconciliation)
+        self.assertIn("issue-creation authorization never permits links; if only it exists, do not link", reconciliation)
+        self.assertIn("every affected ticket-payload or graph/link-delta approval, and any independent link-write authorization", reconciliation)
+        self.assertIn("re-preview the exact publication tuple, affected ticket proposal, and exact edges plus canonical target", reconciliation)
+        self.assertIn("explicit link authorization bound to the parent issue id, body hash, canonical target, and exact graph as applicable", reconciliation)
+        self.assertIn("each write also requires its own writer claim and applicable publication or relationship gate", reconciliation)
+        self.assertIn("create only tickets confirmed missing by exact-id reconciliation and covered by the exact ticket-set approval and separate issue-creation authorization", reconciliation)
+        self.assertIn("start native sub-issue linking only after every planned ticket exists", reconciliation)
+        self.assertIn("before every ticket create, edit, label change, or link write, re-read the parent spec issue", reconciliation)
+        self.assertIn("re-read the parent spec issue using its exact approved issue id", reconciliation)
+        self.assertIn("if any differs, stop and invalidate both final spec approvals", reconciliation)
+        self.assertIn("require that round to pass before re-previewing or requesting, binding, or recording any replacement approval or write authorization", reconciliation)
+        self.assertIn("read the ticket immediately before writing and compare its exact current state", reconciliation)
+        self.assertIn("drift stops the write until the new exact delta is approved", reconciliation)
+        self.assertIn("verify the repository of every involved issue", reconciliation)
+        self.assertIn("immediately before each write", reconciliation)
+        self.assertIn("immediately after each write", reconciliation)
+        self.assertIn("read every involved issue back immediately after each write", reconciliation)
+        self.assertIn("approval of a planned ticket set alone authorizes no issue creation, edit, label change, or link", linking)
+        self.assertIn("issue-creation authorization alone never permits a link", linking)
+        self.assertIn("any independent link-write authorization", template)
+        self.assertIn("explicit link authorization bound to the parent issue id, body hash, canonical target, and exact graph as applicable", template)
+        self.assertIn("atomic writer claim for the exact approved graph/link delta", linking)
+        self.assertNotIn("approval of the planned ticket set authorizes only these routine associations", text + template)
+
+        manual = " ".join(
+            (ROOT / "tests" / "manual" / "requirements-to-spec-tickets.md")
+            .read_text(encoding="utf-8").lower().split()
+        )
+        for heading in (
+            "## staged spec review and final publication gates",
+            "## publication recovery and exclusive writer claims",
+            "## exact-id ticket reconciliation and link approvals",
+        ):
+            with self.subTest(heading=heading):
+                self.assertIn(heading, manual)
+        for scenario in (
+            "second session", "lost create response", "exact body bytes", "ticket-payload batch",
+            "relationship graph", "approved body sha-256", "immediately before and after each write",
+            "all required labels are confirmed by read-back", "separate explicit link authorization",
+            "link authorization is bound to the parent spec issue id", "issue-creation authorization alone never permits links",
+            "independent link-write authorization is invalidated", "re-present the exact edges and canonical target",
+            "fresh link authorization bound to the parent issue id/hash/target/graph before any link",
+        ):
+            with self.subTest(scenario=scenario):
+                self.assertIn(scenario, manual)
+
+
+    def test_to_tickets_requires_safe_pause_or_nonpublishing_ticket_set_staging(self):
+        text = skill("requirements-to-spec-tickets").lower().replace(chr(96), "")
+        protocol = section(text, "## 4. child-session protocol")
+        reconciliation = section(protocol, "### ticket reconciliation and native links")
+        template = skill_reference(
+            "requirements-to-spec-tickets", "child-session-initial-prompt.md",
+        ).lower().replace(chr(96), "")
+        template_gates = section(template, "## workflow gates")
+        manual = " ".join(
+            (ROOT / "tests" / "manual" / "requirements-to-spec-tickets.md")
+            .read_text(encoding="utf-8").lower().split()
+        )
+
+        self.assertIn("prove that the workflow can return its ticket plan and reliably stop before any issue create, edit, label, or link write", reconciliation)
+        self.assertIn("if it cannot, do not invoke its publishing step", reconciliation)
+        self.assertIn("use its existing ticket-granularity, blocking-edge criteria, and template", reconciliation)
+        self.assertIn("freeze the same proposal in task progress without publishing", reconciliation)
+        for proposal_field in ("each proposed title", "body", "canonical target", "required labels", "exact blocking edges"):
+            with self.subTest(proposal_field=proposal_field):
+                self.assertIn(proposal_field, reconciliation)
+        self.assertIn("obtain exact ticket-set approval, then separately obtain explicit issue-creation authorization", reconciliation)
+        for bound_value in ("parent spec issue id", "exact approved body sha-256", "canonical owner/repository target", "exact ticket payload plus graph"):
+            with self.subTest(bound_value=bound_value):
+                self.assertIn(bound_value, reconciliation)
+        self.assertIn("prove it can return the ticket plan and reliably stop before any issue write", template_gates)
+        self.assertIn("if it cannot, do not invoke its publishing step", template_gates)
+        self.assertIn("use its existing criteria and template to prepare and freeze the exact ticket set", template_gates)
+        self.assertIn("exact ticket-set approval, then separately obtain explicit issue-creation authorization", template)
+        self.assertIn("bind both records to the parent spec issue id", template)
+        for manual_fact in (
+            "prove it can stop before any issue write", "stage the exact ticket set in task progress",
+            "separately obtain explicit issue-creation authorization", "ticket-payload batch plus relationship graph",
+        ):
+            with self.subTest(manual_fact=manual_fact):
+                self.assertIn(manual_fact, manual)
+
+    def test_parent_drift_invalidates_ticket_gates_and_field_edge_writes_are_reconciled(self):
+        text = skill("requirements-to-spec-tickets").lower().replace(chr(96), "")
+        protocol = section(text, "## 4. child-session protocol")
+        reconciliation = section(protocol, "### ticket reconciliation and native links")
+        template = skill_reference(
+            "requirements-to-spec-tickets", "child-session-initial-prompt.md",
+        ).lower().replace(chr(96), "")
+        workflow = section(template, "## workflow gates")
+        manual = " ".join(
+            (ROOT / "tests" / "manual" / "requirements-to-spec-tickets.md")
+            .read_text(encoding="utf-8").lower().split()
+        )
+
+        for invalidated in (
+            "both final spec approvals", "ticket-set approval", "separate issue-creation authorization",
+            "every affected ticket-payload or graph/link-delta approval", "any independent link-write authorization",
+        ):
+            with self.subTest(invalidated=invalidated):
+                self.assertIn(invalidated, reconciliation)
+        self.assertIn("re-preview the exact publication tuple, affected ticket proposal, and exact edges plus canonical target", reconciliation)
+        self.assertIn("explicit link authorization bound to the parent issue id, body hash, canonical target, and exact graph as applicable", reconciliation)
+        self.assertIn("verify the returned id, approved title, canonical owner/repository, exact approved body bytes and their sha-256, that every approved required label is present, and that the current required-label tuple matches the approved tuple", reconciliation)
+        body_drift = reconciliation.index("if the exact body bytes are not byte-identical or the sha-256 differs")
+        review_pass = reconciliation.index("require that round to pass before re-previewing or requesting")
+        repreview = reconciliation.index("only after the new review passes, re-preview")
+        replacement_approvals = reconciliation.index("obtain fresh applicable final spec approvals")
+        self.assertLess(body_drift, review_pass)
+        self.assertLess(review_pass, repreview)
+        self.assertLess(repreview, replacement_approvals)
+        self.assertIn("no replacement approval or write authorization may exist before that pass", reconciliation)
+        metadata_drift = reconciliation.index("if body bytes and sha-256 remain identical but only the parent issue id, title, canonical owner/repository, or required-label presence/tuple differs")
+        metadata_preview = reconciliation.index("re-preview the exact affected publication tuple", metadata_drift)
+        metadata_approvals = reconciliation.index("re-obtain every invalidated applicable approval and authorization", metadata_drift)
+        publication_confirm = reconciliation.index("restore or reconfirm successful publication against that tuple", metadata_drift)
+        self.assertLess(metadata_drift, metadata_preview)
+        self.assertLess(metadata_preview, metadata_approvals)
+        self.assertLess(metadata_approvals, publication_confirm)
+        metadata_recovery = reconciliation[metadata_drift:]
+        for replacement_gate in (
+            "final specification approval", "publication authorization", "ticket-set approval",
+            "separate issue-creation authorization", "affected ticket-payload or graph/link-delta approval",
+            "any applicable independent write authorization", "explicit link-write authorization for affected graph changes",
+        ):
+            with self.subTest(replacement_gate=replacement_gate):
+                self.assertIn(replacement_gate, metadata_recovery)
+        self.assertIn("metadata-only drift does not require or imply a new /spec-review round solely because of that drift", reconciliation)
+        self.assertIn("no ticket write may proceed until applicable approvals are fresh and successful publication is reconfirmed", reconciliation)
+        self.assertIn("for each existing-ticket field or edge change, issue one field or edge write at a time", reconciliation)
+        self.assertIn("record a unique operation id and cumulative attempt state for that individual write", reconciliation)
+        self.assertIn("compare its exact current state with the approved baseline or last verified state and the exact expected pre-write state", reconciliation)
+        self.assertIn("reconcile it before advancing", reconciliation)
+        self.assertIn("for an ambiguous response, read back and reconcile before any retry", reconciliation)
+        self.assertIn("retry only when a clearly transient failure is confirmed and read-back proves that exact operation is missing", reconciliation)
+        self.assertIn("at most three attempts per write across resumes", reconciliation)
+        self.assertIn("missing or conflicting operation history stops the workflow without retry", reconciliation)
+        metadata_manual = manual[
+            manual.index("if body bytes and hash remain identical but only"):
+            manual.index("for title-only drift")
+        ]
+        for replacement_authorization in (
+            "final spec approval", "publication authorization", "ticket-set approval",
+            "separate issue-creation authorization", "affected payload/graph approvals",
+            "independent link-write authorization",
+        ):
+            with self.subTest(replacement_authorization=replacement_authorization):
+                self.assertIn(replacement_authorization, metadata_manual)
+        self.assertIn(
+            "bind renewed records to the updated parent tuple and exact payload/graph delta",
+            metadata_manual,
+        )
+        publication_restore = metadata_manual.index("restore or reconfirm successful publication")
+        labels_verified = metadata_manual.index("verify all required labels by read-back")
+        ticket_writes_resume = metadata_manual.index("before resuming ticket writes")
+        self.assertLess(publication_restore, labels_verified)
+        self.assertLess(labels_verified, ticket_writes_resume)
+        self.assertIn("verify all required labels by read-back before resuming ticket writes", metadata_manual)
+        for template_fact in (
+            "both final spec approvals", "ticket-set approval", "separate issue-creation authorization",
+            "any independent link-write authorization", "exact edges plus canonical target",
+            "explicit link authorization bound to the parent issue id, body hash, canonical target, and exact graph as applicable",
+            "approved title", "exact approved body bytes", "every approved required label is present",
+            "current required-label tuple matches the approved tuple",
+            "one field or edge write at a time", "compare the immediate pre-read state",
+            "at most three attempts per write across resumes", "missing or conflicting history stops without retry",
+            "require that round to pass before re-previewing or requesting",
+            "no replacement approval or write authorization may exist before that pass",
+            "only after the new review passes, re-preview",
+            "body bytes and sha-256 remain identical but only the parent issue id, title, canonical owner/repository, or required-label presence/tuple differs",
+            "re-obtain every invalidated applicable approval and authorization",
+            "final specification approval, publication authorization, ticket-set approval",
+            "separate issue-creation authorization", "affected ticket-payload or graph/link-delta approval",
+            "any applicable independent write authorization", "explicit link-write authorization for affected graph changes",
+            "metadata-only drift does not require or imply a new /spec-review round solely because of that drift",
+            "restore or reconfirm successful publication against that tuple",
+        ):
+            with self.subTest(template_fact=template_fact):
+                self.assertIn(template_fact, workflow)
+
+        for manual_fact in (
+            "both final spec approvals", "affected ticket approvals",
+            "independent link-write authorization is invalidated", "re-present the exact edges and canonical target",
+            "fresh link authorization bound to the parent issue id/hash/target/graph before any link",
+            "require the fresh review to pass before re-previewing or requesting, binding, or recording replacement approvals",
+            "no replacement approval or write authorization exists while the fresh review is pending or failed",
+            "for title-only drift, hold body bytes/hash, target, and labels constant",
+            "attempt a ticket write and confirm it is refused before reapproval",
+            "repeat separately for label-only drift with the title and body unchanged",
+            "neither metadata-only case starts a fresh body review",
+            "pending or failed review leaves all ticket writes blocked",
+            "one write at a time", "exact approved baseline", "ambiguous response and reconcile it before retrying",
+            "at most three attempts per write across resumes", "missing or conflicting operation history stops",
+        ):
+            with self.subTest(manual_fact=manual_fact):
+                self.assertIn(manual_fact, manual)
 
 
 class SpecImplementLoopBehaviorTests(unittest.TestCase):
@@ -1781,6 +2800,9 @@ class ConventionalGitMessagesBehaviorTests(unittest.TestCase):
 class ReadmeBehaviorTests(unittest.TestCase):
     def test_generic_skill_install_command_remains(self):
         self.assertIn("npx skills@latest add EltonZhang777/AggregateSkills", (ROOT / "README.md").read_text(encoding="utf-8"))
+
+    def test_spec_review_is_in_the_skill_catalog(self):
+        self.assertIn("- [spec-review](skills/spec-review/SKILL.md)", (ROOT / "README.md").read_text(encoding="utf-8"))
 
 
 if __name__ == "__main__":
