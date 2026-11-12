@@ -26,6 +26,7 @@ After installation, follow your coding agent's skill workflow to activate a skil
 - [conventional-git-messages](skills/conventional-git-messages/SKILL.md) drafts concise commit, pull request, and issue text without performing Git or GitHub operations.
 - [grill-duo](skills/grill-duo/SKILL.md) coordinates an independent reviewer during a multi-round grilling session.
 - [grill-duo-with-docs](skills/grill-duo-with-docs/SKILL.md) records confirmed project terms and decisions during two-agent grilling.
+- [parallel-code-review](skills/parallel-code-review/SKILL.md) freezes one review scope, validates its routing contract, and runs routed independent review tracks.
 - [pr-and-merge](skills/pr-and-merge/SKILL.md) prepares GitHub pull requests and merges only after approval for each pull request.
 - [prune-worktrees-and-branches](skills/prune-worktrees-and-branches/SKILL.md) previews cleanup candidates and removes only approved worktrees or eligible branches.
 - [requirements-to-spec-tickets](skills/requirements-to-spec-tickets/SKILL.md) turns ideas into clarified specs and independently scoped implementation tickets.

@@ -1,0 +1,14 @@
+diff --git a/src/discounts.py b/src/discounts.py
+new file mode 100644
+--- /dev/null
++++ b/src/discounts.py
+@@ -0,0 +1,9 @@
++from decimal import Decimal
++
++def redeem(code: str, amount: Decimal) -> Decimal:
++    if code == "SAVE10":
++        return amount * Decimal("0.9")
++    return amount
++
++def preview_tax(amount: Decimal) -> Decimal:
++    return Decimal(str(float(amount) * 1.08))

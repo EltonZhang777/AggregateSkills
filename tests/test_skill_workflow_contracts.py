@@ -31,7 +31,7 @@ def section(text, heading):
 class SkillPrerequisiteInvocationTests(unittest.TestCase):
     def test_all_entrypoints_put_the_bounded_invocation_rule_first(self):
         entrypoints = sorted((ROOT / "skills").glob("*/SKILL.md"))
-        self.assertEqual(10, len(entrypoints))
+        self.assertEqual(11, len(entrypoints))
 
         for path in entrypoints:
             with self.subTest(skill=path.parent.name):
