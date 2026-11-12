@@ -22,4 +22,4 @@ This skill declares no skill prerequisite. Its audit command requires Python 3.9
 
 The audit reports likely lowercase requirement words, unmarked prohibitions, and unmarked imperatives for manual review. Candidate reporting does not decide whether descriptive prose is normative. The audit MUST NOT rewrite, normalize, replace, or create files in the audited root.
 
-Normal mode exits successfully when candidates exist. Strict mode exits `1` when candidates exist and `0` when none exist. Operational failures exit `2`, write an error to stderr, and do not print a candidate summary.
+Normal mode exits successfully when candidates exist. Strict mode exits `1` when candidates exist and `0` when none exist. Operational failures exit `2`, write an error to stderr, and print no candidate summary.
