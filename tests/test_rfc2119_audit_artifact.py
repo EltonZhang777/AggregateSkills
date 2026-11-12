@@ -67,7 +67,8 @@ class Rfc2119AuditArtifactTests(unittest.TestCase):
             if line.startswith("- [rfc2119-audit]")
         )
         product_paths = sorted(
-            path for path in SKILL_ROOT.rglob("*") if path.is_file()
+            path for path in SKILL_ROOT.rglob("*")
+            if path.is_file() and "__pycache__" not in path.parts
         ) + sorted(ROOT.glob("tests/test_rfc2119*.py"))
         products = [path.read_text(encoding="utf-8") for path in product_paths]
         products.append(entry)
