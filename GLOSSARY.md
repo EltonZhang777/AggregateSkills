@@ -18,6 +18,12 @@ _Avoid_: 分支范围（分支名本身不能说明结论适用的确切改动�
 评审结论所采用的独立视角；本项目区分“规范与质量”和“需求符合度”。
 _Avoid_: 总评（会掩盖两个视角之间的差异）
 
+**Review track**:
+An outer independent review path, such as `/code-review` or
+`/ponytail-review`, executed by its own sub-agent. A review track can contain
+one or more review axes.
+_Avoid_: using "track" for an individual Standards or Spec axis.
+
 **Finding**:
 一项有具体证据和实际影响支撑的评审问题，并保留其所属审阅轴。
 _Avoid_: 观点、偏好
