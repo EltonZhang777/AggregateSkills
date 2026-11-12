@@ -13,6 +13,7 @@ ROOT = Path(__file__).resolve().parents[1]
 SKILL_ROOT = ROOT / "skills" / "parallel-code-review"
 SCRIPT = SKILL_ROOT / "scripts" / "review_contract.py"
 UPSTREAM_SOURCE = SKILL_ROOT / "references" / "tracks" / "code-review.md"
+PONYTAIL_UPSTREAM_SOURCE = SKILL_ROOT / "references" / "tracks" / "ponytail-review.md"
 ROUTING_MARKER = "<!-- parallel-code-review-routing-table -->"
 METADATA_MARKER = "<!-- parallel-code-review-track-metadata -->"
 
@@ -88,20 +89,31 @@ def freeze_acceptance_bundle(temp_dir):
         SKILL_ROOT / "references" / "acceptance-standard.md",
         "--not-run",
         "repository tests=Synthetic patch is review-only.",
-        "--contract-root",
-        SKILL_ROOT,
-        "--upstream",
-        f"/code-review={UPSTREAM_SOURCE}",
+        *contract_args(),
     )
     return completed, bundle
 
 
-def contract_args(skill_root=SKILL_ROOT, upstream=UPSTREAM_SOURCE):
+def upstream_args(
+    skill_root=SKILL_ROOT,
+    upstream=UPSTREAM_SOURCE,
+    ponytail_upstream=None,
+):
+    if ponytail_upstream is None:
+        ponytail_upstream = skill_root / "references" / "tracks" / "ponytail-review.md"
+    return [
+        "--upstream",
+        f"/code-review={upstream}",
+        "--upstream",
+        f"/ponytail-review={ponytail_upstream}",
+    ]
+
+
+def contract_args(skill_root=SKILL_ROOT, upstream=UPSTREAM_SOURCE, ponytail_upstream=None):
     return [
         "--contract-root",
         str(skill_root),
-        "--upstream",
-        f"/code-review={upstream}",
+        *upstream_args(skill_root, upstream, ponytail_upstream),
     ]
 
 
@@ -213,6 +225,127 @@ def valid_code_review_envelope(attestation, checked_sha="e" * 64):
     }
 
 
+def valid_ponytail_review_envelope(attestation, checked_sha="e" * 64):
+    return {
+        "contract_version": 1,
+        "track_id": "ponytail-review",
+        "invocation_id": "ponytail-review-001",
+        "launch_status": "launched",
+        "attestation": {
+            "manifest_sha256": attestation["manifest_sha256"],
+            "patch_sha256": attestation["patch_sha256"],
+            "patch_size_bytes": attestation["patch_size_bytes"],
+            "included_paths": attestation["included_paths"],
+        },
+        "coverage": {
+            "status": "complete",
+            "checked": [
+                {
+                    "path": "src/discounts.py",
+                    "sha256": checked_sha,
+                }
+            ],
+            "unchecked": [
+                {
+                    "path": "runtime behavior",
+                    "reason": "The synthetic fixture has no runnable application.",
+                }
+            ],
+            "checks": [
+                {
+                    "name": "repository tests",
+                    "result": "not_run",
+                    "reason": "The synthetic patch is review-only.",
+                }
+            ],
+        },
+        "native": {
+            "what_this_change_does": (
+                "The change adds coupon redemption and a tax preview for money values."
+            ),
+            "groups": [
+                {"name": "Must fix", "finding_ids": ["1"]},
+                {"name": "Should fix", "finding_ids": ["2", "3"]},
+            ],
+            "verdict": "Verdict: fix 1 first.",
+            "lean": "Lean: -0 lines possible.",
+            "not_checked": [
+                "Runtime behavior: the synthetic fixture has no runnable application."
+            ],
+        },
+        "findings": [
+            {
+                "native_id": "1",
+                "native_severity": "Must fix",
+                "native_group": "Must fix",
+                "severity": "P1",
+                "severity_rationale": (
+                    "Binary floating point can produce an incorrect monetary preview."
+                ),
+                "title": "Money is converted through binary float",
+                "location": {"path": "src/discounts.py", "line": 9},
+                "what_this_is": (
+                    "The tax preview converts Decimal money to a float and back to Decimal."
+                ),
+                "problem": "The float step can change the displayed amount.",
+                "fix": "Keep Decimal arithmetic through the preview.",
+                "if_we_skip_it": "The preview can show the wrong price.",
+                "citations": [
+                    {
+                        "path": "src/discounts.py",
+                        "line": 9,
+                        "quote": "    return Decimal(str(float(amount) * 1.08))",
+                    }
+                ],
+            },
+            {
+                "native_id": "2",
+                "native_severity": "Should fix",
+                "native_group": "Should fix",
+                "severity": "P1",
+                "severity_rationale": (
+                    "The frozen requirement says an unknown coupon must raise an explicit error."
+                ),
+                "title": "Unknown coupons are silently accepted",
+                "location": {"path": "src/discounts.py", "line": 6},
+                "what_this_is": "Every coupon other than SAVE10 returns the amount unchanged.",
+                "problem": "Callers cannot tell that an unknown coupon was not applied.",
+                "fix": "Raise an explicit invalid-coupon error for every other code.",
+                "if_we_skip_it": "A required rejection path remains missing.",
+                "citations": [
+                    {
+                        "path": "src/discounts.py",
+                        "line": 6,
+                        "quote": "    return amount",
+                    }
+                ],
+            },
+            {
+                "native_id": "3",
+                "native_severity": "Should fix",
+                "native_group": "Should fix",
+                "severity": "P2",
+                "severity_rationale": (
+                    "No current runtime impact is shown, but risky money logic has no regression test."
+                ),
+                "title": "Money paths have no regression test",
+                "location": {"path": "src/discounts.py", "line": 3},
+                "what_this_is": "Coupon and tax-preview behavior is added without a test.",
+                "problem": "A later change can break money handling without a failing test.",
+                "fix": "Add one focused test for coupon rejection and one for Decimal preview math.",
+                "if_we_skip_it": "The risky paths can regress silently.",
+                "citations": [
+                    {
+                        "path": "src/discounts.py",
+                        "line": 3,
+                        "quote": "def redeem(code: str, amount: Decimal) -> Decimal:",
+                    }
+                ],
+            },
+        ],
+    }
+
+
 def metadata(track_name, source="https://example.com/skills", inputs=None, version=1):
     return {
         "contract_version": version,
@@ -265,26 +398,120 @@ class ParallelCodeReviewTestHelperTests(unittest.TestCase):
 
 
 class ParallelCodeReviewPreflightTests(unittest.TestCase):
-    def test_shipped_routing_table_is_authoritative_and_code_review_dependencies_are_explicit(self):
+    def test_shipped_routing_table_activates_code_review_then_ponytail_review(self):
         completed = run_contract(
             "preflight",
             "--skill-root",
             SKILL_ROOT,
-            "--upstream",
-            f"/code-review={UPSTREAM_SOURCE}",
+            *upstream_args(),
         )
 
         self.assertEqual(completed.returncode, 0, completed.stderr or completed.stdout)
         result = result_json(completed)
         self.assertEqual("ready", result["status"])
-        self.assertEqual(["code-review"], [track["track_id"] for track in result["tracks"]])
+        self.assertEqual(
+            ["code-review", "ponytail-review"],
+            [track["track_id"] for track in result["tracks"]],
+        )
         self.assertEqual(
             ["patch", "tree", "requirements", "standards", "checks", "exclusions"],
             result["tracks"][0]["required_inputs"],
         )
-        self.assertEqual("/code-review", result["dependencies"][0]["name"])
-        self.assertEqual("https://github.com/mattpocock/skills", result["dependencies"][0]["source"])
-        self.assertEqual("local_file", result["dependencies"][0]["kind"])
+        self.assertEqual(
+            ["/code-review", "/ponytail-review"],
+            [dependency["name"] for dependency in result["dependencies"]],
+        )
+        self.assertEqual(
+            [
+                "https://github.com/mattpocock/skills",
+                "https://github.com/DietrichGebert/ponytail",
+            ],
+            [dependency["source"] for dependency in result["dependencies"]],
+        )
+        self.assertEqual(
+            ["local_file", "local_file"],
+            [dependency["kind"] for dependency in result["dependencies"]],
+        )
+
+    def test_two_track_row_order_controls_dispatch_and_pins_in_both_directions(self):
+        orders = {
+            "forward": [
+                ("code-review", "references/tracks/code-review.md"),
+                ("ponytail-review", "references/tracks/ponytail-review.md"),
+            ],
+            "reverse": [
+                ("ponytail-review", "references/tracks/ponytail-review.md"),
+                ("code-review", "references/tracks/code-review.md"),
+            ],
+        }
+        for label, rows in orders.items():
+            with self.subTest(label):
+                with tempfile.TemporaryDirectory() as temp_dir:
+                    skill_root = Path(temp_dir) / "skill"
+                    shutil.copytree(SKILL_ROOT, skill_root)
+                    write_routing(skill_root, rows)
+                    completed = run_contract(
+                        "preflight",
+                        "--skill-root",
+                        skill_root,
+                        *upstream_args(skill_root),
+                    )
+
+                self.assertEqual(completed.returncode, 0, completed.stderr or completed.stdout)
+                result = result_json(completed)
+                expected = [track_id for track_id, _ in rows]
+                self.assertEqual(expected, [track["track_id"] for track in result["tracks"]])
+                self.assertEqual(
+                    expected,
+                    [pin["track_id"] for pin in result["pins"]["adapters"]],
+                )
+
+    def test_ponytail_metadata_failures_block_before_dispatch(self):
+        cases = {
+            "missing": (
+                "# Adapter without metadata\n",
+                "metadata_missing",
+            ),
+            "duplicate": (
+                f"{METADATA_MARKER}\n\n```json\n"
+                f"{json.dumps(metadata('/ponytail-review', source='https://github.com/DietrichGebert/ponytail'))}\n"
+                f"```\n\n{METADATA_MARKER}\n\n```json\n"
+                f"{json.dumps(metadata('/ponytail-review', source='https://github.com/DietrichGebert/ponytail'))}\n"
+                f"```\n",
+                "metadata_duplicate",
+            ),
+            "malformed": (
+                f"{METADATA_MARKER}\n\n```json\n{{not json\n```\n",
+                "metadata_malformed",
+            ),
+            "version mismatch": (
+                f"{METADATA_MARKER}\n\n```json\n"
+                f"{json.dumps(metadata('/ponytail-review', source='https://github.com/DietrichGebert/ponytail', version=2))}\n"
+                f"```\n",
+                "metadata_version_mismatch",
+            ),
+        }
+        for label, (adapter_text, expected_code) in cases.items():
+            with self.subTest(label):
+                with tempfile.TemporaryDirectory() as temp_dir:
+                    skill_root = Path(temp_dir) / "skill"
+                    shutil.copytree(SKILL_ROOT, skill_root)
+                    (skill_root / "references" / "tracks" / "ponytail-review.md").write_text(
+                        adapter_text,
+                        encoding="utf-8",
+                    )
+                    completed = run_contract(
+                        "preflight",
+                        "--skill-root",
+                        skill_root,
+                        *upstream_args(skill_root),
+                    )
+
+                self.assertNotEqual(0, completed.returncode)
+                result = result_json(completed)
+                self.assertEqual("blocked", result["status"])
+                self.assertIn(expected_code, [error["code"] for error in result["errors"]])
+                self.assertNotIn("pins", result)
 
     def test_routing_row_order_controls_dispatch_and_pin_order(self):
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -562,6 +789,8 @@ class ParallelCodeReviewPreflightTests(unittest.TestCase):
             SKILL_ROOT,
             "--upstream",
             "/code-review=https://example.com/code-review/SKILL.md",
+            "--upstream",
+            f"/ponytail-review={PONYTAIL_UPSTREAM_SOURCE}",
         ]
         missing_size = run_contract(
             "preflight",
@@ -693,7 +922,7 @@ class ParallelCodeReviewFreezeTests(unittest.TestCase):
             self.assertEqual("included", manifest["input_status"]["requirements"])
             self.assertEqual("included", manifest["input_status"]["standards"])
             self.assertEqual(
-                ["code-review"],
+                ["code-review", "ponytail-review"],
                 [track["track_id"] for track in manifest["contract"]["tracks"]],
             )
             bundle_before = snapshot_tree(bundle)
@@ -1274,6 +1503,127 @@ class ParallelCodeReviewEnvelopeTests(unittest.TestCase):
         self.assertIn("Native severity: high", rendered)
         self.assertIn("`src/discounts.py:9`", rendered)
 
+    def test_two_track_envelopes_share_attestation_and_preserve_native_structure_and_order(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            preflight = run_contract(
+                "preflight",
+                "--skill-root",
+                SKILL_ROOT,
+                *upstream_args(),
+            )
+            frozen, bundle = freeze_acceptance_bundle(temp_dir)
+            self.assertEqual(preflight.returncode, 0, preflight.stderr or preflight.stdout)
+            self.assertEqual(frozen.returncode, 0, frozen.stderr or frozen.stdout)
+            manifest = json.loads((bundle / "manifest.json").read_text(encoding="utf-8"))
+            checked_sha = manifest["scope"]["tree_sources"][0]["sha256"]
+            attestation = json.loads((bundle / "attestation.json").read_text(encoding="utf-8"))
+            code_review = valid_code_review_envelope(attestation, checked_sha)
+            ponytail_review = valid_ponytail_review_envelope(attestation, checked_sha)
+
+            code_path = write(temp_dir, "code-review.json", json.dumps(code_review))
+            ponytail_path = write(temp_dir, "ponytail-review.json", json.dumps(ponytail_review))
+            code_result = run_contract(
+                "validate-envelope",
+                "--bundle",
+                bundle,
+                "--envelope",
+                code_path,
+                *contract_args(),
+            )
+            ponytail_result = run_contract(
+                "validate-envelope",
+                "--bundle",
+                bundle,
+                "--envelope",
+                ponytail_path,
+                *contract_args(),
+            )
+
+            reversed_envelope = copy.deepcopy(ponytail_review)
+            reversed_envelope["findings"].reverse()
+            reversed_path = write(
+                temp_dir,
+                "ponytail-review-reversed.json",
+                json.dumps(reversed_envelope),
+            )
+            reversed_result = run_contract(
+                "validate-envelope",
+                "--bundle",
+                bundle,
+                "--envelope",
+                reversed_path,
+                *contract_args(),
+            )
+
+        for completed in (code_result, ponytail_result, reversed_result):
+            self.assertEqual(completed.returncode, 0, completed.stderr or completed.stdout)
+
+        code = result_json(code_result)
+        ponytail = result_json(ponytail_result)
+        reversed_track = result_json(reversed_result)
+        route_order = [
+            track["track_id"] for track in result_json(preflight)["tracks"]
+        ]
+        results_by_track = {
+            "code-review": code,
+            "ponytail-review": ponytail,
+        }
+        self.assertEqual("code-review", code["track_id"])
+        self.assertEqual("ponytail-review", ponytail["track_id"])
+        self.assertEqual(["code-review", "ponytail-review"], route_order)
+        self.assertNotEqual(
+            code_review["invocation_id"],
+            ponytail_review["invocation_id"],
+        )
+        self.assertEqual(
+            code_review["attestation"],
+            ponytail_review["attestation"],
+        )
+        self.assertEqual(
+            code_review["coverage"]["checked"],
+            ponytail_review["coverage"]["checked"],
+        )
+        self.assertEqual(
+            checked_sha,
+            code_review["coverage"]["checked"][0]["sha256"],
+        )
+        self.assertEqual(
+            ["STD-01", "SPEC-01", "1", "2", "3"],
+            [
+                finding["native_id"]
+                for track_id in route_order
+                for finding in results_by_track[track_id]["findings"]
+            ],
+        )
+        self.assertEqual(
+            ["3", "2", "1"],
+            [finding["native_id"] for finding in reversed_track["findings"]],
+        )
+        self.assertEqual(
+            ["P1", "P1", "P2"],
+            [finding["severity"] for finding in ponytail["findings"]],
+        )
+        self.assertEqual(
+            ["Must fix", "Should fix", "Should fix"],
+            [finding["native_group"] for finding in ponytail["findings"]],
+        )
+
+        rendered = ponytail["rendered"]
+        for native_content in (
+            "The change adds coupon redemption and a tax preview",
+            '"name": "Must fix"',
+            '"name": "Should fix"',
+            '"verdict": "Verdict: fix 1 first."',
+            '"lean": "Lean: -0 lines possible."',
+            '"not_checked"',
+            "Native group: Must fix",
+            "Native severity: Should fix",
+        ):
+            self.assertIn(native_content, rendered)
+        self.assertLess(rendered.index("## Native report"), rendered.index("## Findings"))
+        self.assertLess(rendered.index("### 1. Money is converted"), rendered.index("### 2. Unknown coupons"))
+        self.assertLess(rendered.index("### 2. Unknown coupons"), rendered.index("### 3. Money paths"))
+
     def test_envelope_validation_rejects_schema_attestation_and_track_failures(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             frozen, bundle = freeze_acceptance_bundle(temp_dir)
@@ -1464,6 +1814,44 @@ class ParallelCodeReviewPackageTests(unittest.TestCase):
         policy = (SKILL_ROOT / "agents" / "openai.yaml").read_text(encoding="utf-8")
         self.assertIn("allow_implicit_invocation: true", policy)
 
+    def test_ponytail_adapter_is_thin_and_preserves_the_upstream_native_report(self):
+        text = PONYTAIL_UPSTREAM_SOURCE.read_text(encoding="utf-8")
+        payload = json.loads(text.split("```json", 1)[1].split("```", 1)[0])
+        self.assertEqual(1, payload["contract_version"])
+        self.assertEqual(
+            {
+                "name": "/ponytail-review",
+                "source": "https://github.com/DietrichGebert/ponytail",
+            },
+            payload["upstream"],
+        )
+        self.assertEqual(
+            ["patch", "tree", "requirements", "standards", "checks", "exclusions"],
+            payload["required_inputs"],
+        )
+
+        normalized = " ".join(text.lower().replace("`", "").split())
+        self.assertIn("thin integration boundary", normalized)
+        self.assertIn("supplies no replacement review criteria", normalized)
+        self.assertIn("read the original upstream /ponytail-review skill", normalized)
+        self.assertIn("same frozen bundle", normalized)
+        self.assertIn("manifest digest", normalized)
+        self.assertIn("patch attestation", normalized)
+        self.assertIn("included paths", normalized)
+        self.assertIn("must fix", normalized)
+        self.assertIn("should fix", normalized)
+        self.assertIn("nice to have", normalized)
+        self.assertIn("verdict", normalized)
+        self.assertIn("lean", normalized)
+        self.assertIn("not checked", normalized)
+        self.assertIn("do not merge", normalized)
+        self.assertIn("reorder findings", normalized)
+        self.assertIn("p0/p1/p2", normalized)
+        self.assertIn("cite the exact frozen source path", normalized)
+        self.assertIn("synthetic", normalized)
+        self.assertIn("not evidence", normalized)
+        self.assertNotIn("bug:** wrong result", normalized)
+
     def test_skill_keeps_dispatch_frozen_scope_envelope_and_read_only_boundaries(self):
         text = (SKILL_ROOT / "SKILL.md").read_text(encoding="utf-8").lower().replace("`", "")
         self.assertIn("references/routing-table.md", text)
@@ -1491,14 +1879,26 @@ class ParallelCodeReviewPackageTests(unittest.TestCase):
         self.assertIn("synthetic envelope", text)
         self.assertIn("not evidence", text)
 
-    def test_acceptance_package_is_review_only_and_renders_the_expected_code_review_result(self):
+    def test_acceptance_package_is_review_only_and_renders_both_expected_tracks(self):
         patch = SKILL_ROOT / "references" / "acceptance-fixture.patch"
-        scenario = (SKILL_ROOT / "references" / "acceptance-scenario.md").read_text(encoding="utf-8").lower()
+        scenario = " ".join(
+            (SKILL_ROOT / "references" / "acceptance-scenario.md")
+            .read_text(encoding="utf-8")
+            .lower()
+            .split()
+        )
         self.assertIn("do not apply", scenario)
         self.assertIn("not run", scenario)
         self.assertIn("model discovery", scenario)
         self.assertIn("explicit invocation", scenario)
-        self.assertIn("single `/code-review` track", scenario)
+        self.assertIn("`/code-review` track", scenario)
+        self.assertIn("`/ponytail-review` track", scenario)
+        self.assertIn("same frozen bundle", scenario)
+        self.assertIn("routing-table order", scenario)
+        self.assertIn("different independent sub-agents", scenario)
+        self.assertIn("must fix", scenario)
+        self.assertIn("should fix", scenario)
+        self.assertIn("verdict", scenario)
         self.assertIn("no repository writes", scenario)
         self.assertIn("static envelope", scenario)
         self.assertIn("must not be reported as a live", scenario)
@@ -1510,17 +1910,20 @@ class ParallelCodeReviewPackageTests(unittest.TestCase):
             manifest = json.loads((bundle / "manifest.json").read_text(encoding="utf-8"))
             checked_sha = manifest["scope"]["tree_sources"][0]["sha256"]
             attestation = json.loads((bundle / "attestation.json").read_text(encoding="utf-8"))
-            envelope = valid_code_review_envelope(attestation, checked_sha)
-            envelope_path = write(temp_dir, "envelope.json", json.dumps(envelope))
-            validated = run_contract(
-                "validate-envelope",
-                "--bundle",
-                bundle,
-                "--envelope",
-                envelope_path,
-                *contract_args(),
-            )
-            self.assertEqual(validated.returncode, 0, validated.stderr or validated.stdout)
+            for track_id, envelope in (
+                ("code-review", valid_code_review_envelope(attestation, checked_sha)),
+                ("ponytail-review", valid_ponytail_review_envelope(attestation, checked_sha)),
+            ):
+                envelope_path = write(temp_dir, f"{track_id}.json", json.dumps(envelope))
+                validated = run_contract(
+                    "validate-envelope",
+                    "--bundle",
+                    bundle,
+                    "--envelope",
+                    envelope_path,
+                    *contract_args(),
+                )
+                self.assertEqual(validated.returncode, 0, validated.stderr or validated.stdout)
 
         self.assertEqual(before, snapshot_tree(ROOT))
         self.assertFalse((ROOT / "src" / "discounts.py").exists())
@@ -1532,6 +1935,7 @@ class ParallelCodeReviewPackageTests(unittest.TestCase):
             "[parallel-code-review](skills/parallel-code-review/SKILL.md)",
             readme,
         )
+        self.assertIn("`/code-review` and `/ponytail-review`", readme)
         self.assertIn(
             "skills/parallel-code-review/references/acceptance-fixture.patch -text",
             (ROOT / ".gitattributes").read_text(encoding="utf-8"),

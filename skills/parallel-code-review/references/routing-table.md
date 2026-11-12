@@ -8,3 +8,4 @@ collection, and aggregation order.
 | Track ID | Adapter document |
 | --- | --- |
 | code-review | references/tracks/code-review.md |
+| ponytail-review | references/tracks/ponytail-review.md |
