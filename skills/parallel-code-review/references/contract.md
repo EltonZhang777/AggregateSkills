@@ -224,6 +224,161 @@ Native semantic ordering belongs to the upstream track and remains opaque to
 the coordinator. A schema-valid synthetic envelope is contract-test data, not
 evidence of live model discovery or independent execution.
 
+## Coordinator run result
+
+One review run record aggregates every required routed track without changing
+the track envelope. The run record has exactly these fields:
+
+```json
+{
+  "contract_version": 1,
+  "tracks": [
+    {
+      "track_id": "code-review",
+      "attempts": [
+        {
+          "invocation_id": "code-review-001",
+          "status": "completed",
+          "launch_status": "launched",
+          "request_sha256": "...",
+          "envelope": "code-review.json"
+        }
+      ]
+    }
+  ],
+  "checks": [
+    {
+      "name": "independence_capability",
+      "result": "not_run",
+      "reason": "The host did not expose live launch evidence."
+    }
+  ],
+  "partial": null
+}
+```
+
+`validate-run` derives the overall `status`; a run record cannot claim it.
+`complete` requires every routed track's final attempt to be `completed` with
+a current valid envelope. Any missing, unstarted, invalid, blank, truncated,
+scope-mismatched, or otherwise unverifiable required track makes the overall
+status `blocked`. A valid completed envelope remains in `completed_reports`
+in routing-table order when another required track fails. A malformed or
+unverifiable track attempt degrades only that track; valid reports from other
+tracks remain in the aggregation. Duplicate, unknown, unidentified, or
+non-object track entries and malformed `checks` containers or records are
+run-level errors, not reasons to discard already valid completed reports. A
+valid completed candidate for a routed track remains attributable even when a
+duplicate entry is malformed, while the duplicate still makes the run blocked.
+Validation fails closed before aggregation only when the run cannot be
+interpreted: the run is not an object, required top-level fields are missing
+or unknown, `contract_version` is unsupported, `tracks` is not a list, or the
+frozen manifest has no usable routing table.
+Envelope paths in the run record are relative to the run record's directory.
+The command exits zero only for `complete`; `blocked` and `partial` still
+print their full result but exit nonzero so neither can pass as a complete
+review by command status alone.
+
+Each attempt is `completed` or `failed`. A completed attempt names its
+envelope and must use `launch_status: launched`; its envelope track and
+invocation IDs must match the attempt. A failed attempt records evidence
+appropriate to its class and one of these classes:
+
+- `launch_failure`: the required track could not start.
+- `transient_runtime`: an evidenced transient runtime failure.
+- `transient_transport`: an evidenced transient transport failure.
+- `invalid_result`: the returned result was blank, truncated, or unverifiable.
+- `scope_mismatch`: the report did not attest the frozen scope.
+
+A track with no attempts is missing. The coordinator never substitutes a
+reviewer, invents an envelope, or lets a single completed track become a
+complete review through omission.
+
+One run may perform at most one recovery invocation. Recovery is allowed only
+when the immediately preceding attempt failed with `transient_runtime` or
+`transient_transport` and supplied structured host evidence. The recovery
+attempt has a new `invocation_id`, the same derived `request_sha256` as the
+failed attempt, and a `recovery` object:
+
+```json
+{
+  "recovery": {
+    "of_invocation_id": "code-review-001",
+    "analysis_reused": false
+  }
+}
+```
+
+`analysis_reused` must be `false`; the recovery receives the original frozen
+request and must not reuse the failed attempt's analysis. An implicit retry,
+a second recovery, a changed request, or recovery after a non-transient
+failure is invalid. Every attempt must use `launch_status: launched` except
+`launch_failure`, which must use `not_launched`.
+
+Transient failure evidence has exactly `source`, `phase`, and `detail`.
+`source` must be `host`, and `phase` must be `runtime` for
+`transient_runtime` or `transport` for `transient_transport`. This validates
+the recorded evidence shape, not whether the host actually failed.
+
+`request_sha256` must equal the SHA-256 of canonical JSON containing the
+routed `track_id`, frozen `manifest`, and frozen `attestation`. The validator
+recomputes that digest for every attempt and requires recovery attempts to
+match the failed attempt. This proves the recorded request identity matches
+the frozen bundle; it does not prove the host sent those bytes or that hidden
+analysis was not reused.
+
+After a blocked result has been shown, an explicit user approval may retain
+exactly one completed report as `partial`. First save the blocked
+`validate-run` JSON result as an external artifact. Then use a separate
+follow-up run record:
+
+```json
+{
+  "partial": {
+    "approval": {
+      "source": "user",
+      "evidence": "User approved the one-track partial review."
+    },
+    "blocked_result": {
+      "path": "blocked-result.json",
+      "sha256": "..."
+    },
+    "missing_track_ids": ["ponytail-review"],
+    "reduced_independence": "Only one of two required independent tracks completed."
+  }
+}
+```
+
+The artifact path is relative to the follow-up run record and cannot be the
+current run record or a hard link to it. Its resolved path must remain inside
+the run directory. Its exact bytes must match `sha256`; it must contain the
+complete `validate-run` result schema with overall status `blocked`, no partial
+approval, and rendered output. Its tracks, coverage, checks, missing tracks, and
+full completed envelopes and run errors must exactly match the follow-up run.
+Its rendered output must exactly equal the canonical render of those blocked
+result values; substituted summary or display text is invalid. The approval
+source must be `user` and include non-empty evidence. The missing-track list
+must match the tracks that did not complete, and exactly one track must have
+completed. The derived result labels the run `partial`, records the artifact
+digest, missing tracks, reduced independence, coverage, and completed-report
+identities, and includes each original completed envelope without truncation.
+Partial mode is never a complete parallel review. The digest binds the artifact
+content but cannot prove wall-clock order or the human identity behind
+`source: "user"`.
+
+Track `coverage.status` remains a report fact separate from launch status. A
+valid report may record `partial` or `not_assessed` coverage without being
+misreported as a launch failure. Unavailable host independence or recovery
+capability is recorded in run `checks` as `independence_capability` or
+`recovery_capability` with result `not_run` and a non-empty reason, not
+inferred as passed. Every run needs at least one such capability check. A
+recovery needs `recovery_capability`; a complete run needs
+`independence_capability`. A capability check with result `failed` or
+`not_assessed` makes the overall result blocked. A completed report with
+`coverage.status: blocked` also makes the overall result blocked with a
+distinct `coverage_blocked` run error; the track remains completed and its
+original report remains present. `partial` and `not_assessed` coverage remain
+visible limitations and do not trigger that failure.
+
 ## Severity
 
 - `P0`: data loss, a severe security issue, an unusable core flow, or inability

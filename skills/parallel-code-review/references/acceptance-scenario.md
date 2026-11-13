@@ -53,6 +53,60 @@ post-patch context.
    no applied patch, no branch or commit changes, and no task or pull request
    actions.
 
+## Failure and partial-mode scenarios
+
+Use the same frozen bundle and static envelopes to exercise coordinator
+behavior only. These records do not demonstrate live model discovery,
+independent execution, or recovery capability.
+
+1. **Successful two-track review.** Record one completed attempt for each
+   routed track with distinct invocation IDs, the identical frozen
+   bundle/attestation, and a distinct request hash derived from each track
+   identity. Record the `independence_capability` check. Run `validate-run`.
+   Confirm overall `complete`, routing order, both original reports, and no
+   merged or reranked findings. The per-track request hashes are expected to
+   differ.
+2. **Required-track launch failure.** Record the first track as completed,
+   then record the second track's attempt as `launch_failure` with evidence and
+   `launch_status: not_launched`. Run `validate-run`. Confirm overall `blocked`,
+   the second track is missing, and the first completed report remains visible
+   and attributable with its original findings.
+   Repeat with the valid completed track accompanied by duplicate, unknown,
+   non-object, missing-ID, and malformed-attempt entries, and separately with
+   `checks: null`. Confirm each run is `blocked`, records the relevant run
+   errors, and still returns the actual completed report rather than only an
+   error-code envelope.
+3. **One bounded recovery.** Fail one track with an evidenced
+   `transient_transport` attempt using `source: host`, `phase: transport`, and
+   a non-empty detail. Add exactly one recovery attempt with a new invocation
+   ID, the same derived `request_sha256`, `analysis_reused: false`, and the
+   `recovery_capability` check. Confirm the recovered run is `complete`.
+   Repeat with a non-launched transient, permanent failure, arbitrary request
+   hash, malformed evidence, reused invocation ID, or reused analysis and
+   confirm each is rejected.
+4. **Explicit partial approval.** Show and save the blocked launch-failure
+   complete JSON result first. In a separate run record, reference that
+   artifact by relative path and exact SHA-256, and record
+   `approval.source: "user"` with evidence,
+   `missing_track_ids: ["ponytail-review"]`, and the reduced independence.
+   Confirm the result is `partial`, includes the missing track, derived
+   coverage, artifact digest, and the untouched completed envelope, and never
+   says it is a complete parallel review. Confirm a self-referenced same-pass
+   record is rejected, as are a hard link to the current run, a minimal forged
+   artifact, and an artifact with changed findings, rendered summary, or track
+   summary under the same identities.
+5. **Coverage is not launch failure.** Validate launched reports whose
+   `coverage.status` is `partial` or `not_assessed`. Confirm the run reports
+   that coverage separately and does not relabel it as a launch failure. Repeat
+   with one completed report set to `coverage.status: blocked` and confirm the
+   overall run is blocked with `coverage_blocked`, while the track remains
+   completed and its full report remains visible.
+6. **Unavailable host capability.** If live independent launches,
+   independence evidence, or recovery capability cannot be demonstrated,
+   record the exact `independence_capability` or `recovery_capability` check as
+   `not_run` with a reason. Static records and subprocess contract tests are
+   not live evidence.
+
 ## Expected findings
 
 Routing order and normalized order are fixed for this synthetic bundle:

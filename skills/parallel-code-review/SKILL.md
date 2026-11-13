@@ -34,6 +34,7 @@ validator with those resolution inputs:
 ```text
 python scripts/review_contract.py preflight --skill-root <skill package root> \
   --upstream /code-review=<resolved SKILL.md or URI> \
+  --upstream /ponytail-review=<resolved SKILL.md or URI> \
   [--upstream-exact-sha /code-review=<exact-sha256>] \
   [--upstream-size /code-review=<exact-bytes>] \
   [--upstream-sha /code-review=<normalized-text-sha256>]
@@ -72,14 +73,24 @@ Freeze one immutable patch/tree snapshot before starting any track. The snapshot
 Use the package script with an output directory outside the reviewed repository:
 
 ```text
-python scripts/review_contract.py freeze --repo <repo> --output <external bundle> --range <base...head> --contract-root <skill package root> --upstream /code-review=<resolved source>
-python scripts/review_contract.py freeze --output <external bundle> --patch <patch> --tree-root <frozen tree> --contract-root <skill package root> --upstream /code-review=<resolved source>
-python scripts/review_contract.py freeze --repo <repo> --output <external bundle> --uncommitted --contract-root <skill package root> --upstream /code-review=<resolved source>
+python scripts/review_contract.py freeze --repo <repo> --output <external bundle> --range <base...head> \
+  --contract-root <skill package root> \
+  --upstream /code-review=<resolved source> \
+  --upstream /ponytail-review=<resolved source>
+python scripts/review_contract.py freeze --output <external bundle> --patch <patch> --tree-root <frozen tree> \
+  --contract-root <skill package root> \
+  --upstream /code-review=<resolved source> \
+  --upstream /ponytail-review=<resolved source>
+python scripts/review_contract.py freeze --repo <repo> --output <external bundle> --uncommitted \
+  --contract-root <skill package root> \
+  --upstream /code-review=<resolved source> \
+  --upstream /ponytail-review=<resolved source>
 ```
 
-For a remote URI, also pass `--upstream-exact-sha /code-review=<exact digest>`
-and `--upstream-size /code-review=<exact bytes>`; `--upstream-sha` is optional
-normalized attestation. Supply pinned requirements and standards with
+For each routed remote URI, also pass
+`--upstream-exact-sha <track>=<exact digest>` and
+`--upstream-size <track>=<exact bytes>`; `--upstream-sha` is optional normalized
+attestation. Supply pinned requirements and standards with
 repeatable `--requirements` and `--standards`. When the routed adapters require
 `checks`, supply at least one `--check NAME=RESULT` or `--not-run NAME=REASON`;
 `--check` accepts `passed`, `failed`, or `not_assessed`, while `not_run` must
@@ -97,7 +108,8 @@ Before each track starts, run:
 ```text
 python scripts/review_contract.py verify --bundle <bundle> \
   --contract-root <skill package root> \
-  --upstream /code-review=<resolved source>
+  --upstream /code-review=<resolved source> \
+  --upstream /ponytail-review=<resolved source>
 ```
 
 A changed patch, tree source, pinned input bytes, manifest, route table, adapter document, or upstream pin makes the run stale. Stop and report stale; do not present stale findings as current and do not silently re-freeze mid-run.
@@ -125,7 +137,8 @@ Run:
 ```text
 python scripts/review_contract.py validate-envelope --bundle <bundle> --envelope <track report> \
   --contract-root <skill package root> \
-  --upstream /code-review=<resolved source>
+  --upstream /code-review=<resolved source> \
+  --upstream /ponytail-review=<resolved source>
 ```
 
 The coordinator validates the schema, routed track ID, contract version, and attestation. It must validate but do not reclassify or reorder findings, change native severity or grouping, merge findings, or choose a cross-track winner. A malformed, truncated, blank, stale, or attestation-mismatched report blocks the run.
@@ -150,6 +163,27 @@ If we skip it: ...
 
 Show native axis, ID, severity, or group separately when present. Report launch status, coverage, findings, and any unavailable check as separate facts.
 
+## Block required-track failures
+
+Aggregate the validated track results with one coordinator run record and run:
+
+```text
+python scripts/review_contract.py validate-run --bundle <bundle> --run <run record> \
+  --contract-root <skill package root> \
+  --upstream /code-review=<resolved source> \
+  --upstream /ponytail-review=<resolved source>
+```
+
+A missing, unstarted, invalid, blank, truncated, scope-mismatched, or otherwise unverifiable required track makes the overall status blocked. Preserve every completed track report for a recognized routed track in routing-table order and show the blocked result before asking for any degradation. Duplicate, unknown, unidentified, or non-object track entries and malformed `checks` containers or records are run-level errors; continue aggregation instead of discarding valid reports. Only a run structure that cannot be enumerated or interpreted may fail before aggregation. Never launch a substitute reviewer, synthesize a missing report, or silently continue with fewer tracks.
+
+The command exits zero only for `complete`; treat both `blocked` and `partial` output as non-passing even when the JSON is structurally valid.
+
+The coordinator may make at most one recovery invocation in the whole run, and only when the failed attempt has `transient_runtime` or `transient_transport` evidence shaped as `{"source": "host", "phase": "runtime" | "transport", "detail": "..."}`. Every attempt's `request_sha256` must equal the deterministic digest of the frozen manifest, attestation, and routed track identity. Use a new invocation ID, reference the failed invocation, give the recovery no failed-attempt analysis, and record `analysis_reused: false`. Do not retry a permanent failure or use a changed request. This validates recorded evidence, not hidden host behavior.
+
+After `validate-run` produces a blocked result, save that JSON result as an external artifact. The artifact must contain the complete result schema. The user may then approve a one-track partial result in a separate follow-up run record that references the artifact path and exact SHA-256 and records `approval.source: "user"` plus evidence. The artifact must stay inside the run directory, must be blocked, and must match this run's tracks, coverage, checks, missing tracks, full completed envelopes, and run errors. Its rendered output must exactly equal the canonical render of those values; do not substitute display or summary text. It cannot be the current run record or a hard link to it. Approval before the visible block, inferred from silence, or self-referenced does not count. A partial result must be labeled `partial` and name the missing track, reduced independence, coverage, and the original completed report; it must never claim a complete parallel review. The digest cannot prove wall-clock order or user identity, so never fabricate either.
+
+Keep launch failure and `coverage.status` separate. A report may have `partial` or `not_assessed` coverage without becoming a launch failure. A completed report with `coverage.status: blocked` makes the run blocked because frozen-requirement coverage is incomplete, without relabeling the report or track as a launch failure. Every run records at least one meaningful capability check. A recovery requires a `recovery_capability` check, and a complete result requires an `independence_capability` check. If the host cannot demonstrate a capability, record that exact check as `not_run` with the reason; do not report it as passed. A failed or not-assessed capability check cannot yield `complete`.
+
 ## Read-only boundary
 
-Do not write to the reviewed repository, apply the patch, create review branches, stage files, commit, push, open pull requests, update issues, or run write-producing checks. Write only the explicit external bundle. Report checks that were not run with their reason instead of implying they passed.
+Do not write to the reviewed repository, apply the patch, create review branches, stage files, commit, push, open pull requests, update issues, or run write-producing checks. Write only the explicit external bundle and, when requesting partial mode, its blocked-result artifact. Report checks that were not run with their reason instead of implying they passed.

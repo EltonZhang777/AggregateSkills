@@ -1,6 +1,7 @@
 import copy
 import hashlib
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -57,6 +58,25 @@ def write(repo, relative_path, content):
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(content, encoding="utf-8")
     return path
+
+
+def make_directory_link(link, target):
+    try:
+        link.symlink_to(target, target_is_directory=True)
+        return
+    except (OSError, NotImplementedError) as exc:
+        if os.name != "nt":
+            raise
+        completed = subprocess.run(
+            ["cmd", "/c", "mklink", "/J", str(link), str(target)],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        if completed.returncode != 0:
+            raise OSError(
+                completed.stderr.strip() or completed.stdout.strip() or str(exc)
+            ) from exc
 
 
 def toggle_line_endings(path):
@@ -344,6 +364,66 @@ def valid_ponytail_review_envelope(attestation, checked_sha="e" * 64):
             },
         ],
     }
+
+
+def run_attempt(
+    invocation_id,
+    request_sha256,
+    *,
+    envelope=None,
+    failure=None,
+    launch_status="launched",
+    recovery=None,
+):
+    attempt = {
+        "invocation_id": invocation_id,
+        "status": "completed" if envelope is not None else "failed",
+        "launch_status": launch_status,
+        "request_sha256": request_sha256,
+    }
+    if envelope is not None:
+        attempt["envelope"] = envelope
+    else:
+        attempt["failure"] = failure
+    if recovery is not None:
+        attempt["recovery"] = recovery
+    return attempt
+
+
+def review_run(code_attempts, ponytail_attempts, partial=None, checks=None):
+    if checks is None:
+        checks = [
+            {
+                "name": "independence_capability",
+                "result": "not_run",
+                "reason": "Synthetic records do not demonstrate live independence.",
+            }
+        ]
+    return {
+        "contract_version": 1,
+        "tracks": [
+            {"track_id": "code-review", "attempts": code_attempts},
+            {"track_id": "ponytail-review", "attempts": ponytail_attempts},
+        ],
+        "checks": checks,
+        "partial": partial,
+    }
+
+
+def track_request_sha256(manifest, attestation, track_id):
+    payload = {
+        "track_id": track_id,
+        "manifest": manifest,
+        "attestation": attestation,
+    }
+    return hashlib.sha256(
+        json.dumps(
+            payload,
+            ensure_ascii=False,
+            separators=(",", ":"),
+            sort_keys=True,
+        ).encode("utf-8")
+    ).hexdigest()
 
 
 def metadata(track_name, source="https://example.com/skills", inputs=None, version=1):
@@ -1792,6 +1872,1550 @@ class ParallelCodeReviewEnvelopeTests(unittest.TestCase):
         )
 
 
+class ParallelCodeReviewRunTests(unittest.TestCase):
+    def test_run_success_preserves_route_order_and_separates_coverage_from_launch(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            frozen, bundle = freeze_acceptance_bundle(temp_dir)
+            self.assertEqual(frozen.returncode, 0, frozen.stderr or frozen.stdout)
+            manifest = json.loads((bundle / "manifest.json").read_text(encoding="utf-8"))
+            checked_sha = manifest["scope"]["tree_sources"][0]["sha256"]
+            attestation = json.loads((bundle / "attestation.json").read_text(encoding="utf-8"))
+            code_envelope = valid_code_review_envelope(attestation, checked_sha)
+            code_envelope["coverage"]["status"] = "partial"
+            ponytail_envelope = valid_ponytail_review_envelope(attestation, checked_sha)
+            ponytail_envelope["coverage"]["status"] = "not_assessed"
+            ponytail_envelope["coverage"]["checked"] = []
+            code_request = track_request_sha256(
+                manifest,
+                attestation,
+                "code-review",
+            )
+            ponytail_request = track_request_sha256(
+                manifest,
+                attestation,
+                "ponytail-review",
+            )
+            write(temp_dir, "code-review.json", json.dumps(code_envelope))
+            write(temp_dir, "ponytail-review.json", json.dumps(ponytail_envelope))
+            checks = [
+                {
+                    "name": "independence_capability",
+                    "result": "not_run",
+                    "reason": "Synthetic records do not demonstrate live host launches.",
+                },
+                {
+                    "name": "recovery_capability",
+                    "result": "not_run",
+                    "reason": "No live recovery was attempted.",
+                },
+            ]
+            run = review_run(
+                [
+                    run_attempt(
+                        "code-review-001",
+                        code_request,
+                        envelope="code-review.json",
+                    )
+                ],
+                [
+                    run_attempt(
+                        "ponytail-review-001",
+                        ponytail_request,
+                        envelope="ponytail-review.json",
+                    )
+                ],
+                checks=checks,
+            )
+            run["tracks"].reverse()
+            run_path = write(temp_dir, "run.json", json.dumps(run))
+            completed = run_contract(
+                "validate-run",
+                "--bundle",
+                bundle,
+                "--run",
+                run_path,
+                *contract_args(),
+            )
+
+        self.assertEqual(completed.returncode, 0, completed.stderr or completed.stdout)
+        result = result_json(completed)
+        self.assertEqual("complete", result["status"])
+        self.assertEqual(
+            ["code-review", "ponytail-review"],
+            [track["track_id"] for track in result["tracks"]],
+        )
+        self.assertEqual(
+            ["launched", "launched"],
+            [track["launch_status"] for track in result["tracks"]],
+        )
+        self.assertEqual(
+            ["partial", "not_assessed"],
+            [track["coverage_status"] for track in result["tracks"]],
+        )
+        self.assertEqual(
+            [code_envelope, ponytail_envelope],
+            result["completed_reports"],
+        )
+        rendered = result["rendered"]
+        self.assertIn("Overall status: `complete`", rendered)
+        self.assertLess(
+            rendered.index("## Track report: `code-review`"),
+            rendered.index("## Track report: `ponytail-review`"),
+        )
+        self.assertIn("independence_capability", rendered)
+        self.assertIn("`not_run`", rendered)
+
+    def test_completed_track_with_blocked_coverage_blocks_without_dropping_report(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            frozen, bundle = freeze_acceptance_bundle(temp_dir)
+            self.assertEqual(frozen.returncode, 0, frozen.stderr or frozen.stdout)
+            manifest = json.loads((bundle / "manifest.json").read_text(encoding="utf-8"))
+            checked_sha = manifest["scope"]["tree_sources"][0]["sha256"]
+            attestation = json.loads(
+                (bundle / "attestation.json").read_text(encoding="utf-8")
+            )
+            code_envelope = valid_code_review_envelope(attestation, checked_sha)
+            code_envelope["coverage"]["status"] = "blocked"
+            ponytail_envelope = valid_ponytail_review_envelope(
+                attestation,
+                checked_sha,
+            )
+            write(temp_dir, "code-review.json", json.dumps(code_envelope))
+            write(temp_dir, "ponytail-review.json", json.dumps(ponytail_envelope))
+            run = review_run(
+                [
+                    run_attempt(
+                        "code-review-001",
+                        track_request_sha256(
+                            manifest,
+                            attestation,
+                            "code-review",
+                        ),
+                        envelope="code-review.json",
+                    )
+                ],
+                [
+                    run_attempt(
+                        "ponytail-review-001",
+                        track_request_sha256(
+                            manifest,
+                            attestation,
+                            "ponytail-review",
+                        ),
+                        envelope="ponytail-review.json",
+                    )
+                ],
+            )
+            run_path = write(temp_dir, "blocked-coverage.json", json.dumps(run))
+            blocked = run_contract(
+                "validate-run",
+                "--bundle",
+                bundle,
+                "--run",
+                run_path,
+                *contract_args(),
+            )
+
+        self.assertEqual(1, blocked.returncode)
+        result = result_json(blocked)
+        self.assertEqual("blocked", result["status"])
+        self.assertEqual([], result["missing_tracks"])
+        self.assertEqual(
+            ["completed", "completed"],
+            [track["status"] for track in result["tracks"]],
+        )
+        self.assertEqual(
+            ["launched", "launched"],
+            [track["launch_status"] for track in result["tracks"]],
+        )
+        self.assertEqual(
+            ["blocked", "complete"],
+            [track["coverage_status"] for track in result["tracks"]],
+        )
+        self.assertEqual(
+            [code_envelope, ponytail_envelope],
+            result["completed_reports"],
+        )
+        self.assertIn("coverage_blocked", [error["code"] for error in result["errors"]])
+        self.assertIn(
+            "Completed track did not verify the frozen requirements.",
+            result["rendered"],
+        )
+        self.assertIn("## Completed track reports", result["rendered"])
+
+    def test_run_requires_meaningful_capability_checks(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            frozen, bundle = freeze_acceptance_bundle(temp_dir)
+            self.assertEqual(frozen.returncode, 0, frozen.stderr or frozen.stdout)
+            manifest = json.loads((bundle / "manifest.json").read_text(encoding="utf-8"))
+            checked_sha = manifest["scope"]["tree_sources"][0]["sha256"]
+            attestation = json.loads((bundle / "attestation.json").read_text(encoding="utf-8"))
+            code_envelope = valid_code_review_envelope(attestation, checked_sha)
+            ponytail_envelope = valid_ponytail_review_envelope(
+                attestation,
+                checked_sha,
+            )
+            write(temp_dir, "code-review.json", json.dumps(code_envelope))
+            write(
+                temp_dir,
+                "ponytail-review.json",
+                json.dumps(ponytail_envelope),
+            )
+            run = review_run(
+                [
+                    run_attempt(
+                        "code-review-001",
+                        track_request_sha256(
+                            manifest,
+                            attestation,
+                            "code-review",
+                        ),
+                        envelope="code-review.json",
+                    )
+                ],
+                [
+                    run_attempt(
+                        "ponytail-review-001",
+                        track_request_sha256(
+                            manifest,
+                            attestation,
+                            "ponytail-review",
+                        ),
+                        envelope="ponytail-review.json",
+                    )
+                ],
+            )
+
+            for label, checks in (
+                ("no checks", []),
+                (
+                    "unrelated check",
+                    [
+                        {
+                            "name": "unrelated assumption",
+                            "result": "not_run",
+                            "reason": "Not a host capability.",
+                        }
+                    ],
+                ),
+            ):
+                with self.subTest(label):
+                    payload = copy.deepcopy(run)
+                    payload["checks"] = checks
+                    run_path = write(
+                        temp_dir,
+                        f"{label.replace(' ', '-')}.json",
+                        json.dumps(payload),
+                    )
+                    rejected = run_contract(
+                        "validate-run",
+                        "--bundle",
+                        bundle,
+                        "--run",
+                        run_path,
+                        *contract_args(),
+                    )
+                    self.assertNotEqual(0, rejected.returncode)
+                    result = result_json(rejected)
+                    self.assertEqual("blocked", result["status"])
+                    self.assertEqual(
+                        [code_envelope, ponytail_envelope],
+                        result["completed_reports"],
+                    )
+                    self.assertIn(
+                        "capability_check_missing",
+                        [error["code"] for error in result["errors"]],
+                    )
+
+            payload = copy.deepcopy(run)
+            payload["checks"][0]["result"] = "failed"
+            run_path = write(temp_dir, "failed-capability.json", json.dumps(payload))
+            blocked = run_contract(
+                "validate-run",
+                "--bundle",
+                bundle,
+                "--run",
+                run_path,
+                *contract_args(),
+            )
+            self.assertEqual(1, blocked.returncode)
+            result = result_json(blocked)
+            self.assertEqual("blocked", result["status"])
+            self.assertEqual([], result["missing_tracks"])
+            self.assertEqual(
+                [code_envelope, ponytail_envelope],
+                result["completed_reports"],
+            )
+
+    def test_run_record_accepts_lf_and_crlf(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            frozen, bundle = freeze_acceptance_bundle(temp_dir)
+            self.assertEqual(frozen.returncode, 0, frozen.stderr or frozen.stdout)
+            manifest = json.loads((bundle / "manifest.json").read_text(encoding="utf-8"))
+            checked_sha = manifest["scope"]["tree_sources"][0]["sha256"]
+            attestation = json.loads((bundle / "attestation.json").read_text(encoding="utf-8"))
+            code_request = track_request_sha256(
+                manifest,
+                attestation,
+                "code-review",
+            )
+            ponytail_request = track_request_sha256(
+                manifest,
+                attestation,
+                "ponytail-review",
+            )
+            write(
+                temp_dir,
+                "code-review.json",
+                json.dumps(valid_code_review_envelope(attestation, checked_sha)),
+            )
+            write(
+                temp_dir,
+                "ponytail-review.json",
+                json.dumps(valid_ponytail_review_envelope(attestation, checked_sha)),
+            )
+            run = review_run(
+                [
+                    run_attempt(
+                        "code-review-001",
+                        code_request,
+                        envelope="code-review.json",
+                    )
+                ],
+                [
+                    run_attempt(
+                        "ponytail-review-001",
+                        ponytail_request,
+                        envelope="ponytail-review.json",
+                    )
+                ],
+            )
+            lf_bytes = json.dumps(run, indent=2).encode("utf-8").replace(b"\r\n", b"\n")
+            for label, data in (
+                ("lf", lf_bytes),
+                ("crlf", lf_bytes.replace(b"\n", b"\r\n")),
+            ):
+                with self.subTest(label):
+                    self.assertIn(b"\n", data)
+                    self.assertEqual(label == "crlf", b"\r\n" in data)
+                    run_path = Path(temp_dir) / f"run-{label}.json"
+                    run_path.write_bytes(data)
+                    completed = run_contract(
+                        "validate-run",
+                        "--bundle",
+                        bundle,
+                        "--run",
+                        run_path,
+                        *contract_args(),
+                    )
+                    self.assertEqual(
+                        completed.returncode,
+                        0,
+                        completed.stderr or completed.stdout,
+                    )
+                    self.assertEqual("complete", result_json(completed)["status"])
+
+    def test_run_blocks_missing_unstartable_invalid_and_mismatched_required_tracks(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            frozen, bundle = freeze_acceptance_bundle(temp_dir)
+            self.assertEqual(frozen.returncode, 0, frozen.stderr or frozen.stdout)
+            manifest = json.loads((bundle / "manifest.json").read_text(encoding="utf-8"))
+            checked_sha = manifest["scope"]["tree_sources"][0]["sha256"]
+            attestation = json.loads((bundle / "attestation.json").read_text(encoding="utf-8"))
+            code_envelope = valid_code_review_envelope(attestation, checked_sha)
+            ponytail_envelope = valid_ponytail_review_envelope(attestation, checked_sha)
+            code_request = track_request_sha256(
+                manifest,
+                attestation,
+                "code-review",
+            )
+            ponytail_request = track_request_sha256(
+                manifest,
+                attestation,
+                "ponytail-review",
+            )
+            write(temp_dir, "code-review.json", json.dumps(code_envelope))
+            write(temp_dir, "ponytail-review.json", json.dumps(ponytail_envelope))
+            code_attempt = run_attempt(
+                "code-review-001",
+                code_request,
+                envelope="code-review.json",
+            )
+
+            write(temp_dir, "blank.json", "")
+            write(temp_dir, "truncated.json", '{"contract_version":')
+            unverifiable = copy.deepcopy(ponytail_envelope)
+            del unverifiable["native"]
+            write(temp_dir, "unverifiable.json", json.dumps(unverifiable))
+            wrong_scope = copy.deepcopy(ponytail_envelope)
+            wrong_scope["attestation"]["patch_sha256"] = "0" * 64
+            write(temp_dir, "wrong-scope.json", json.dumps(wrong_scope))
+
+            cases = {
+                "missing": [],
+                "unstartable": [
+                    run_attempt(
+                        "ponytail-review-001",
+                        ponytail_request,
+                        failure={
+                            "class": "launch_failure",
+                            "evidence": "No independent sub-agent runtime was available.",
+                        },
+                        launch_status="not_launched",
+                    )
+                ],
+                "blank": [
+                    run_attempt(
+                        "ponytail-review-001",
+                        ponytail_request,
+                        envelope="blank.json",
+                    )
+                ],
+                "truncated": [
+                    run_attempt(
+                        "ponytail-review-001",
+                        ponytail_request,
+                        envelope="truncated.json",
+                    )
+                ],
+                "unverifiable": [
+                    run_attempt(
+                        "ponytail-review-001",
+                        ponytail_request,
+                        envelope="unverifiable.json",
+                    )
+                ],
+                "missing report": [
+                    run_attempt(
+                        "ponytail-review-001",
+                        ponytail_request,
+                        envelope="not-created.json",
+                    )
+                ],
+                "scope mismatch": [
+                    run_attempt(
+                        "ponytail-review-001",
+                        ponytail_request,
+                        envelope="wrong-scope.json",
+                    )
+                ],
+                "malformed attempt": [
+                    {
+                        "invocation_id": "ponytail-review-001",
+                        "status": "completed",
+                        "launch_status": "unknown",
+                        "request_sha256": ponytail_request,
+                        "envelope": "ponytail-review.json",
+                    }
+                ],
+                "malformed attempt list launch status": [
+                    {
+                        "invocation_id": "ponytail-review-001",
+                        "status": "completed",
+                        "launch_status": [],
+                        "request_sha256": ponytail_request,
+                        "envelope": "ponytail-review.json",
+                    }
+                ],
+                "malformed attempt object launch status": [
+                    {
+                        "invocation_id": "ponytail-review-001",
+                        "status": "completed",
+                        "launch_status": {"source": "host"},
+                        "request_sha256": ponytail_request,
+                        "envelope": "ponytail-review.json",
+                    }
+                ],
+            }
+            for label, ponytail_attempts in cases.items():
+                with self.subTest(label):
+                    run_path = write(
+                        temp_dir,
+                        f"{label.replace(' ', '-')}.json",
+                        json.dumps(review_run([code_attempt], ponytail_attempts)),
+                    )
+                    completed = run_contract(
+                        "validate-run",
+                        "--bundle",
+                        bundle,
+                        "--run",
+                        run_path,
+                        *contract_args(),
+                    )
+                    self.assertEqual(1, completed.returncode)
+                    result = result_json(completed)
+                    self.assertEqual("blocked", result["status"])
+                    self.assertEqual(["ponytail-review"], result["missing_tracks"])
+                    self.assertEqual([code_envelope], result["completed_reports"])
+                    self.assertEqual(
+                        "not_assessed",
+                        result["tracks"][1]["coverage_status"],
+                    )
+                    self.assertIn("Overall status: `blocked`", result["rendered"])
+                    self.assertIn("This is not a passing review.", result["rendered"])
+                    self.assertIn(
+                        "### 1. Preview converts Decimal money to float",
+                        result["rendered"],
+                    )
+
+            invalid_track_run = review_run([code_attempt], [])
+            invalid_track_run["tracks"][1]["attempts"] = None
+            invalid_track_path = write(
+                temp_dir,
+                "invalid-track-attempts.json",
+                json.dumps(invalid_track_run),
+            )
+            blocked = run_contract(
+                "validate-run",
+                "--bundle",
+                bundle,
+                "--run",
+                invalid_track_path,
+                *contract_args(),
+            )
+            self.assertEqual(1, blocked.returncode)
+            result = result_json(blocked)
+            self.assertEqual("blocked", result["status"])
+            self.assertEqual([code_envelope], result["completed_reports"])
+            self.assertEqual("failed", result["tracks"][1]["status"])
+
+    def test_run_preserves_completed_reports_when_track_entries_or_checks_are_malformed(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            frozen, bundle = freeze_acceptance_bundle(temp_dir)
+            self.assertEqual(frozen.returncode, 0, frozen.stderr or frozen.stdout)
+            manifest = json.loads((bundle / "manifest.json").read_text(encoding="utf-8"))
+            checked_sha = manifest["scope"]["tree_sources"][0]["sha256"]
+            attestation = json.loads(
+                (bundle / "attestation.json").read_text(encoding="utf-8")
+            )
+            code_envelope = valid_code_review_envelope(attestation, checked_sha)
+            ponytail_envelope = valid_ponytail_review_envelope(
+                attestation,
+                checked_sha,
+            )
+            write(temp_dir, "code-review.json", json.dumps(code_envelope))
+            write(temp_dir, "ponytail-review.json", json.dumps(ponytail_envelope))
+            code_attempt = run_attempt(
+                "code-review-001",
+                track_request_sha256(manifest, attestation, "code-review"),
+                envelope="code-review.json",
+            )
+            ponytail_attempt = run_attempt(
+                "ponytail-review-001",
+                track_request_sha256(manifest, attestation, "ponytail-review"),
+                envelope="ponytail-review.json",
+            )
+
+            malformed_tracks = review_run([code_attempt], [])
+            malformed_tracks["tracks"] = [
+                {"track_id": "code-review", "attempts": None},
+                {"track_id": "code-review", "attempts": [code_attempt]},
+                {"track_id": "unknown-review", "attempts": []},
+                "not-an-object",
+                {"attempts": []},
+            ]
+            malformed_tracks_path = write(
+                temp_dir,
+                "malformed-tracks.json",
+                json.dumps(malformed_tracks),
+            )
+            blocked = run_contract(
+                "validate-run",
+                "--bundle",
+                bundle,
+                "--run",
+                malformed_tracks_path,
+                *contract_args(),
+            )
+
+            self.assertEqual(1, blocked.returncode)
+            result = result_json(blocked)
+            self.assertEqual("blocked", result["status"])
+            self.assertEqual([code_envelope], result["completed_reports"])
+            self.assertEqual(
+                ["completed", "missing"],
+                [track["status"] for track in result["tracks"]],
+            )
+            self.assertEqual(["ponytail-review"], result["missing_tracks"])
+            error_codes = [error["code"] for error in result["errors"]]
+            self.assertIn("run_invalid", error_codes)
+            self.assertIn("track_not_routed", error_codes)
+            self.assertIn(
+                "Preview converts Decimal money to float",
+                result["rendered"],
+            )
+
+            malformed_checks = review_run([code_attempt], [ponytail_attempt])
+            malformed_checks["checks"] = None
+            malformed_checks_path = write(
+                temp_dir,
+                "malformed-checks.json",
+                json.dumps(malformed_checks),
+            )
+            blocked = run_contract(
+                "validate-run",
+                "--bundle",
+                bundle,
+                "--run",
+                malformed_checks_path,
+                *contract_args(),
+            )
+
+            self.assertEqual(1, blocked.returncode)
+            result = result_json(blocked)
+            self.assertEqual("blocked", result["status"])
+            self.assertEqual(
+                [code_envelope, ponytail_envelope],
+                result["completed_reports"],
+            )
+            error_codes = [error["code"] for error in result["errors"]]
+            self.assertIn("run_invalid", error_codes)
+            self.assertIn("capability_check_missing", error_codes)
+
+    def test_run_allows_one_bounded_recovery_with_the_same_frozen_request(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            frozen, bundle = freeze_acceptance_bundle(temp_dir)
+            self.assertEqual(frozen.returncode, 0, frozen.stderr or frozen.stdout)
+            manifest = json.loads((bundle / "manifest.json").read_text(encoding="utf-8"))
+            checked_sha = manifest["scope"]["tree_sources"][0]["sha256"]
+            attestation = json.loads((bundle / "attestation.json").read_text(encoding="utf-8"))
+            code_envelope = valid_code_review_envelope(attestation, checked_sha)
+            ponytail_envelope = valid_ponytail_review_envelope(attestation, checked_sha)
+            ponytail_envelope["invocation_id"] = "ponytail-review-002"
+            code_request = track_request_sha256(
+                manifest,
+                attestation,
+                "code-review",
+            )
+            ponytail_request = track_request_sha256(
+                manifest,
+                attestation,
+                "ponytail-review",
+            )
+            checks = [
+                {
+                    "name": "independence_capability",
+                    "result": "not_run",
+                    "reason": "Synthetic records do not demonstrate live independence.",
+                },
+                {
+                    "name": "recovery_capability",
+                    "result": "not_run",
+                    "reason": "Synthetic records do not demonstrate live recovery.",
+                },
+            ]
+            write(temp_dir, "code-review.json", json.dumps(code_envelope))
+            write(temp_dir, "ponytail-review.json", json.dumps(ponytail_envelope))
+            code_attempt = run_attempt(
+                "code-review-001",
+                code_request,
+                envelope="code-review.json",
+            )
+            failed_attempt = run_attempt(
+                "ponytail-review-001",
+                ponytail_request,
+                failure={
+                    "class": "transient_transport",
+                    "evidence": {
+                        "source": "host",
+                        "phase": "transport",
+                        "detail": "The transport reset after the request was sent.",
+                    },
+                },
+            )
+            recovered_attempt = run_attempt(
+                "ponytail-review-002",
+                ponytail_request,
+                envelope="ponytail-review.json",
+                recovery={
+                    "of_invocation_id": "ponytail-review-001",
+                    "analysis_reused": False,
+                },
+            )
+            run = review_run(
+                [code_attempt],
+                [failed_attempt, recovered_attempt],
+                checks=checks,
+            )
+            run_path = write(temp_dir, "recovered.json", json.dumps(run))
+            completed = run_contract(
+                "validate-run",
+                "--bundle",
+                bundle,
+                "--run",
+                run_path,
+                *contract_args(),
+            )
+            self.assertEqual(completed.returncode, 0, completed.stderr or completed.stdout)
+            result = result_json(completed)
+            self.assertEqual("complete", result["status"])
+            self.assertEqual(
+                [code_envelope, ponytail_envelope],
+                result["completed_reports"],
+            )
+            self.assertEqual(2, len(result["tracks"][1]["attempts"]))
+            self.assertIn("one bounded recovery", result["rendered"])
+            self.assertIn("recorded `analysis_reused: false`", result["rendered"])
+            self.assertIn("not independently verified", result["rendered"])
+            self.assertNotIn("fresh analysis", result["rendered"])
+
+            blocked_cases = {}
+            bad = copy.deepcopy(run)
+            bad["tracks"][1]["attempts"][0]["failure"] = {
+                "class": "launch_failure",
+                "evidence": "The host had no sub-agent runtime.",
+            }
+            bad["tracks"][1]["attempts"][0]["launch_status"] = "not_launched"
+            blocked_cases["permanent failure"] = bad
+
+            bad = copy.deepcopy(run)
+            bad["tracks"][1]["attempts"][1]["request_sha256"] = "c" * 64
+            blocked_cases["arbitrary recovery request hash"] = bad
+
+            bad = copy.deepcopy(run)
+            bad["tracks"][1]["attempts"][0]["request_sha256"] = "c" * 64
+            bad["tracks"][1]["attempts"][1]["request_sha256"] = "c" * 64
+            blocked_cases["arbitrary request hashes"] = bad
+
+            bad = copy.deepcopy(run)
+            bad["tracks"][1]["attempts"][1]["invocation_id"] = "ponytail-review-001"
+            blocked_cases["reused invocation"] = bad
+
+            bad = copy.deepcopy(run)
+            bad["tracks"][1]["attempts"][1]["recovery"]["analysis_reused"] = True
+            blocked_cases["reused analysis"] = bad
+
+            bad = copy.deepcopy(run)
+            del bad["tracks"][1]["attempts"][1]["recovery"]
+            blocked_cases["implicit retry"] = bad
+
+            bad = copy.deepcopy(run)
+            bad["tracks"][1]["attempts"][0]["failure"] = {
+                "class": "transient_transport",
+                "evidence": "Transport failed.",
+            }
+            blocked_cases["malformed transient evidence"] = bad
+
+            bad = copy.deepcopy(run)
+            bad["tracks"][1]["attempts"][0]["launch_status"] = "not_launched"
+            blocked_cases["non-launched transient"] = bad
+
+            bad = copy.deepcopy(run)
+            bad["tracks"][1]["attempts"].append(
+                run_attempt(
+                    "ponytail-review-003",
+                    ponytail_request,
+                    envelope="ponytail-review.json",
+                    recovery={
+                        "of_invocation_id": "ponytail-review-002",
+                        "analysis_reused": False,
+                    },
+                )
+            )
+            blocked_cases["second recovery"] = bad
+
+            for label, payload in blocked_cases.items():
+                with self.subTest(label):
+                    run_path = write(
+                        temp_dir,
+                        f"{label.replace(' ', '-')}.json",
+                        json.dumps(payload),
+                    )
+                    blocked = run_contract(
+                        "validate-run",
+                        "--bundle",
+                        bundle,
+                        "--run",
+                        run_path,
+                        *contract_args(),
+                    )
+                    self.assertNotEqual(0, blocked.returncode)
+                    result = result_json(blocked)
+                    self.assertEqual("blocked", result["status"])
+                    self.assertEqual(["ponytail-review"], result["missing_tracks"])
+                    self.assertEqual([code_envelope], result["completed_reports"])
+
+            error_cases = {}
+            recovered_code_envelope = copy.deepcopy(code_envelope)
+            recovered_code_envelope["invocation_id"] = "code-review-002"
+            write(
+                temp_dir,
+                "code-review-002.json",
+                json.dumps(recovered_code_envelope),
+            )
+            bad = copy.deepcopy(run)
+            bad["tracks"][0] = {
+                "track_id": "code-review",
+                "attempts": [
+                    run_attempt(
+                        "code-review-001",
+                        code_request,
+                        failure={
+                            "class": "transient_runtime",
+                            "evidence": {
+                                "source": "host",
+                                "phase": "runtime",
+                                "detail": "The runtime stopped after launch.",
+                            },
+                        },
+                    ),
+                    run_attempt(
+                        "code-review-002",
+                        code_request,
+                        envelope="code-review-002.json",
+                        recovery={
+                            "of_invocation_id": "code-review-001",
+                            "analysis_reused": False,
+                        },
+                    ),
+                ],
+            }
+            error_cases["two tracks recover"] = (
+                bad,
+                "recovery_limit",
+                [recovered_code_envelope, ponytail_envelope],
+            )
+
+            bad = copy.deepcopy(run)
+            bad["checks"] = [checks[0]]
+            error_cases["missing recovery capability check"] = (
+                bad,
+                "recovery_capability_check_missing",
+                [code_envelope, ponytail_envelope],
+            )
+
+            bad = copy.deepcopy(run)
+            bad["tracks"][1]["attempts"][0]["invocation_id"] = "code-review-001"
+            bad["tracks"][1]["attempts"][1]["recovery"]["of_invocation_id"] = (
+                "code-review-001"
+            )
+            error_cases["duplicate invocation IDs"] = (
+                bad,
+                "run_invalid",
+                [code_envelope, ponytail_envelope],
+            )
+
+            for label, (payload, expected_code, expected_reports) in error_cases.items():
+                with self.subTest(label):
+                    run_path = write(
+                        temp_dir,
+                        f"{label.replace(' ', '-')}.json",
+                        json.dumps(payload),
+                    )
+                    blocked = run_contract(
+                        "validate-run",
+                        "--bundle",
+                        bundle,
+                        "--run",
+                        run_path,
+                        *contract_args(),
+                    )
+                    self.assertNotEqual(0, blocked.returncode)
+                    result = result_json(blocked)
+                    self.assertEqual("blocked", result["status"])
+                    self.assertEqual(expected_reports, result["completed_reports"])
+                    self.assertIn(
+                        expected_code,
+                        [error["code"] for error in result["errors"]],
+                    )
+
+    def test_recovery_envelope_failure_preserves_metadata_and_recovery_gate(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            frozen, bundle = freeze_acceptance_bundle(temp_dir)
+            self.assertEqual(frozen.returncode, 0, frozen.stderr or frozen.stdout)
+            manifest = json.loads((bundle / "manifest.json").read_text(encoding="utf-8"))
+            checked_sha = manifest["scope"]["tree_sources"][0]["sha256"]
+            attestation = json.loads(
+                (bundle / "attestation.json").read_text(encoding="utf-8")
+            )
+            code_envelope = valid_code_review_envelope(attestation, checked_sha)
+            write(temp_dir, "code-review.json", json.dumps(code_envelope))
+            code_attempt = run_attempt(
+                "code-review-001",
+                track_request_sha256(manifest, attestation, "code-review"),
+                envelope="code-review.json",
+            )
+            ponytail_request = track_request_sha256(
+                manifest,
+                attestation,
+                "ponytail-review",
+            )
+            checks = [
+                {
+                    "name": "independence_capability",
+                    "result": "not_run",
+                    "reason": "Synthetic records do not demonstrate live independence.",
+                }
+            ]
+
+            for label, content in (
+                ("blank", ""),
+                ("corrupt", '{"contract_version":'),
+            ):
+                with self.subTest(label):
+                    envelope_name = f"ponytail-{label}.json"
+                    write(temp_dir, envelope_name, content)
+                    failed_attempt = run_attempt(
+                        "ponytail-review-001",
+                        ponytail_request,
+                        failure={
+                            "class": "transient_runtime",
+                            "evidence": {
+                                "source": "host",
+                                "phase": "runtime",
+                                "detail": "The runtime stopped after launch.",
+                            },
+                        },
+                    )
+                    recovery_attempt = run_attempt(
+                        "ponytail-review-002",
+                        ponytail_request,
+                        envelope=envelope_name,
+                        recovery={
+                            "of_invocation_id": "ponytail-review-001",
+                            "analysis_reused": False,
+                        },
+                    )
+                    run = review_run(
+                        [code_attempt],
+                        [failed_attempt, recovery_attempt],
+                        checks=checks,
+                    )
+                    run_path = write(
+                        temp_dir,
+                        f"recovery-{label}.json",
+                        json.dumps(run),
+                    )
+                    blocked = run_contract(
+                        "validate-run",
+                        "--bundle",
+                        bundle,
+                        "--run",
+                        run_path,
+                        *contract_args(),
+                    )
+
+                    self.assertEqual(1, blocked.returncode)
+                    result = result_json(blocked)
+                    self.assertEqual("blocked", result["status"])
+                    self.assertEqual(["ponytail-review"], result["missing_tracks"])
+                    self.assertEqual([code_envelope], result["completed_reports"])
+                    attempts = result["tracks"][1]["attempts"]
+                    self.assertEqual(2, len(attempts))
+                    self.assertEqual(
+                        "ponytail-review-002",
+                        attempts[1]["invocation_id"],
+                    )
+                    self.assertIn("recovery", attempts[1])
+                    self.assertEqual("invalid_result", attempts[1]["failure"]["class"])
+                    self.assertIn(
+                        "recovery_capability_check_missing",
+                        [error["code"] for error in result["errors"]],
+                    )
+                    self.assertNotIn("implicit retry", result["rendered"])
+
+    def test_nul_envelope_path_degrades_only_that_track(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            frozen, bundle = freeze_acceptance_bundle(temp_dir)
+            self.assertEqual(frozen.returncode, 0, frozen.stderr or frozen.stdout)
+            manifest = json.loads((bundle / "manifest.json").read_text(encoding="utf-8"))
+            checked_sha = manifest["scope"]["tree_sources"][0]["sha256"]
+            attestation = json.loads(
+                (bundle / "attestation.json").read_text(encoding="utf-8")
+            )
+            code_envelope = valid_code_review_envelope(attestation, checked_sha)
+            write(temp_dir, "code-review.json", json.dumps(code_envelope))
+            run = review_run(
+                [
+                    run_attempt(
+                        "code-review-001",
+                        track_request_sha256(
+                            manifest,
+                            attestation,
+                            "code-review",
+                        ),
+                        envelope="code-review.json",
+                    )
+                ],
+                [
+                    run_attempt(
+                        "ponytail-review-001",
+                        track_request_sha256(
+                            manifest,
+                            attestation,
+                            "ponytail-review",
+                        ),
+                        envelope="ponytail-review\x00.json",
+                    )
+                ],
+            )
+            run_path = write(temp_dir, "nul-envelope.json", json.dumps(run))
+            blocked = run_contract(
+                "validate-run",
+                "--bundle",
+                bundle,
+                "--run",
+                run_path,
+                *contract_args(),
+            )
+
+        self.assertEqual(1, blocked.returncode)
+        result = result_json(blocked)
+        self.assertEqual("blocked", result["status"])
+        self.assertEqual(["ponytail-review"], result["missing_tracks"])
+        self.assertEqual([code_envelope], result["completed_reports"])
+        self.assertEqual("failed", result["tracks"][1]["status"])
+        self.assertEqual(
+            "invalid_result",
+            result["tracks"][1]["attempts"][0]["failure"]["class"],
+        )
+        self.assertIn(
+            "### 1. Preview converts Decimal money to float",
+            result["rendered"],
+        )
+
+    def test_partial_mode_requires_post_block_approval_and_records_the_gap(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            frozen, bundle = freeze_acceptance_bundle(temp_dir)
+            self.assertEqual(frozen.returncode, 0, frozen.stderr or frozen.stdout)
+            manifest = json.loads((bundle / "manifest.json").read_text(encoding="utf-8"))
+            checked_sha = manifest["scope"]["tree_sources"][0]["sha256"]
+            attestation = json.loads((bundle / "attestation.json").read_text(encoding="utf-8"))
+            code_envelope = valid_code_review_envelope(attestation, checked_sha)
+            code_request = track_request_sha256(
+                manifest,
+                attestation,
+                "code-review",
+            )
+            ponytail_request = track_request_sha256(
+                manifest,
+                attestation,
+                "ponytail-review",
+            )
+            write(temp_dir, "code-review.json", json.dumps(code_envelope))
+            code_attempt = run_attempt(
+                "code-review-001",
+                code_request,
+                envelope="code-review.json",
+            )
+            failed_attempt = run_attempt(
+                "ponytail-review-001",
+                ponytail_request,
+                failure={
+                    "class": "launch_failure",
+                    "evidence": "The second independent sub-agent did not start.",
+                },
+                launch_status="not_launched",
+            )
+            blocked_run = review_run([code_attempt], [failed_attempt])
+            blocked_run_path = write(
+                temp_dir,
+                "blocked-run.json",
+                json.dumps(blocked_run),
+            )
+            blocked = run_contract(
+                "validate-run",
+                "--bundle",
+                bundle,
+                "--run",
+                blocked_run_path,
+                *contract_args(),
+            )
+            self.assertEqual(1, blocked.returncode)
+            blocked_result = result_json(blocked)
+            self.assertEqual("blocked", blocked_result["status"])
+            blocked_result_path = write(
+                temp_dir,
+                "blocked-result.json",
+                json.dumps(blocked_result),
+            )
+            blocked_digest = hashlib.sha256(
+                blocked_result_path.read_bytes()
+            ).hexdigest()
+            partial = {
+                "approval": {
+                    "source": "user",
+                    "evidence": "User approved retaining the completed code-review track.",
+                },
+                "blocked_result": {
+                    "path": "blocked-result.json",
+                    "sha256": blocked_digest,
+                },
+                "missing_track_ids": ["ponytail-review"],
+                "reduced_independence": (
+                    "Only one of two required independent review tracks completed."
+                ),
+            }
+            run = review_run([code_attempt], [failed_attempt], partial=partial)
+            run_path = write(temp_dir, "partial-run.json", json.dumps(run))
+            completed = run_contract(
+                "validate-run",
+                "--bundle",
+                bundle,
+                "--run",
+                run_path,
+                *contract_args(),
+            )
+
+            self.assertEqual(1, completed.returncode)
+            result = result_json(completed)
+            self.assertEqual("partial", result["status"], result.get("errors"))
+            self.assertEqual(["ponytail-review"], result["missing_tracks"])
+            self.assertEqual(
+                [
+                    {"track_id": "code-review", "status": "complete"},
+                    {
+                        "track_id": "ponytail-review",
+                        "status": "not_assessed",
+                        "reason": "Required review track did not complete.",
+                    },
+                ],
+                result["partial"]["coverage"],
+            )
+            self.assertEqual(
+                [
+                    {
+                        "track_id": code_envelope["track_id"],
+                        "invocation_id": code_envelope["invocation_id"],
+                    }
+                ],
+                result["partial"]["completed_reports"],
+            )
+            self.assertEqual([code_envelope], result["completed_reports"])
+            rendered = result["rendered"]
+            self.assertIn("Overall status: `partial`", rendered)
+            self.assertIn("blocked one-track partial review", rendered)
+            self.assertIn("not a complete parallel review", rendered)
+            self.assertIn("Missing tracks: `ponytail-review`", rendered)
+            self.assertIn("Approval source: user", rendered)
+            self.assertIn(blocked_digest, rendered)
+            self.assertIn("Reduced independence:", rendered)
+            self.assertIn("`ponytail-review`: `not_assessed`", rendered)
+            self.assertIn(
+                "Preview converts Decimal money to float",
+                rendered,
+            )
+            self.assertNotIn("Overall status: `complete`", rendered)
+
+            cases = {}
+            bad = copy.deepcopy(run)
+            bad["partial"]["approval"]["source"] = "coordinator"
+            cases["not user approved"] = (bad, "partial_approval_invalid")
+
+            bad = copy.deepcopy(run)
+            bad["partial"]["approval"]["evidence"] = ""
+            cases["no evidence"] = (bad, "partial_approval_invalid")
+
+            bad = copy.deepcopy(run)
+            bad["partial"]["missing_track_ids"] = ["code-review"]
+            cases["wrong gap"] = (bad, "partial_gap_mismatch")
+
+            bad = copy.deepcopy(run)
+            bad["partial"]["blocked_result"]["sha256"] = "0" * 64
+            cases["wrong blocked digest"] = (
+                bad,
+                "partial_blocked_result_invalid",
+            )
+
+            not_blocked = copy.deepcopy(blocked_result)
+            not_blocked["status"] = "complete"
+            not_blocked_path = write(
+                temp_dir,
+                "not-blocked-result.json",
+                json.dumps(not_blocked),
+            )
+            bad = copy.deepcopy(run)
+            bad["partial"]["blocked_result"] = {
+                "path": "not-blocked-result.json",
+                "sha256": hashlib.sha256(
+                    not_blocked_path.read_bytes()
+                ).hexdigest(),
+            }
+            cases["not blocked artifact"] = (
+                bad,
+                "partial_blocked_result_invalid",
+            )
+
+            wrong_blocked = copy.deepcopy(blocked_result)
+            wrong_blocked["missing_tracks"] = []
+            wrong_blocked_path = write(
+                temp_dir,
+                "wrong-blocked-result.json",
+                json.dumps(wrong_blocked),
+            )
+            bad = copy.deepcopy(run)
+            bad["partial"]["blocked_result"] = {
+                "path": "wrong-blocked-result.json",
+                "sha256": hashlib.sha256(
+                    wrong_blocked_path.read_bytes()
+                ).hexdigest(),
+            }
+            cases["wrong blocked gap"] = (bad, "partial_gap_mismatch")
+
+            minimal = {
+                "status": "blocked",
+                "missing_tracks": ["ponytail-review"],
+                "completed_reports": [
+                    {
+                        "track_id": "code-review",
+                        "invocation_id": "code-review-001",
+                    }
+                ],
+            }
+            minimal_path = write(
+                temp_dir,
+                "minimal-blocked-result.json",
+                json.dumps(minimal),
+            )
+            bad = copy.deepcopy(run)
+            bad["partial"]["blocked_result"] = {
+                "path": "minimal-blocked-result.json",
+                "sha256": hashlib.sha256(minimal_path.read_bytes()).hexdigest(),
+            }
+            cases["minimal blocked forgery"] = (
+                bad,
+                "partial_blocked_result_invalid",
+            )
+
+            changed_findings = copy.deepcopy(blocked_result)
+            changed_findings["completed_reports"][0]["findings"][0]["title"] = (
+                "Changed with the same report identities"
+            )
+            changed_findings_path = write(
+                temp_dir,
+                "changed-findings-blocked-result.json",
+                json.dumps(changed_findings),
+            )
+            bad = copy.deepcopy(run)
+            bad["partial"]["blocked_result"] = {
+                "path": "changed-findings-blocked-result.json",
+                "sha256": hashlib.sha256(
+                    changed_findings_path.read_bytes()
+                ).hexdigest(),
+            }
+            cases["changed findings"] = (
+                bad,
+                "partial_blocked_result_invalid",
+            )
+
+            changed_rendered = copy.deepcopy(blocked_result)
+            changed_rendered["rendered"] += "\nForged review summary.\n"
+            changed_rendered_path = write(
+                temp_dir,
+                "changed-rendered-blocked-result.json",
+                json.dumps(changed_rendered),
+            )
+            bad = copy.deepcopy(run)
+            bad["partial"]["blocked_result"] = {
+                "path": "changed-rendered-blocked-result.json",
+                "sha256": hashlib.sha256(
+                    changed_rendered_path.read_bytes()
+                ).hexdigest(),
+            }
+            cases["changed rendered summary"] = (
+                bad,
+                "partial_blocked_result_invalid",
+            )
+
+            changed_summary = copy.deepcopy(blocked_result)
+            changed_summary["tracks"][0]["finding_count"] += 1
+            changed_summary_path = write(
+                temp_dir,
+                "changed-track-summary-blocked-result.json",
+                json.dumps(changed_summary),
+            )
+            bad = copy.deepcopy(run)
+            bad["partial"]["blocked_result"] = {
+                "path": "changed-track-summary-blocked-result.json",
+                "sha256": hashlib.sha256(changed_summary_path.read_bytes()).hexdigest(),
+            }
+            cases["changed track summary"] = (
+                bad,
+                "partial_blocked_result_invalid",
+            )
+
+            changed_count = copy.deepcopy(blocked_result)
+            changed_count["tracks"][0]["finding_count"] = float(
+                changed_count["tracks"][0]["finding_count"]
+            )
+            changed_count_path = write(
+                temp_dir,
+                "changed-count-blocked-result.json",
+                json.dumps(changed_count),
+            )
+            bad = copy.deepcopy(run)
+            bad["partial"]["blocked_result"] = {
+                "path": "changed-count-blocked-result.json",
+                "sha256": hashlib.sha256(changed_count_path.read_bytes()).hexdigest(),
+            }
+            cases["float track count"] = (
+                bad,
+                "partial_blocked_result_invalid",
+            )
+
+            changed_count = copy.deepcopy(blocked_result)
+            changed_count["completed_reports"][0]["contract_version"] = True
+            changed_count_path = write(
+                temp_dir,
+                "boolean-count-blocked-result.json",
+                json.dumps(changed_count),
+            )
+            bad = copy.deepcopy(run)
+            bad["partial"]["blocked_result"] = {
+                "path": "boolean-count-blocked-result.json",
+                "sha256": hashlib.sha256(changed_count_path.read_bytes()).hexdigest(),
+            }
+            cases["boolean track count"] = (
+                bad,
+                "partial_blocked_result_invalid",
+            )
+
+            bad = copy.deepcopy(run)
+            bad["partial"]["blocked_result"]["path"] = "../blocked-result.json"
+            cases["unsafe artifact path"] = (
+                bad,
+                "partial_blocked_result_invalid",
+            )
+
+            bad = copy.deepcopy(run)
+            bad["partial"]["blocked_result"]["path"] = "blocked\x00-result.json"
+            cases["NUL artifact path"] = (
+                bad,
+                "partial_blocked_result_invalid",
+            )
+
+            for label, (payload, expected_code) in cases.items():
+                with self.subTest(label):
+                    run_path = write(
+                        temp_dir,
+                        f"partial-{label.replace(' ', '-')}.json",
+                        json.dumps(payload),
+                    )
+                    blocked = run_contract(
+                        "validate-run",
+                        "--bundle",
+                        bundle,
+                        "--run",
+                        run_path,
+                        *contract_args(),
+                    )
+                    self.assertNotEqual(0, blocked.returncode)
+                    result = result_json(blocked)
+                    self.assertEqual("blocked", result["status"])
+                    self.assertEqual([code_envelope], result["completed_reports"])
+                    self.assertIn(
+                        expected_code,
+                        [error["code"] for error in result["errors"]],
+                    )
+
+            same_pass = copy.deepcopy(run)
+            same_pass["partial"]["blocked_result"]["path"] = "same-pass.json"
+            same_pass_path = write(
+                temp_dir,
+                "same-pass.json",
+                json.dumps(same_pass),
+            )
+            rejected = run_contract(
+                "validate-run",
+                "--bundle",
+                bundle,
+                "--run",
+                same_pass_path,
+                *contract_args(),
+            )
+            self.assertNotEqual(0, rejected.returncode)
+            self.assertIn(
+                "partial_blocked_result_invalid",
+                [error["code"] for error in result_json(rejected)["errors"]],
+            )
+
+    def test_symlink_escape_is_rejected_for_envelopes_and_partial_artifacts(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            frozen, bundle = freeze_acceptance_bundle(temp_dir)
+            self.assertEqual(frozen.returncode, 0, frozen.stderr or frozen.stdout)
+            manifest = json.loads((bundle / "manifest.json").read_text(encoding="utf-8"))
+            checked_sha = manifest["scope"]["tree_sources"][0]["sha256"]
+            attestation = json.loads(
+                (bundle / "attestation.json").read_text(encoding="utf-8")
+            )
+            code_envelope = valid_code_review_envelope(attestation, checked_sha)
+            ponytail_envelope = valid_ponytail_review_envelope(attestation, checked_sha)
+            code_request = track_request_sha256(
+                manifest,
+                attestation,
+                "code-review",
+            )
+            ponytail_request = track_request_sha256(
+                manifest,
+                attestation,
+                "ponytail-review",
+            )
+            run_dir = Path(temp_dir) / "run"
+            outside_dir = Path(temp_dir) / "outside"
+            run_dir.mkdir()
+            outside_dir.mkdir()
+            write(run_dir, "code-review.json", json.dumps(code_envelope))
+            write(
+                outside_dir,
+                "ponytail-review.json",
+                json.dumps(ponytail_envelope),
+            )
+            try:
+                make_directory_link(run_dir / "outside", outside_dir)
+            except (OSError, NotImplementedError) as exc:
+                self.skipTest(f"Directory links are unavailable: {exc}")
+
+            code_attempt = run_attempt(
+                "code-review-001",
+                code_request,
+                envelope="code-review.json",
+            )
+            ponytail_attempt = run_attempt(
+                "ponytail-review-001",
+                ponytail_request,
+                envelope="outside/ponytail-review.json",
+            )
+            run = review_run([code_attempt], [ponytail_attempt])
+            run_path = write(run_dir, "blocked-run.json", json.dumps(run))
+            blocked = run_contract(
+                "validate-run",
+                "--bundle",
+                bundle,
+                "--run",
+                run_path,
+                *contract_args(),
+            )
+
+            self.assertEqual(1, blocked.returncode)
+            blocked_result = result_json(blocked)
+            self.assertEqual("blocked", blocked_result["status"])
+            self.assertEqual([code_envelope], blocked_result["completed_reports"])
+            self.assertEqual(
+                "invalid_result",
+                blocked_result["tracks"][1]["attempts"][0]["failure"]["class"],
+            )
+
+            outside_artifact = write(
+                outside_dir,
+                "blocked-result.json",
+                json.dumps(blocked_result),
+            )
+            partial = {
+                "approval": {
+                    "source": "user",
+                    "evidence": "User approved the one-track partial review.",
+                },
+                "blocked_result": {
+                    "path": "outside/blocked-result.json",
+                    "sha256": hashlib.sha256(
+                        outside_artifact.read_bytes()
+                    ).hexdigest(),
+                },
+                "missing_track_ids": ["ponytail-review"],
+                "reduced_independence": "Only one required track completed.",
+            }
+            follow_up = review_run(
+                [code_attempt],
+                [ponytail_attempt],
+                partial=partial,
+            )
+            follow_up_path = write(run_dir, "partial-run.json", json.dumps(follow_up))
+            rejected = run_contract(
+                "validate-run",
+                "--bundle",
+                bundle,
+                "--run",
+                follow_up_path,
+                *contract_args(),
+            )
+
+        self.assertEqual(1, rejected.returncode)
+        result = result_json(rejected)
+        self.assertEqual("blocked", result["status"])
+        self.assertEqual([code_envelope], result["completed_reports"])
+        self.assertIn(
+            "partial_blocked_result_invalid",
+            [error["code"] for error in result["errors"]],
+        )
+
+    def test_partial_mode_rejects_a_hardlink_to_the_current_run(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            frozen, bundle = freeze_acceptance_bundle(temp_dir)
+            self.assertEqual(frozen.returncode, 0, frozen.stderr or frozen.stdout)
+            manifest = json.loads((bundle / "manifest.json").read_text(encoding="utf-8"))
+            checked_sha = manifest["scope"]["tree_sources"][0]["sha256"]
+            attestation = json.loads(
+                (bundle / "attestation.json").read_text(encoding="utf-8")
+            )
+            write(
+                temp_dir,
+                "code-review.json",
+                json.dumps(valid_code_review_envelope(attestation, checked_sha)),
+            )
+            run = review_run(
+                [
+                    run_attempt(
+                        "code-review-001",
+                        track_request_sha256(
+                            manifest,
+                            attestation,
+                            "code-review",
+                        ),
+                        envelope="code-review.json",
+                    )
+                ],
+                [
+                    run_attempt(
+                        "ponytail-review-001",
+                        track_request_sha256(
+                            manifest,
+                            attestation,
+                            "ponytail-review",
+                        ),
+                        failure={
+                            "class": "launch_failure",
+                            "evidence": "The second independent sub-agent did not start.",
+                        },
+                        launch_status="not_launched",
+                    )
+                ],
+                partial={
+                    "approval": {
+                        "source": "user",
+                        "evidence": "User approved the one-track partial review.",
+                    },
+                    "blocked_result": {
+                        "path": "current-run-hardlink.json",
+                        "sha256": "0" * 64,
+                    },
+                    "missing_track_ids": ["ponytail-review"],
+                    "reduced_independence": "Only one required track completed.",
+                },
+            )
+            run_path = write(temp_dir, "hardlink-run.json", json.dumps(run))
+            try:
+                os.link(
+                    run_path,
+                    Path(temp_dir) / "current-run-hardlink.json",
+                )
+            except (OSError, NotImplementedError) as exc:
+                self.skipTest(f"Hard links are unavailable: {exc}")
+            rejected = run_contract(
+                "validate-run",
+                "--bundle",
+                bundle,
+                "--run",
+                run_path,
+                *contract_args(),
+            )
+
+        self.assertNotEqual(0, rejected.returncode)
+        self.assertIn(
+            "partial_blocked_result_invalid",
+            [error["code"] for error in result_json(rejected)["errors"]],
+        )
+
+
 class ParallelCodeReviewPackageTests(unittest.TestCase):
     def test_model_facing_description_has_narrow_parallel_triggers_and_explicit_invocation(self):
         text = (SKILL_ROOT / "SKILL.md").read_text(encoding="utf-8")
@@ -1928,6 +3552,71 @@ class ParallelCodeReviewPackageTests(unittest.TestCase):
         self.assertEqual(before, snapshot_tree(ROOT))
         self.assertFalse((ROOT / "src" / "discounts.py").exists())
         self.assertIn(b"src/discounts.py", patch.read_bytes())
+
+    def test_skill_contract_and_scenario_define_failure_recovery_and_partial_mode(self):
+        skill = " ".join(
+            (SKILL_ROOT / "SKILL.md").read_text(encoding="utf-8").lower().split()
+        )
+        for phrase in (
+            "validate-run",
+            "overall status blocked",
+            "preserve every completed track report",
+            "at most one recovery invocation",
+            "deterministic digest of the frozen manifest",
+            "new invocation id",
+            "failed-attempt analysis",
+            "save that json result as an external artifact",
+            "separate follow-up run record",
+            "approval.source",
+            "missing track",
+            "reduced independence",
+            "never claim a complete parallel review",
+            "independence_capability",
+            "recovery_capability",
+            "not run",
+        ):
+            self.assertIn(phrase, skill)
+
+        contract = " ".join(
+            (SKILL_ROOT / "references" / "contract.md")
+            .read_text(encoding="utf-8")
+            .lower()
+            .split()
+        )
+        for phrase in (
+            "coordinator run result",
+            "complete` requires every routed track",
+            "transient_runtime",
+            "transient_transport",
+            "analysis_reused",
+            "transient failure evidence has exactly",
+            "same derived `request_sha256`",
+            "its exact bytes must match `sha256`",
+            "partial mode is never a complete parallel review",
+            "coverage.status` remains a report fact separate from launch status",
+        ):
+            self.assertIn(phrase, contract)
+
+        scenario = " ".join(
+            (SKILL_ROOT / "references" / "acceptance-scenario.md")
+            .read_text(encoding="utf-8")
+            .lower()
+            .split()
+        )
+        for phrase in (
+            "successful two-track review",
+            "required-track launch failure",
+            "one bounded recovery",
+            "explicit partial approval",
+            "coverage is not launch failure",
+            "distinct request hash derived from each track identity",
+            "artifact by relative path and exact sha-256",
+            "same-pass record is rejected",
+            "not run",
+            "static records",
+            "not live evidence",
+        ):
+            self.assertIn(phrase, scenario)
 
     def test_readme_lists_the_new_skill(self):
         readme = (ROOT / "README.md").read_text(encoding="utf-8")

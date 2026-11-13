@@ -55,6 +55,42 @@ FINDING_NATIVE_FIELDS = {
     "native_severity",
     "native_group",
 }
+RUN_FIELDS = {"contract_version", "tracks", "checks", "partial"}
+RUN_TRACK_FIELDS = {"track_id", "attempts"}
+RUN_ATTEMPT_FIELDS = {
+    "invocation_id",
+    "status",
+    "launch_status",
+    "request_sha256",
+}
+RUN_FAILURE_CLASSES = {
+    "launch_failure",
+    "transient_runtime",
+    "transient_transport",
+    "invalid_result",
+    "scope_mismatch",
+}
+TRANSIENT_FAILURE_CLASSES = {"transient_runtime", "transient_transport"}
+RUN_PARTIAL_FIELDS = {
+    "approval",
+    "blocked_result",
+    "missing_track_ids",
+    "reduced_independence",
+}
+RUN_APPROVAL_FIELDS = {"source", "evidence"}
+RUN_BLOCKED_RESULT_FIELDS = {"path", "sha256"}
+RUN_RECOVERY_FIELDS = {"of_invocation_id", "analysis_reused"}
+TRANSIENT_EVIDENCE_FIELDS = {"source", "phase", "detail"}
+CAPABILITY_CHECKS = {"independence_capability", "recovery_capability"}
+RUN_RESULT_FIELDS = {
+    "status",
+    "tracks",
+    "completed_reports",
+    "missing_tracks",
+    "coverage",
+    "checks",
+    "partial",
+}
 
 
 class ContractFailure(Exception):
@@ -714,6 +750,8 @@ def parse_git_range(value):
 
 def safe_relative_path(value):
     normalized = value.replace("\\", "/")
+    if "\x00" in normalized:
+        raise ContractFailure("path_unsafe", f"Unsafe bundle path: {value}")
     path = PurePosixPath(normalized)
     if (
         path.is_absolute()
@@ -725,8 +763,34 @@ def safe_relative_path(value):
     return path
 
 
+def resolve_relative_under(root, value, code, label):
+    try:
+        relative = safe_relative_path(value)
+    except ContractFailure as exc:
+        raise ContractFailure(code, f"{label} path is unsafe: {exc.message}") from exc
+    try:
+        root = Path(root).resolve()
+        candidate = root.joinpath(*relative.parts)
+        resolved = candidate.resolve()
+    except (OSError, RuntimeError) as exc:
+        raise ContractFailure(
+            code,
+            f"{label} path cannot be resolved safely: {exc}",
+        ) from exc
+    try:
+        resolved.relative_to(root)
+    except ValueError as exc:
+        raise ContractFailure(
+            code,
+            f"{label} must stay inside {root}.",
+        ) from exc
+    return resolved
+
+
 def normalize_exclusion(value):
     normalized = value.replace("\\", "/")
+    if "\x00" in normalized:
+        raise ContractFailure("exclusion_invalid", f"Unsafe exclusion path: {value}")
     path = PurePosixPath(normalized)
     if (
         path.is_absolute()
@@ -2025,9 +2089,9 @@ def require_mapping(payload, fields, code="envelope_invalid"):
         )
 
 
-def require_text(value, field):
+def require_text(value, field, code="envelope_invalid"):
     if not isinstance(value, str) or not value.strip():
-        raise ContractFailure("envelope_invalid", f"{field} must be a non-empty string.")
+        raise ContractFailure(code, f"{field} must be a non-empty string.")
     return value
 
 
@@ -2103,6 +2167,26 @@ def source_key(value):
     return PurePosixPath(value.replace("\\", "/")).as_posix()
 
 
+def validate_check_record(check, code="envelope_invalid"):
+    require_mapping(check, {"name", "result", "reason"}, code)
+    require_text(check["name"], "check.name", code)
+    result = check["result"]
+    if not isinstance(result, str) or result not in {
+        "passed",
+        "failed",
+        "not_run",
+        "not_assessed",
+    }:
+        raise ContractFailure(code, "Unknown check result.")
+    if not isinstance(check["reason"], str):
+        raise ContractFailure(code, "check.reason must be a string.")
+    if result == "not_run" and not check["reason"].strip():
+        raise ContractFailure(
+            code,
+            "check not_run requires a non-empty reason.",
+        )
+
+
 def validate_coverage(coverage, manifest):
     require_mapping(coverage, {"status", "checked", "unchecked", "checks"})
     status = coverage["status"]
@@ -2144,23 +2228,7 @@ def validate_coverage(coverage, manifest):
     if not isinstance(coverage["checks"], list):
         raise ContractFailure("envelope_invalid", "coverage.checks must be a list.")
     for check in coverage["checks"]:
-        require_mapping(check, {"name", "result", "reason"})
-        require_text(check["name"], "coverage.checks.name")
-        result = check["result"]
-        if not isinstance(result, str) or result not in {
-            "passed",
-            "failed",
-            "not_run",
-            "not_assessed",
-        }:
-            raise ContractFailure("envelope_invalid", "Unknown check result.")
-        if not isinstance(check["reason"], str):
-            raise ContractFailure("envelope_invalid", "coverage.checks.reason must be a string.")
-        if result == "not_run" and not check["reason"].strip():
-            raise ContractFailure(
-                "envelope_invalid",
-                "coverage.checks not_run requires a non-empty reason.",
-            )
+        validate_check_record(check)
 
 
 def validate_envelope(envelope, manifest, attestation):
@@ -2310,9 +2378,784 @@ def validate_frozen_locations(envelope, bundle, manifest):
                 )
 
 
-def render_envelope(envelope):
+def track_request_sha256(manifest, attestation, track_id):
+    return sha256_bytes(
+        canonical_json_bytes(
+            {
+                "track_id": track_id,
+                "manifest": manifest,
+                "attestation": attestation,
+            }
+        )
+    )
+
+
+def validate_run_failure(failure):
+    require_mapping(failure, {"class", "evidence"}, "run_invalid")
+    failure_class = require_text(failure["class"], "failure.class", "run_invalid")
+    if failure_class not in RUN_FAILURE_CLASSES:
+        raise ContractFailure(
+            "run_invalid",
+            f"Unknown failure class: {failure_class}",
+        )
+    evidence = failure["evidence"]
+    if failure_class in TRANSIENT_FAILURE_CLASSES:
+        require_mapping(evidence, TRANSIENT_EVIDENCE_FIELDS, "recovery_invalid")
+        if evidence["source"] != "host":
+            raise ContractFailure(
+                "recovery_invalid",
+                "Transient failure evidence must identify the host as its source.",
+            )
+        expected_phase = failure_class.split("_", 1)[1]
+        if evidence["phase"] != expected_phase:
+            raise ContractFailure(
+                "recovery_invalid",
+                f"{failure_class} requires phase {expected_phase}.",
+            )
+        require_text(
+            evidence["detail"],
+            "failure.evidence.detail",
+            "recovery_invalid",
+        )
+    else:
+        require_text(evidence, "failure.evidence", "run_invalid")
+
+
+def validate_run_attempt(attempt, expected_request_sha):
+    if not isinstance(attempt, dict):
+        raise ContractFailure("run_invalid", "Each track attempt must be an object.")
+    status = attempt.get("status")
+    if not isinstance(status, str) or status not in {"completed", "failed"}:
+        raise ContractFailure(
+            "run_invalid",
+            "Track attempt status must be completed or failed.",
+        )
+    fields = set(RUN_ATTEMPT_FIELDS)
+    fields.add("envelope" if status == "completed" else "failure")
+    if "recovery" in attempt:
+        fields.add("recovery")
+    require_mapping(attempt, fields, "run_invalid")
+    require_text(attempt["invocation_id"], "attempt.invocation_id", "run_invalid")
+    request_sha = require_text(
+        attempt["request_sha256"],
+        "attempt.request_sha256",
+        "run_invalid",
+    )
+    if not re.fullmatch(r"[0-9a-f]{64}", request_sha):
+        raise ContractFailure(
+            "run_invalid",
+            "attempt.request_sha256 must be a lowercase SHA-256.",
+        )
+    if request_sha != expected_request_sha:
+        raise ContractFailure(
+            "request_digest_mismatch",
+            "attempt.request_sha256 does not match the frozen track request digest.",
+        )
+    launch_status = attempt["launch_status"]
+    if (
+        not isinstance(launch_status, str)
+        or launch_status not in {"launched", "not_launched"}
+    ):
+        raise ContractFailure(
+            "run_invalid",
+            "attempt.launch_status must be launched or not_launched.",
+        )
+    if status == "completed":
+        if launch_status != "launched":
+            raise ContractFailure(
+                "run_invalid",
+                "A completed track attempt must record launch_status launched.",
+            )
+        require_text(attempt["envelope"], "attempt.envelope", "run_invalid")
+    else:
+        validate_run_failure(attempt["failure"])
+        failure_class = attempt["failure"]["class"]
+        if failure_class == "launch_failure" and launch_status != "not_launched":
+            raise ContractFailure(
+                "run_invalid",
+                "launch_failure requires launch_status not_launched.",
+            )
+        if failure_class != "launch_failure" and launch_status != "launched":
+            raise ContractFailure(
+                "run_invalid",
+                f"{failure_class} requires launch_status launched.",
+            )
+    if "recovery" in attempt:
+        recovery = attempt["recovery"]
+        require_mapping(recovery, RUN_RECOVERY_FIELDS, "recovery_invalid")
+        require_text(
+            recovery["of_invocation_id"],
+            "recovery.of_invocation_id",
+            "recovery_invalid",
+        )
+        if recovery["analysis_reused"] is not False:
+            raise ContractFailure(
+                "recovery_invalid",
+                "A recovery attempt must not reuse failed-attempt analysis.",
+            )
+
+
+def validate_run_track(track):
+    require_mapping(track, RUN_TRACK_FIELDS, "run_invalid")
+    track_id = require_text(track["track_id"], "track.track_id", "run_invalid")
+    attempts = track["attempts"]
+    if not isinstance(attempts, list):
+        raise ContractFailure("run_invalid", "track.attempts must be a list.")
+    return track_id
+
+
+def load_run_envelope(bundle, manifest, attestation, run_dir, attempt, track_id):
+    path = resolve_relative_under(
+        run_dir,
+        attempt["envelope"],
+        "invalid_result",
+        "Track report",
+    )
+    try:
+        data = path.read_bytes()
+    except OSError as exc:
+        raise ContractFailure(
+            "invalid_result",
+            f"Cannot read track report {attempt['envelope']}: {exc}",
+        ) from exc
+    if not data.strip():
+        raise ContractFailure(
+            "invalid_result",
+            f"Track report is blank: {attempt['envelope']}",
+        )
+    try:
+        envelope = json.loads(data)
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise ContractFailure(
+            "invalid_result",
+            f"Track report is malformed or truncated: {attempt['envelope']}",
+        ) from exc
+    try:
+        validate_envelope(envelope, manifest, attestation)
+        validate_frozen_locations(envelope, bundle, manifest)
+    except ContractFailure as exc:
+        if exc.code == "attestation_mismatch":
+            raise ContractFailure(
+                "scope_mismatch",
+                f"Track report scope does not match the frozen bundle: {exc.message}",
+            ) from exc
+        raise ContractFailure(
+            "invalid_result",
+            f"Track report is unverifiable: {exc.message}",
+        ) from exc
+    if envelope["track_id"] != track_id:
+        raise ContractFailure(
+            "invalid_result",
+            f"Track report {attempt['envelope']} belongs to {envelope['track_id']}, not {track_id}.",
+        )
+    if envelope["invocation_id"] != attempt["invocation_id"]:
+        raise ContractFailure(
+            "invalid_result",
+            "Track report invocation_id does not match its attempt.",
+        )
+    return envelope
+
+
+def failure_from_attempt(attempt, failure, track_id, index, preserve_metadata=False):
+    launch_status = attempt.get("launch_status") if isinstance(attempt, dict) else None
+    if not isinstance(launch_status, str) or launch_status not in {
+        "launched",
+        "not_launched",
+    }:
+        launch_status = "not_launched"
+    result = {
+        "invocation_id": f"{track_id}-invalid-{index}",
+        "status": "failed",
+        "launch_status": launch_status,
+        "failure": failure,
+    }
+    if preserve_metadata and isinstance(attempt, dict):
+        for field in ("invocation_id", "request_sha256", "recovery"):
+            if field in attempt:
+                result[field] = attempt[field]
+    return result
+
+
+def evaluate_run_track(track, bundle, manifest, attestation, run_dir):
+    if len(track["attempts"]) > 2:
+        return failed_track_result(
+            track,
+            f"Track {track['track_id']} has more than one recovery attempt.",
+        ), None
+    effective = []
+    envelope = None
+    expected_request_sha = track_request_sha256(
+        manifest,
+        attestation,
+        track["track_id"],
+    )
+    for index, attempt in enumerate(track["attempts"], start=1):
+        try:
+            validate_run_attempt(attempt, expected_request_sha)
+        except ContractFailure as exc:
+            effective.append(
+                failure_from_attempt(
+                    attempt,
+                    {"class": "invalid_result", "evidence": exc.message},
+                    track["track_id"],
+                    index,
+                )
+            )
+            envelope = None
+            continue
+        if attempt["status"] == "failed":
+            effective.append(dict(attempt))
+            continue
+        try:
+            envelope = load_run_envelope(
+                bundle,
+                manifest,
+                attestation,
+                run_dir,
+                attempt,
+                track["track_id"],
+            )
+            effective.append(dict(attempt))
+        except ContractFailure as exc:
+            failure_class = (
+                "scope_mismatch" if exc.code == "scope_mismatch" else "invalid_result"
+            )
+            effective.append(
+                failure_from_attempt(
+                    attempt,
+                    {"class": failure_class, "evidence": exc.message},
+                    track["track_id"],
+                    index,
+                    preserve_metadata=True,
+                )
+            )
+            envelope = None
+
+    recovery_error = None
+    if len(effective) == 2:
+        first, second = effective
+        if "recovery" not in second:
+            recovery_error = (
+                f"Track {track['track_id']} has an implicit retry "
+                "without a recovery record."
+            )
+        elif first["status"] != "failed" or (
+            failure := first.get("failure")
+        ) is None or failure["class"] not in TRANSIENT_FAILURE_CLASSES:
+            recovery_error = (
+                "Recovery is allowed only after an evidenced transient runtime "
+                "or transport failure."
+            )
+        else:
+            recovery = second["recovery"]
+            if recovery["of_invocation_id"] != first["invocation_id"]:
+                recovery_error = "Recovery does not reference the failed invocation."
+            elif second["request_sha256"] != first["request_sha256"]:
+                recovery_error = "Recovery did not use the same frozen request."
+            elif second["invocation_id"] == first["invocation_id"]:
+                recovery_error = "Recovery must use a new invocation ID."
+    elif len(effective) == 1 and "recovery" in effective[0]:
+        recovery_error = "The first track attempt cannot be a recovery."
+
+    if recovery_error is not None:
+        effective[-1] = failure_from_attempt(
+            effective[-1],
+            {"class": "invalid_result", "evidence": recovery_error},
+            track["track_id"],
+            len(effective),
+            preserve_metadata=True,
+        )
+        envelope = None
+
+    if not effective:
+        return {
+            "track_id": track["track_id"],
+            "status": "missing",
+            "launch_status": "not_launched",
+            "coverage_status": "not_assessed",
+            "finding_count": 0,
+            "attempts": [],
+        }, None
+
+    final = effective[-1]
+    if final["status"] == "completed" and envelope is None:
+        return {
+            "track_id": track["track_id"],
+            "status": "failed",
+            "launch_status": final["launch_status"],
+            "coverage_status": "not_assessed",
+            "finding_count": 0,
+            "attempts": effective,
+        }, None
+    return {
+        "track_id": track["track_id"],
+        "status": final["status"],
+        "launch_status": final["launch_status"],
+        "coverage_status": (
+            envelope["coverage"]["status"] if envelope is not None else "not_assessed"
+        ),
+        "finding_count": len(envelope["findings"]) if envelope is not None else 0,
+        "attempts": effective,
+    }, envelope
+
+
+def failed_track_result(track, message):
+    return {
+        "track_id": track["track_id"],
+        "status": "failed",
+        "launch_status": "not_launched",
+        "coverage_status": "not_assessed",
+        "finding_count": 0,
+        "attempts": [
+            {
+                "invocation_id": f"{track['track_id']}-invalid",
+                "status": "failed",
+                "launch_status": "not_launched",
+                "failure": {"class": "invalid_result", "evidence": message},
+            }
+        ],
+    }
+
+
+def validate_run_partial(
+    partial,
+    completed_ids,
+    expected_blocked,
+    run_path,
+):
+    require_mapping(partial, RUN_PARTIAL_FIELDS, "partial_approval_invalid")
+    approval = partial["approval"]
+    require_mapping(approval, RUN_APPROVAL_FIELDS, "partial_approval_invalid")
+    if approval["source"] != "user":
+        raise ContractFailure(
+            "partial_approval_invalid",
+            "Partial mode requires an explicit post-block user approval source.",
+        )
+    require_text(
+        approval["evidence"],
+        "partial.approval.evidence",
+        "partial_approval_invalid",
+    )
+    blocked_result = partial["blocked_result"]
+    require_mapping(
+        blocked_result,
+        RUN_BLOCKED_RESULT_FIELDS,
+        "partial_blocked_result_invalid",
+    )
+    blocked_relative = require_text(
+        blocked_result["path"],
+        "partial.blocked_result.path",
+        "partial_blocked_result_invalid",
+    )
+    run_dir = run_path.parent.resolve()
+    blocked_path = resolve_relative_under(
+        run_dir,
+        blocked_relative,
+        "partial_blocked_result_invalid",
+        "The blocked result artifact",
+    )
+    try:
+        same_file = os.path.samefile(blocked_path, run_path)
+    except OSError:
+        same_file = False
+    if same_file:
+        raise ContractFailure(
+            "partial_blocked_result_invalid",
+            "Partial approval cannot reference the current run or a hard link to it.",
+        )
+    digest = require_text(
+        blocked_result["sha256"],
+        "partial.blocked_result.sha256",
+        "partial_blocked_result_invalid",
+    )
+    if not re.fullmatch(r"[0-9a-f]{64}", digest):
+        raise ContractFailure(
+            "partial_blocked_result_invalid",
+            "partial.blocked_result.sha256 must be a lowercase SHA-256.",
+        )
+    try:
+        blocked_bytes = blocked_path.read_bytes()
+    except OSError as exc:
+        raise ContractFailure(
+            "partial_blocked_result_invalid",
+            f"Cannot read the blocked result artifact: {exc}",
+        ) from exc
+    if sha256_bytes(blocked_bytes) != digest:
+        raise ContractFailure(
+            "partial_blocked_result_invalid",
+            "The blocked result artifact digest does not match.",
+        )
+    try:
+        blocked = json.loads(blocked_bytes)
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise ContractFailure(
+            "partial_blocked_result_invalid",
+            "The blocked result artifact is not valid JSON.",
+        ) from exc
+    required_fields = RUN_RESULT_FIELDS | {"rendered"}
+    allowed_fields = required_fields | {"errors"}
+    if (
+        not isinstance(blocked, dict)
+        or not required_fields <= set(blocked)
+        or set(blocked) - allowed_fields
+    ):
+        raise ContractFailure(
+            "partial_blocked_result_invalid",
+            "The blocked result artifact does not have the complete validate-run result schema.",
+        )
+    require_text(
+        blocked["rendered"],
+        "partial.blocked_result.rendered",
+        "partial_blocked_result_invalid",
+    )
+    if "errors" in blocked:
+        errors = blocked["errors"]
+        if (
+            not isinstance(errors, list)
+            or any(
+                not isinstance(error, dict)
+                or set(error) != {"code", "message"}
+                or not isinstance(error["code"], str)
+                or not error["code"].strip()
+                or not isinstance(error["message"], str)
+                or not error["message"].strip()
+                for error in errors
+            )
+        ):
+            raise ContractFailure(
+                "partial_blocked_result_invalid",
+                "The blocked result errors are malformed.",
+            )
+    for field in RUN_RESULT_FIELDS:
+        if canonical_json_bytes(blocked[field]) != canonical_json_bytes(
+            expected_blocked[field]
+        ):
+            raise ContractFailure(
+                (
+                    "partial_gap_mismatch"
+                    if field == "missing_tracks"
+                    else "partial_blocked_result_invalid"
+                ),
+                f"The blocked result {field} does not match this run.",
+            )
+    expected_errors = expected_blocked.get("errors", [])
+    if canonical_json_bytes(blocked.get("errors", [])) != canonical_json_bytes(
+        expected_errors
+    ):
+        raise ContractFailure(
+            "partial_blocked_result_invalid",
+            "The blocked result errors do not match this run.",
+        )
+    canonical_blocked = {
+        field: value for field, value in blocked.items() if field != "rendered"
+    }
+    if blocked["rendered"] != render_run(canonical_blocked):
+        raise ContractFailure(
+            "partial_blocked_result_invalid",
+            "The blocked result rendered output is not the canonical render of this run.",
+        )
+    missing_track_ids = partial["missing_track_ids"]
+    if (
+        not isinstance(missing_track_ids, list)
+        or not missing_track_ids
+        or any(not isinstance(item, str) or not item.strip() for item in missing_track_ids)
+        or len(missing_track_ids) != len(set(missing_track_ids))
+    ):
+        raise ContractFailure(
+            "partial_approval_invalid",
+            "partial.missing_track_ids must be a non-empty list of unique track IDs.",
+        )
+    missing_ids = expected_blocked["missing_tracks"]
+    if set(missing_track_ids) != set(missing_ids):
+        raise ContractFailure(
+            "partial_gap_mismatch",
+            "Partial mode does not match the actual missing tracks.",
+        )
+    require_text(
+        partial["reduced_independence"],
+        "partial.reduced_independence",
+        "partial_approval_invalid",
+    )
+    if len(completed_ids) != 1:
+        raise ContractFailure(
+            "partial_requires_one_completed_track",
+            "One-track partial mode requires exactly one completed track.",
+        )
+    return digest
+
+
+def validate_run_record(run, bundle, manifest, attestation, run_path):
+    if not isinstance(run, dict):
+        raise ContractFailure("run_invalid", "Review run must be a JSON object.")
+    unknown = set(run) - RUN_FIELDS
+    if unknown:
+        raise ContractFailure(
+            "run_unknown_field",
+            f"Unknown review run fields: {', '.join(sorted(unknown))}",
+        )
+    missing = RUN_FIELDS - set(run)
+    if missing:
+        raise ContractFailure(
+            "run_invalid",
+            f"Review run is missing fields: {', '.join(sorted(missing))}",
+        )
+    version = run["contract_version"]
+    if isinstance(version, bool) or not isinstance(version, int):
+        raise ContractFailure("run_invalid", "contract_version must be an integer.")
+    if version != CONTRACT_VERSION:
+        raise ContractFailure(
+            "run_version_mismatch",
+            f"Expected contract_version {CONTRACT_VERSION}, got {version}.",
+        )
+    if not isinstance(run["tracks"], list):
+        raise ContractFailure("run_invalid", "tracks must be a list.")
+    run_errors = []
+    valid_checks = []
+    checks = run["checks"]
+    if not isinstance(checks, list):
+        run_errors.append(
+            {
+                "code": "run_invalid",
+                "message": "checks must be a list.",
+            }
+        )
+    else:
+        for check in checks:
+            try:
+                validate_check_record(check, "run_invalid")
+            except ContractFailure as exc:
+                run_errors.append({"code": exc.code, "message": exc.message})
+                continue
+            valid_checks.append(check)
+    check_names = {check["name"] for check in valid_checks}
+    if not check_names & CAPABILITY_CHECKS:
+        run_errors.append(
+            {
+                "code": "capability_check_missing",
+                "message": "Run checks must record at least one host capability check.",
+            }
+        )
+
+    contract = manifest.get("contract")
+    if not isinstance(contract, dict):
+        raise ContractFailure(
+            "bundle_invalid",
+            "The frozen manifest does not pin routing and adapter metadata.",
+        )
+    routed_ids = [track["track_id"] for track in contract.get("tracks", [])]
+    track_candidates = {track_id: [] for track_id in routed_ids}
+    for index, track in enumerate(run["tracks"], start=1):
+        if not isinstance(track, dict):
+            run_errors.append(
+                {
+                    "code": "run_invalid",
+                    "message": f"Track result {index} must be an object.",
+                }
+            )
+            continue
+        track_id = track.get("track_id")
+        if not isinstance(track_id, str) or not track_id.strip():
+            run_errors.append(
+                {
+                    "code": "run_invalid",
+                    "message": f"Track result {index} must identify its routed track.",
+                }
+            )
+            continue
+        if track_id not in track_candidates:
+            run_errors.append(
+                {
+                    "code": "track_not_routed",
+                    "message": f"Track is not routed: {track_id}",
+                }
+            )
+            continue
+        if track_candidates[track_id]:
+            run_errors.append(
+                {
+                    "code": "run_invalid",
+                    "message": f"Duplicate track result: {track_id}",
+                }
+            )
+        track_candidates[track_id].append(track)
+
+    track_results = []
+    completed_reports = []
+    run_dir = run_path.parent
+    for track_id in routed_ids:
+        candidates = track_candidates[track_id] or [
+            {"track_id": track_id, "attempts": []}
+        ]
+        selected = None
+        for track in candidates:
+            try:
+                validate_run_track(track)
+            except ContractFailure as exc:
+                run_errors.append({"code": exc.code, "message": exc.message})
+                if selected is None:
+                    selected = (
+                        failed_track_result({"track_id": track_id}, exc.message),
+                        None,
+                    )
+                continue
+            try:
+                result, envelope = evaluate_run_track(
+                    track, bundle, manifest, attestation, run_dir
+                )
+            except ContractFailure as exc:
+                result, envelope = failed_track_result(track, exc.message), None
+            if selected is None or envelope is not None:
+                selected = (result, envelope)
+                if envelope is not None:
+                    break
+        result, envelope = selected
+        track_results.append(result)
+        if envelope is not None:
+            completed_reports.append(envelope)
+
+    invocation_ids = []
+    recovery_count = 0
+    for result in track_results:
+        for attempt in result["attempts"]:
+            invocation_ids.append(attempt["invocation_id"])
+            if "recovery" in attempt:
+                recovery_count += 1
+    if len(invocation_ids) != len(set(invocation_ids)):
+        run_errors.append(
+            {
+                "code": "run_invalid",
+                "message": "Invocation IDs must be unique across the review run.",
+            }
+        )
+    if recovery_count > 1:
+        run_errors.append(
+            {
+                "code": "recovery_limit",
+                "message": "One review run may perform at most one recovery invocation.",
+            }
+        )
+    if recovery_count and "recovery_capability" not in check_names:
+        run_errors.append(
+            {
+                "code": "recovery_capability_check_missing",
+                "message": "Recovery requires a recorded recovery_capability check.",
+            }
+        )
+
+    completed_ids = [
+        result["track_id"]
+        for result in track_results
+        if result["status"] == "completed"
+    ]
+    missing_ids = [
+        result["track_id"]
+        for result in track_results
+        if result["status"] != "completed"
+    ]
+    if not missing_ids and "independence_capability" not in check_names:
+        run_errors.append(
+            {
+                "code": "independence_capability_check_missing",
+                "message": "A complete run requires a recorded independence_capability check.",
+            }
+        )
+    capability_blocked = any(
+        check["name"] in CAPABILITY_CHECKS
+        and check["result"] not in {"passed", "not_run"}
+        for check in valid_checks
+    )
+    coverage = []
+    for result in track_results:
+        entry = {
+            "track_id": result["track_id"],
+            "status": result["coverage_status"],
+        }
+        if result["status"] != "completed":
+            entry["reason"] = "Required review track did not complete."
+        elif result["coverage_status"] == "blocked":
+            entry["reason"] = "Completed track did not verify the frozen requirements."
+        coverage.append(entry)
+    coverage_blocked = any(
+        result["status"] == "completed"
+        and result["coverage_status"] == "blocked"
+        for result in track_results
+    )
+    if coverage_blocked:
+        run_errors.append(
+            {
+                "code": "coverage_blocked",
+                "message": (
+                    "A completed review track reported blocked frozen-requirement "
+                    "coverage."
+                ),
+            }
+        )
+    partial = run["partial"]
+    partial_result = None
+    if partial is not None:
+        expected_blocked = {
+            "status": "blocked",
+            "tracks": track_results,
+            "completed_reports": completed_reports,
+            "missing_tracks": missing_ids,
+            "coverage": coverage,
+            "checks": valid_checks,
+            "partial": None,
+        }
+        if run_errors:
+            expected_blocked["errors"] = [dict(error) for error in run_errors]
+        try:
+            blocked_result_sha256 = validate_run_partial(
+                partial,
+                completed_ids,
+                expected_blocked,
+                run_path,
+            )
+        except ContractFailure as exc:
+            run_errors.append({"code": exc.code, "message": exc.message})
+        else:
+            partial_result = {
+                "approved": True,
+                "approved_after_block": True,
+                "approval_source": partial["approval"]["source"],
+                "approval_evidence": partial["approval"]["evidence"],
+                "blocked_result_sha256": blocked_result_sha256,
+                "missing_tracks": missing_ids,
+                "reduced_independence": partial["reduced_independence"],
+                "coverage": coverage,
+                "completed_reports": [
+                    {
+                        "track_id": envelope["track_id"],
+                        "invocation_id": envelope["invocation_id"],
+                    }
+                    for envelope in completed_reports
+                ],
+            }
+    if run_errors or coverage_blocked:
+        status = "blocked"
+    elif partial_result is not None:
+        status = "blocked" if capability_blocked else "partial"
+    elif not missing_ids and not capability_blocked:
+        status = "complete"
+    else:
+        status = "blocked"
+    result = {
+        "status": status,
+        "tracks": track_results,
+        "completed_reports": completed_reports,
+        "missing_tracks": missing_ids,
+        "coverage": coverage,
+        "checks": valid_checks,
+        "partial": partial_result,
+    }
+    if run_errors:
+        result["errors"] = run_errors
+    return result
+
+
+def render_envelope(envelope, heading="# Parallel Code Review"):
     lines = [
-        "# Parallel Code Review",
+        heading,
         "",
         f"Track: `{envelope['track_id']}`",
         f"Invocation: `{envelope['invocation_id']}`",
@@ -2344,7 +3187,7 @@ def render_envelope(envelope):
         "## Native report",
         "",
         "```json",
-        json.dumps(envelope["native"], ensure_ascii=False, indent=2, sort_keys=False),
+        json.dumps(envelope["native"], ensure_ascii=False, indent=2, sort_keys=True),
         "```",
         "",
         "## Findings",
@@ -2383,39 +3226,139 @@ def render_envelope(envelope):
     return "\n".join(lines) + "\n"
 
 
-def command_validate_envelope(args):
+def render_run(result):
+    lines = ["# Parallel Code Review", "", f"Overall status: `{result['status']}`"]
+    if result["status"] == "complete":
+        lines.append("All required review tracks returned a current valid report.")
+    elif result["status"] == "partial":
+        lines.extend(
+            [
+                "This is a blocked one-track partial review, not a complete parallel review.",
+                f"Missing tracks: {', '.join(f'`{track}`' for track in result['missing_tracks'])}",
+            ]
+        )
+    else:
+        lines.append("This is not a passing review.")
+        if result["missing_tracks"]:
+            lines.append(
+                f"Missing tracks: {', '.join(f'`{track}`' for track in result['missing_tracks'])}"
+            )
+
+    lines.extend(["", "## Track results", ""])
+    for track in result["tracks"]:
+        lines.append(
+            f"- `{track['track_id']}`: `{track['status']}`; "
+            f"launch `{track['launch_status']}`; "
+            f"coverage `{track['coverage_status']}`; "
+            f"findings {track['finding_count']}"
+        )
+        for attempt in track["attempts"]:
+            if attempt["status"] == "failed":
+                failure = attempt["failure"]
+                lines.append(
+                    f"  - `{attempt['invocation_id']}` failed as "
+                    f"`{failure['class']}`: {failure['evidence']}"
+                )
+            if "recovery" in attempt:
+                lines.append(
+                    f"  - `{attempt['invocation_id']}` is one bounded recovery "
+                    f"of `{attempt['recovery']['of_invocation_id']}` with recorded "
+                    "`analysis_reused: false` (not independently verified)."
+                )
+
+    if result.get("errors"):
+        lines.extend(["", "## Run errors", ""])
+        for error in result["errors"]:
+            lines.append(f"- `{error['code']}`: {error['message']}")
+
+    lines.extend(["", "## Coverage", ""])
+    for coverage in result["coverage"]:
+        reason = f" — {coverage['reason']}" if "reason" in coverage else ""
+        lines.append(f"- `{coverage['track_id']}`: `{coverage['status']}`{reason}")
+
+    lines.extend(["", "## Host checks", ""])
+    if result["checks"]:
+        for check in result["checks"]:
+            reason = f" — {check['reason']}" if check["reason"] else ""
+            lines.append(f"- `{check['name']}`: `{check['result']}`{reason}")
+    else:
+        lines.append("None recorded.")
+
+    if result["partial"] is not None:
+        partial = result["partial"]
+        lines.extend(
+            [
+                "",
+                "## Partial mode",
+                "",
+                "Explicit approval: `approved after blocked result`",
+                f"Approval source: {partial['approval_source']}",
+                f"Approval evidence: {partial['approval_evidence']}",
+                f"Blocked result SHA-256: `{partial['blocked_result_sha256']}`",
+                f"Reduced independence: {partial['reduced_independence']}",
+                "Coverage:",
+            ]
+        )
+        for coverage in partial["coverage"]:
+            reason = f" — {coverage['reason']}" if "reason" in coverage else ""
+            lines.append(f"- `{coverage['track_id']}`: `{coverage['status']}`{reason}")
+        lines.append("The original completed reports follow without truncation.")
+
+    if result["completed_reports"]:
+        lines.extend(["", "## Completed track reports"])
+        for envelope in result["completed_reports"]:
+            lines.extend(
+                [
+                    "",
+                    render_envelope(
+                        envelope,
+                        heading=f"## Track report: `{envelope['track_id']}`",
+                    ).rstrip(),
+                ]
+            )
+    return "\n".join(lines) + "\n"
+
+
+def load_current_review_bundle(args):
     if not args.contract_root:
         raise ContractFailure(
             "contract_root_required",
-            "Envelope validation requires --contract-root with an explicit --upstream resolution.",
+            "Review validation requires --contract-root with an explicit --upstream resolution.",
         )
     if not args.upstream:
         raise ContractFailure(
             "upstream_unresolved",
-            "Envelope validation requires the frozen upstream resolution explicitly.",
+            "Review validation requires the frozen upstream resolution explicitly.",
         )
     bundle = Path(args.bundle).resolve()
     manifest, manifest_bytes, attestation = load_bundle(bundle)
     reasons = verify_bundle_integrity(bundle, manifest)
     reasons.extend(attestation_mismatch_reasons(manifest_bytes, manifest, attestation))
     if reasons:
-        return {"status": "blocked", "reasons": reasons}, 1
+        return None, {"status": "blocked", "reasons": reasons}, 1
 
-    if args.contract_root:
-        contract, errors = collect_preflight(
-            Path(args.contract_root).resolve(),
-            upstream_values=args.upstream,
-            upstream_normalized_hashes=args.upstream_sha,
-            upstream_exact_hashes=args.upstream_exact_sha,
-            upstream_sizes=args.upstream_size,
+    contract, errors = collect_preflight(
+        Path(args.contract_root).resolve(),
+        upstream_values=args.upstream,
+        upstream_normalized_hashes=args.upstream_sha,
+        upstream_exact_hashes=args.upstream_exact_sha,
+        upstream_sizes=args.upstream_size,
+    )
+    if errors:
+        return None, error_payload(errors), 1
+    if manifest.get("contract") != contract:
+        raise ContractFailure(
+            "bundle_stale",
+            "The routing table, adapter, or upstream resolution changed after the freeze.",
         )
-        if errors:
-            return error_payload(errors), 1
-        if manifest.get("contract") != contract:
-            raise ContractFailure(
-                "bundle_stale",
-                "The routing table, adapter, or upstream resolution changed after the freeze.",
-            )
+    return (bundle, manifest, attestation), None, 0
+
+
+def command_validate_envelope(args):
+    loaded, blocked, exit_code = load_current_review_bundle(args)
+    if blocked is not None:
+        return blocked, exit_code
+    bundle, manifest, attestation = loaded
 
     envelope_path = Path(args.envelope).resolve()
     if not envelope_path.is_file():
@@ -2432,6 +3375,30 @@ def command_validate_envelope(args):
         "findings": envelope["findings"],
         "rendered": render_envelope(envelope),
     }, 0
+
+
+def command_validate_run(args):
+    loaded, blocked, exit_code = load_current_review_bundle(args)
+    if blocked is not None:
+        return blocked, exit_code
+    bundle, manifest, attestation = loaded
+
+    run_path = Path(args.run).resolve()
+    if not run_path.is_file():
+        raise ContractFailure("run_missing", f"Review run is missing: {run_path}")
+    try:
+        run = json.loads(run_path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise ContractFailure("run_invalid", f"Cannot read review run: {exc}") from exc
+    result = validate_run_record(
+        run,
+        bundle,
+        manifest,
+        attestation,
+        run_path,
+    )
+    result["rendered"] = render_run(result)
+    return result, 0 if result["status"] == "complete" else 1
 
 
 def command_preflight(args):
@@ -2532,6 +3499,16 @@ def build_parser():
     envelope.add_argument("--contract-root")
     add_upstream_arguments(envelope)
     envelope.set_defaults(handler=command_validate_envelope)
+
+    run = subparsers.add_parser(
+        "validate-run",
+        help="Validate and render one coordinator review run.",
+    )
+    run.add_argument("--bundle", required=True)
+    run.add_argument("--run", required=True)
+    run.add_argument("--contract-root")
+    add_upstream_arguments(run)
+    run.set_defaults(handler=command_validate_run)
     return parser
 
 
