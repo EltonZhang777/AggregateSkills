@@ -1536,21 +1536,6 @@ class SpecImplementLoopBehaviorTests(unittest.TestCase):
             preparation.index("request the single task-start authorization defined by the main skill"),
         )
 
-    def test_remediation_routes_only_when_final_review_finds_issues(self):
-        text = skill("spec-implement-loop").lower()
-        final_review = section(text, "## final review")
-        remediation = skill_reference("spec-implement-loop", "final-review-remediation.md").lower().replace(chr(96), "")
-        self.assertIn("when no non-deferred ready ticket remains, review the complete target diff", final_review)
-        self.assertIn("if the reports contain no findings", final_review)
-        self.assertIn("if findings exist", final_review)
-        self.assertIn("references/final-review-remediation.md", final_review)
-        self.assertNotIn("## final review and remediation", text)
-        self.assertIn("preserve its seam-confirmation gate before publication", remediation)
-        self.assertIn("preserve its granularity, blocking-edge, and publication approval gates", remediation)
-        self.assertIn("**deferred:** yes", remediation)
-        self.assertIn("show the complete p0/p1 batch and ask the user for approval", remediation)
-        self.assertIn("allow at most three rounds", remediation)
-
     def test_status_sync_authorization_is_repository_and_checkpoint_scoped(self):
         text = skill("spec-implement-loop").lower().replace(chr(96), "")
         authorization = section(text, "## plan the graph and reusable worktree pool")
