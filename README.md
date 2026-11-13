@@ -30,6 +30,7 @@ After installation, follow your coding agent's skill workflow to activate a skil
 - [prune-worktrees-and-branches](skills/prune-worktrees-and-branches/SKILL.md) previews cleanup candidates and removes only approved worktrees or eligible branches.
 - [requirements-to-spec-tickets](skills/requirements-to-spec-tickets/SKILL.md) turns ideas into clarified specs and independently scoped implementation tickets.
 - [review-duo](skills/review-duo/SKILL.md) runs a strict code review across independent review axes.
+- [rfc2119-audit](skills/rfc2119-audit/SKILL.md) audits an explicit Markdown root for likely missing or inconsistent RFC 2119 markers and reports candidates read-only.
 - [skill-scout](skills/skill-scout/SKILL.md) finds and compares skills, with optional discovery through a local SkillRoute catalog.
 - [spec-implement-loop](skills/spec-implement-loop/SKILL.md) carries an explicitly approved spec or ticket tree through implementation, verification, and bounded review remediation.
 
