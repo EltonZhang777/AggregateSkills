@@ -2374,6 +2374,11 @@ def validate_check_record(check, code="envelope_invalid"):
         )
 
 
+def capability_passed(checks, name):
+    results = [check["result"] for check in checks if check["name"] == name]
+    return bool(results) and all(result == "passed" for result in results)
+
+
 def validate_coverage(coverage, manifest):
     require_mapping(coverage, {"status", "checked", "unchecked", "checks"})
     status = coverage["status"]
@@ -3246,10 +3251,15 @@ def validate_run_record(run, bundle, manifest, attestation, run_path):
                 "message": "A complete run requires a recorded independence_capability check.",
             }
         )
-    capability_blocked = any(
-        check["name"] in CAPABILITY_CHECKS
-        and check["result"] not in {"passed", "not_run"}
-        for check in valid_checks
+    independence_passed = capability_passed(valid_checks, "independence_capability")
+    recovery_passed = capability_passed(valid_checks, "recovery_capability")
+    capability_blocked = (
+        any(
+            check["name"] in CAPABILITY_CHECKS
+            and check["result"] not in {"passed", "not_run"}
+            for check in valid_checks
+        )
+        or (recovery_count and not recovery_passed)
     )
     coverage = []
     for result in track_results:
@@ -3322,7 +3332,7 @@ def validate_run_record(run, bundle, manifest, attestation, run_path):
         status = "blocked"
     elif partial_result is not None:
         status = "blocked" if capability_blocked else "partial"
-    elif not missing_ids and not capability_blocked:
+    elif not missing_ids and not capability_blocked and independence_passed:
         status = "complete"
     else:
         status = "blocked"

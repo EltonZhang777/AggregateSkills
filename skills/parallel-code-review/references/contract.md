@@ -400,12 +400,15 @@ capability is recorded in run `checks` as `independence_capability` or
 `recovery_capability` with result `not_run` and a non-empty reason, not
 inferred as passed. Every run needs at least one such capability check. A
 recovery needs `recovery_capability`; a complete run needs
-`independence_capability`. A capability check with result `failed` or
-`not_assessed` makes the overall result blocked. A completed report with
-`coverage.status: blocked` also makes the overall result blocked with a
-distinct `coverage_blocked` run error; the track remains completed and its
-original report remains present. `partial` and `not_assessed` coverage remain
-visible limitations and do not trigger that failure.
+`independence_capability` with result `passed`, and a run with a recorded
+recovery also needs `recovery_capability` with result `passed`. A required
+capability check with result `not_run`, `failed`, or `not_assessed` blocks
+completion. A capability check with result `failed` or `not_assessed` makes
+the overall result blocked. A completed report with `coverage.status: blocked`
+also makes the overall result blocked with a distinct `coverage_blocked` run
+error; the track remains completed and its original report remains present.
+`partial` and `not_assessed` coverage remain visible limitations and do not
+trigger that failure.
 
 ## Severity
 

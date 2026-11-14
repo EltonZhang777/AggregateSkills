@@ -2560,8 +2560,8 @@ class ParallelCodeReviewRunTests(unittest.TestCase):
             checks = [
                 {
                     "name": "independence_capability",
-                    "result": "not_run",
-                    "reason": "Synthetic records do not demonstrate live host launches.",
+                    "result": "passed",
+                    "reason": "Synthetic fixture records independence as passed.",
                 },
                 {
                     "name": "recovery_capability",
@@ -2616,6 +2616,7 @@ class ParallelCodeReviewRunTests(unittest.TestCase):
             [code_envelope, ponytail_envelope],
             result["completed_reports"],
         )
+        self.assertEqual(checks, result["checks"])
         rendered = result["rendered"]
         self.assertIn("Overall status: `complete`", rendered)
         self.assertLess(
@@ -2664,6 +2665,13 @@ class ParallelCodeReviewRunTests(unittest.TestCase):
                         ),
                         envelope="ponytail-review.json",
                     )
+                ],
+                checks=[
+                    {
+                        "name": "independence_capability",
+                        "result": "passed",
+                        "reason": "Synthetic fixture records independence as passed.",
+                    }
                 ],
             )
             run_path = write(temp_dir, "blocked-coverage.json", json.dumps(run))
@@ -2744,6 +2752,13 @@ class ParallelCodeReviewRunTests(unittest.TestCase):
                         envelope="ponytail-review.json",
                     )
                 ],
+                checks=[
+                    {
+                        "name": "independence_capability",
+                        "result": "passed",
+                        "reason": "Synthetic fixture records independence as passed.",
+                    }
+                ],
             )
 
             for label, checks in (
@@ -2788,9 +2803,15 @@ class ParallelCodeReviewRunTests(unittest.TestCase):
                     )
 
             payload = copy.deepcopy(run)
-            payload["checks"][0]["result"] = "failed"
-            run_path = write(temp_dir, "failed-capability.json", json.dumps(payload))
-            blocked = run_contract(
+            payload["checks"] = [
+                {
+                    "name": "recovery_capability",
+                    "result": "not_run",
+                    "reason": "No recovery was attempted.",
+                }
+            ]
+            run_path = write(temp_dir, "missing-independence.json", json.dumps(payload))
+            rejected = run_contract(
                 "validate-run",
                 "--bundle",
                 bundle,
@@ -2798,14 +2819,51 @@ class ParallelCodeReviewRunTests(unittest.TestCase):
                 run_path,
                 *contract_args(),
             )
-            self.assertEqual(1, blocked.returncode)
-            result = result_json(blocked)
+            self.assertNotEqual(0, rejected.returncode)
+            result = result_json(rejected)
             self.assertEqual("blocked", result["status"])
-            self.assertEqual([], result["missing_tracks"])
             self.assertEqual(
                 [code_envelope, ponytail_envelope],
                 result["completed_reports"],
             )
+            self.assertIn(
+                "independence_capability_check_missing",
+                [error["code"] for error in result["errors"]],
+            )
+
+            for result_value in ("not_run", "failed", "not_assessed"):
+                with self.subTest(f"independence capability {result_value}"):
+                    checks = [
+                        {
+                            "name": "independence_capability",
+                            "result": result_value,
+                            "reason": f"Independence capability was {result_value}.",
+                        }
+                    ]
+                    payload = copy.deepcopy(run)
+                    payload["checks"] = checks
+                    run_path = write(
+                        temp_dir,
+                        f"independence-capability-{result_value}.json",
+                        json.dumps(payload),
+                    )
+                    blocked = run_contract(
+                        "validate-run",
+                        "--bundle",
+                        bundle,
+                        "--run",
+                        run_path,
+                        *contract_args(),
+                    )
+                    self.assertEqual(1, blocked.returncode)
+                    result = result_json(blocked)
+                    self.assertEqual("blocked", result["status"])
+                    self.assertEqual([], result["missing_tracks"])
+                    self.assertEqual(
+                        [code_envelope, ponytail_envelope],
+                        result["completed_reports"],
+                    )
+                    self.assertEqual(checks, result["checks"])
 
     def test_run_record_accepts_lf_and_crlf(self):
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -2848,6 +2906,13 @@ class ParallelCodeReviewRunTests(unittest.TestCase):
                         ponytail_request,
                         envelope="ponytail-review.json",
                     )
+                ],
+                checks=[
+                    {
+                        "name": "independence_capability",
+                        "result": "passed",
+                    "reason": "Synthetic fixture records independence as passed.",
+                    }
                 ],
             )
             lf_bytes = json.dumps(run, indent=2).encode("utf-8").replace(b"\r\n", b"\n")
@@ -3155,13 +3220,13 @@ class ParallelCodeReviewRunTests(unittest.TestCase):
             checks = [
                 {
                     "name": "independence_capability",
-                    "result": "not_run",
-                    "reason": "Synthetic records do not demonstrate live independence.",
+                    "result": "passed",
+                    "reason": "Synthetic fixture records independence as passed.",
                 },
                 {
                     "name": "recovery_capability",
-                    "result": "not_run",
-                    "reason": "Synthetic records do not demonstrate live recovery.",
+                    "result": "passed",
+                    "reason": "Synthetic fixture records recovery as passed.",
                 },
             ]
             write(temp_dir, "code-review.json", json.dumps(code_envelope))
@@ -3213,11 +3278,45 @@ class ParallelCodeReviewRunTests(unittest.TestCase):
                 [code_envelope, ponytail_envelope],
                 result["completed_reports"],
             )
+            self.assertEqual(checks, result["checks"])
             self.assertEqual(2, len(result["tracks"][1]["attempts"]))
             self.assertIn("one bounded recovery", result["rendered"])
             self.assertIn("recorded `analysis_reused: false`", result["rendered"])
             self.assertIn("not independently verified", result["rendered"])
             self.assertNotIn("fresh analysis", result["rendered"])
+
+            for result_value in ("not_run", "failed", "not_assessed"):
+                with self.subTest(f"recovery capability {result_value}"):
+                    blocked_checks = copy.deepcopy(checks)
+                    blocked_checks[1] = {
+                        "name": "recovery_capability",
+                        "result": result_value,
+                        "reason": f"Recovery capability was {result_value}.",
+                    }
+                    bad = copy.deepcopy(run)
+                    bad["checks"] = blocked_checks
+                    run_path = write(
+                        temp_dir,
+                        f"recovery-capability-{result_value}.json",
+                        json.dumps(bad),
+                    )
+                    blocked = run_contract(
+                        "validate-run",
+                        "--bundle",
+                        bundle,
+                        "--run",
+                        run_path,
+                        *contract_args(),
+                    )
+                    self.assertEqual(1, blocked.returncode)
+                    blocked_result = result_json(blocked)
+                    self.assertEqual("blocked", blocked_result["status"])
+                    self.assertEqual([], blocked_result["missing_tracks"])
+                    self.assertEqual(
+                        [code_envelope, ponytail_envelope],
+                        blocked_result["completed_reports"],
+                    )
+                    self.assertEqual(blocked_checks, blocked_result["checks"])
 
             blocked_cases = {}
             bad = copy.deepcopy(run)
@@ -4379,6 +4478,13 @@ class ParallelCodeReviewPackageTests(unittest.TestCase):
             refreshed_run = review_run(
                 [refreshed_attempts[0]],
                 [refreshed_attempts[1]],
+                checks=[
+                    {
+                        "name": "independence_capability",
+                        "result": "passed",
+                        "reason": "Synthetic fixture records independence as passed.",
+                    }
+                ],
             )
             refreshed_run_path = write(
                 temp_dir,
@@ -4595,10 +4701,10 @@ class ParallelCodeReviewPackageTests(unittest.TestCase):
                 "checks": [
                     {
                         "name": "independence_capability",
-                        "result": "not_run",
+                        "result": "passed",
                         "reason": (
-                            "Static acceptance envelopes do not demonstrate "
-                            "live independent execution."
+                            "Synthetic acceptance fixture records independence "
+                            "as passed."
                         ),
                     }
                 ],
