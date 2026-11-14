@@ -1189,6 +1189,59 @@ class ParallelCodeReviewFreezeTests(unittest.TestCase):
             self.assertFalse((bundle / "attestation.json").exists())
             self.assertEqual(before, snapshot_tree(repo))
 
+    def test_git_range_freeze_rejects_tracked_symlink(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            repo = self.make_repo(temp_dir)
+            base = git(repo, "rev-parse", "HEAD")
+            write(repo, "src/example.py", "value = 2\n")
+            target_blob = subprocess.run(
+                ["git", "hash-object", "-w", "--stdin"],
+                cwd=repo,
+                input="src/example.py",
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                check=True,
+            ).stdout.strip()
+            git(
+                repo,
+                "update-index",
+                "--add",
+                "--cacheinfo",
+                f"120000,{target_blob},src/example-link.py",
+            )
+            git(repo, "add", "src/example.py")
+            git(repo, "commit", "-m", "add tracked symlink")
+            head = git(repo, "rev-parse", "HEAD")
+            bundle = Path(temp_dir) / "bundle"
+
+            completed = run_contract(
+                "freeze",
+                "--repo",
+                repo,
+                "--output",
+                bundle,
+                "--range",
+                f"{base}...{head}",
+                "--requirements",
+                SKILL_ROOT / "references" / "acceptance-requirements.md",
+                "--standards",
+                SKILL_ROOT / "references" / "acceptance-standard.md",
+                "--not-run",
+                "repository tests=Synthetic patch is review-only.",
+                *contract_args(),
+            )
+
+            self.assertNotEqual(0, completed.returncode)
+            error = result_json(completed)["errors"][0]
+            self.assertEqual("tree_symlink_unsupported", error["code"])
+            self.assertIn("src/example-link.py", error["message"])
+            self.assertFalse(
+                (bundle / "tree" / "src" / "example-link.py").is_file()
+            )
+            self.assertFalse((bundle / "manifest.json").exists())
+            self.assertFalse((bundle / "attestation.json").exists())
+
     def test_git_range_freeze_rejects_copied_tree_path_mismatch(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             repo = self.make_repo(temp_dir)

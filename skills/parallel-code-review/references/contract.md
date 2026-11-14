@@ -191,6 +191,11 @@ Excluded paths are omitted from the frozen tree and recorded with their
 reasons. A patch that changes an excluded path fails the freeze instead of
 claiming the path was both reviewed and excluded.
 
+Symlinks are unsupported in every frozen tree. A Git-range freeze rejects
+tracked `120000` entries, and an explicit-tree freeze rejects filesystem
+symlinks; both fail closed with `tree_symlink_unsupported` and never store the
+link target text as a regular tree file.
+
 ## Common report envelope
 
 Each track returns one JSON object with exactly these top-level fields:

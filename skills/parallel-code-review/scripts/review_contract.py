@@ -749,6 +749,23 @@ def nul_paths(data):
     ]
 
 
+def git_tree_paths(repo, tree):
+    paths = []
+    for entry in git_output(repo, "ls-tree", "-r", "-z", tree).stdout.split(b"\0"):
+        if not entry:
+            continue
+        metadata, raw_path = entry.split(b"\t", 1)
+        mode = metadata.split(b" ", 1)[0]
+        relative = raw_path.decode("utf-8", errors="surrogateescape")
+        if mode == b"120000":
+            raise ContractFailure(
+                "tree_symlink_unsupported",
+                f"Tree symlink is not frozen: {relative}",
+            )
+        paths.append(relative)
+    return paths
+
+
 def parse_git_range(value):
     match = re.fullmatch(r"(.+?)\.\.\.(.+)", value)
     if not match:
@@ -1348,9 +1365,7 @@ def build_git_range_scope(repo, range_value, bundle=None, exclusions=None):
     ).stdout
     changed_paths, _ = inspect_patch_paths(patch)
     reject_excluded_patch_paths(changed_paths, exclusions)
-    tree_paths = nul_paths(
-        git_output(repo, "ls-tree", "-r", "--name-only", "-z", head).stdout
-    )
+    tree_paths = git_tree_paths(repo, head)
     included_tree_paths = [
         path for path in tree_paths if not is_excluded(path, exclusions)
     ]
@@ -1380,6 +1395,11 @@ def verify_live_git_range(repo, scope, patch, exclusions):
             f"{scope['base']}...{scope['head']}",
             exclusions=exclusions,
         )
+        head_tree_paths = {
+            path
+            for path in git_tree_paths(repo, scope["head"])
+            if not is_excluded(path, exclusions)
+        }
     except ContractFailure as exc:
         return [f"The Git-range scope became unreadable: {exc.message}"]
 
@@ -1394,13 +1414,6 @@ def verify_live_git_range(repo, scope, patch, exclusions):
     if current_patch != patch:
         reasons.append("The reviewed scope changed after the freeze.")
 
-    head_tree_paths = {
-        path
-        for path in nul_paths(
-            git_output(repo, "ls-tree", "-r", "--name-only", "-z", scope["head"]).stdout
-        )
-        if not is_excluded(path, exclusions)
-    }
     if head_tree_paths != {source["path"] for source in scope["tree_sources"]}:
         reasons.append("The exact head tree path set changed after the freeze.")
 
