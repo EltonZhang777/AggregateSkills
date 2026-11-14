@@ -97,7 +97,7 @@ repeatable `--requirements` and `--standards`. When the routed adapters require
 use `--not-run` with a non-empty reason. Record every exclusion with `--exclude
 PATH=REASON`.
 
-The bundle contains the exact patch, the frozen code tree, pinned input snapshots, a canonical manifest, and a separate patch/manifest attestation. The manifest records the manifest digest source, included sources, checks, exclusions, routing/adapter/upstream pins, and the scope identity. For an explicit patch, every non-deleted changed path must exist in the supplied tree or the freeze fails. Do not reconstruct inputs from live workspace reads after the freeze.
+The bundle contains the exact patch, the frozen code tree, pinned input snapshots, a canonical manifest, and a separate patch/manifest attestation. The manifest records the manifest digest source, included sources, checks, exclusions, routing/adapter/upstream pins, and the scope identity. For an explicit patch, every non-deleted changed path must exist in the supplied tree, and the tree must match the patch's exact post-image, or the freeze fails. Do not reconstruct inputs from live workspace reads after the freeze.
 
 Every supplied `--repo` path is resolved immediately to its Git top level.
 The output directory must stay outside that reviewed repository and outside any

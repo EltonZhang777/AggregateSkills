@@ -156,8 +156,10 @@ cannot require `not_assessed` content, and a required `checks` category needs
 at least one record. Any mismatch makes the bundle invalid.
 
 An explicit patch also requires a separately supplied frozen tree. Every
-non-deleted changed path must exist in that tree or freeze fails. The
-coordinator never applies the patch to create live review context.
+non-deleted changed path must exist in that tree, and the tree must match the
+patch's exact post-image, or freeze fails. The coordinator validates
+applicability against a temporary copy and never applies the patch to create
+live review context.
 
 Excluded paths are omitted from the frozen tree and recorded with their
 reasons. A patch that changes an excluded path fails the freeze instead of

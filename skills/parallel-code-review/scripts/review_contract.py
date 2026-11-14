@@ -4,8 +4,10 @@ import hashlib
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
+import tempfile
 from urllib.parse import unquote, urlparse
 from pathlib import Path, PurePosixPath
 
@@ -887,6 +889,29 @@ def copy_tree_root(tree_root, bundle, exclusions, paths=None):
     return [source["path"] for source in sources], sources
 
 
+def validate_tree_post_image(patch, tree_root, paths):
+    with tempfile.TemporaryDirectory(prefix="parallel-review-tree-") as temp_dir:
+        snapshot = Path(temp_dir)
+        for value in paths:
+            relative = safe_relative_path(value)
+            target = snapshot.joinpath(*relative.parts)
+            target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(tree_root.joinpath(*relative.parts), target)
+        completed = subprocess.run(
+            ["git", "-c", "core.quotePath=false", "apply", "--check", "--reverse", "-"],
+            cwd=snapshot,
+            input=patch,
+            capture_output=True,
+            check=False,
+        )
+    if completed.returncode != 0:
+        detail = completed.stderr.decode("utf-8", errors="replace").strip()
+        raise ContractFailure(
+            "tree_mismatch",
+            f"The frozen tree is not the patch's exact post-image: {detail}",
+        )
+
+
 def run_git_apply_query(patch, *query_args):
     completed = subprocess.run(
         ["git", "-c", "core.quotePath=false", "apply", *query_args, "-"],
@@ -1333,6 +1358,7 @@ def build_explicit_patch_scope(patch_path, tree_root, bundle, exclusions):
             "tree_incomplete",
             f"The frozen tree is missing changed paths: {', '.join(missing)}",
         )
+    validate_tree_post_image(patch, tree_root, tree_paths)
     _, tree_sources = copy_tree_root(tree_root, bundle, exclusions, tree_paths)
     included_paths = sorted(set(patch_paths) | set(tree_paths))
     return {

@@ -1095,6 +1095,68 @@ class ParallelCodeReviewFreezeTests(unittest.TestCase):
         self.assertNotEqual(0, verified.returncode)
         self.assertEqual("stale", result_json(verified)["status"])
 
+    def test_explicit_patch_requires_tree_to_match_post_image(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            patch_path = write(
+                temp_dir,
+                "change.patch",
+                "diff --git a/src/example.py b/src/example.py\n"
+                "--- a/src/example.py\n"
+                "+++ b/src/example.py\n"
+                "@@ -1 +1 @@\n"
+                "-value = 1\n"
+                "+value = 2\n",
+            )
+            matching_tree = Path(temp_dir) / "matching-tree"
+            write(matching_tree, "src/example.py", "value = 2\n")
+            mismatched_tree = Path(temp_dir) / "mismatched-tree"
+            write(mismatched_tree, "src/example.py", "value = 3\n")
+            matching_bundle = Path(temp_dir) / "matching-bundle"
+            mismatched_bundle = Path(temp_dir) / "mismatched-bundle"
+            matching_before = snapshot_tree(matching_tree)
+            mismatched_before = snapshot_tree(mismatched_tree)
+            common_args = [
+                "--requirements",
+                SKILL_ROOT / "references" / "acceptance-requirements.md",
+                "--standards",
+                SKILL_ROOT / "references" / "acceptance-standard.md",
+                "--not-run",
+                "repository tests=Synthetic patch is review-only.",
+                *contract_args(),
+            ]
+
+            matching = run_contract(
+                "freeze",
+                "--output",
+                matching_bundle,
+                "--patch",
+                patch_path,
+                "--tree-root",
+                matching_tree,
+                *common_args,
+            )
+            mismatched = run_contract(
+                "freeze",
+                "--output",
+                mismatched_bundle,
+                "--patch",
+                patch_path,
+                "--tree-root",
+                mismatched_tree,
+                *common_args,
+            )
+
+            self.assertEqual(matching.returncode, 0, matching.stderr or matching.stdout)
+            self.assertTrue(matching_bundle.is_dir())
+            self.assertEqual(matching_before, snapshot_tree(matching_tree))
+            self.assertNotEqual(0, mismatched.returncode)
+            self.assertEqual(
+                "tree_mismatch",
+                result_json(mismatched)["errors"][0]["code"],
+            )
+            self.assertFalse(mismatched_bundle.exists())
+            self.assertEqual(mismatched_before, snapshot_tree(mismatched_tree))
+
     def test_frozen_uncommitted_work_includes_untracked_files_and_detects_staleness(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             repo = self.make_repo(temp_dir)
