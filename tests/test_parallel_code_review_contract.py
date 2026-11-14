@@ -1,5 +1,8 @@
 import copy
+import contextlib
 import hashlib
+import importlib.util
+import io
 import json
 import os
 import shutil
@@ -7,6 +10,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from unittest import mock
 from pathlib import Path
 
 
@@ -28,6 +32,13 @@ def run_contract(*args):
         encoding="utf-8",
         check=False,
     )
+
+
+def load_contract_module():
+    spec = importlib.util.spec_from_file_location("review_contract_under_test", SCRIPT)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
 
 
 def result_json(completed):
@@ -1035,6 +1046,96 @@ class ParallelCodeReviewFreezeTests(unittest.TestCase):
 
         self.assertEqual(verified.returncode, 0, verified.stderr or verified.stdout)
         self.assertEqual("current", result_json(verified)["status"])
+
+    def test_git_range_freeze_fails_when_tree_entry_cannot_be_read(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            repo = self.make_repo(temp_dir)
+            base = git(repo, "rev-parse", "HEAD")
+            git(
+                repo,
+                "update-index",
+                "--add",
+                "--cacheinfo",
+                f"160000,{'1' * 40},missing-submodule",
+            )
+            git(repo, "commit", "-m", "point at missing submodule")
+            head = git(repo, "rev-parse", "HEAD")
+            bundle = Path(temp_dir) / "bundle"
+            before = snapshot_tree(repo)
+
+            completed = run_contract(
+                "freeze",
+                "--repo",
+                repo,
+                "--output",
+                bundle,
+                "--range",
+                f"{base}...{head}",
+                "--requirements",
+                SKILL_ROOT / "references" / "acceptance-requirements.md",
+                "--standards",
+                SKILL_ROOT / "references" / "acceptance-standard.md",
+                "--not-run",
+                "repository tests=Synthetic patch is review-only.",
+                *contract_args(),
+            )
+
+            self.assertNotEqual(0, completed.returncode)
+            error = result_json(completed)["errors"][0]
+            self.assertEqual("git_command_failed", error["code"])
+            self.assertIn("missing-submodule", error["message"])
+            self.assertFalse((bundle / "manifest.json").exists())
+            self.assertFalse((bundle / "attestation.json").exists())
+            self.assertEqual(before, snapshot_tree(repo))
+
+    def test_git_range_freeze_rejects_copied_tree_path_mismatch(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            repo = self.make_repo(temp_dir)
+            base = git(repo, "rev-parse", "HEAD")
+            write(repo, "src/example.py", "value = 2\n")
+            git(repo, "add", ".")
+            git(repo, "commit", "-m", "change")
+            head = git(repo, "rev-parse", "HEAD")
+            bundle = Path(temp_dir) / "bundle"
+            contract = load_contract_module()
+            original_write = contract.write_bundle_file
+
+            def omit_copied_source(bundle_root, relative_path, data):
+                if relative_path == "tree/src/example.py":
+                    return None
+                return original_write(bundle_root, relative_path, data)
+
+            stdout = io.StringIO()
+            with mock.patch.object(
+                contract,
+                "write_bundle_file",
+                side_effect=omit_copied_source,
+            ), contextlib.redirect_stdout(stdout):
+                exit_code = contract.main(
+                    [
+                        "freeze",
+                        "--repo",
+                        str(repo),
+                        "--output",
+                        str(bundle),
+                        "--range",
+                        f"{base}...{head}",
+                        "--requirements",
+                        str(SKILL_ROOT / "references" / "acceptance-requirements.md"),
+                        "--standards",
+                        str(SKILL_ROOT / "references" / "acceptance-standard.md"),
+                        "--not-run",
+                        "repository tests=Synthetic patch is review-only.",
+                        *contract_args(),
+                    ]
+                )
+
+            error = json.loads(stdout.getvalue())["errors"][0]
+            self.assertNotEqual(0, exit_code)
+            self.assertEqual("tree_incomplete", error["code"])
+            self.assertIn("src/example.py", error["message"])
+            self.assertFalse((bundle / "manifest.json").exists())
+            self.assertFalse((bundle / "attestation.json").exists())
 
     def test_explicit_patch_and_supplied_tree_are_immutable(self):
         with tempfile.TemporaryDirectory() as temp_dir:

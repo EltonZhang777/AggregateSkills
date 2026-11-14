@@ -846,13 +846,11 @@ def copy_file_sources(source_root, paths, bundle):
 
 
 def copy_git_tree(repo, head, paths, bundle):
+    requested = {safe_relative_path(value).as_posix() for value in paths}
     sources = []
-    for value in sorted(set(paths)):
+    for value in sorted(requested):
         relative = safe_relative_path(value)
-        completed = git_output(repo, "show", f"{head}:{relative.as_posix()}", check=False)
-        if completed.returncode != 0:
-            continue
-        data = completed.stdout
+        data = git_output(repo, "show", f"{head}:{relative.as_posix()}").stdout
         write_bundle_file(bundle, f"tree/{relative.as_posix()}", data)
         sources.append(
             {
@@ -861,6 +859,19 @@ def copy_git_tree(repo, head, paths, bundle):
                 "sha256": sha256_bytes(data),
                 "size_bytes": len(data),
             }
+        )
+    copied = {
+        path.relative_to(bundle / "tree").as_posix()
+        for path in (bundle / "tree").rglob("*")
+        if path.is_file()
+    }
+    if copied != requested:
+        missing = ", ".join(sorted(requested - copied)) or "none"
+        unexpected = ", ".join(sorted(copied - requested)) or "none"
+        raise ContractFailure(
+            "tree_incomplete",
+            "Copied Git tree paths do not match the requested paths: "
+            f"missing: {missing}; unexpected: {unexpected}",
         )
     return sources
 
