@@ -52,7 +52,7 @@ An upstream identity is `(name, source)`. Adapters may share the same identity,
 but a declared name must not map to multiple sources; that conflict fails with
 `upstream_identity_conflict` before resolution or pin creation.
 
-For every routed row, read its fixed-marker JSON metadata, resolve the declared upstream skill through the current host and SkillRoute, and collect its required manifest inputs. Report all missing upstream dependencies and inputs together, then stop. Do not dispatch a track while any required dependency or input is unresolved. Verify that every metadata block uses the exact shared contract version before starting work.
+For every routed row, read its fixed-marker JSON metadata, resolve the declared upstream skill through the current host and SkillRoute, and collect its required manifest inputs. Report every adapter metadata error, missing upstream dependency, and missing or unreadable supplied input file together, then stop. Do not dispatch a track while any required dependency or input is unresolved. Verify that every metadata block uses the exact shared contract version before starting work.
 
 The validator does not run SkillRoute or fetch remote text. Pass the
 coordinator-resolved upstream source explicitly. A local skill file or skill

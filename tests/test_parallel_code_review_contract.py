@@ -620,6 +620,39 @@ class ParallelCodeReviewPreflightTests(unittest.TestCase):
                 self.assertIn(expected_code, [error["code"] for error in result["errors"]])
                 self.assertNotIn("pins", result)
 
+    def test_preflight_aggregates_adapter_and_upstream_failures(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            skill_root = Path(temp_dir) / "skill"
+            shutil.copytree(SKILL_ROOT, skill_root)
+            broken_adapter = (
+                skill_root / "references" / "tracks" / "ponytail-review.md"
+            )
+            broken_adapter.write_text(
+                "# Adapter without metadata\n",
+                encoding="utf-8",
+            )
+            missing_upstream = Path(temp_dir) / "missing-upstream.md"
+            completed = run_contract(
+                "preflight",
+                "--skill-root",
+                skill_root,
+                "--upstream",
+                f"/code-review={missing_upstream}",
+                "--upstream",
+                f"/ponytail-review={broken_adapter}",
+            )
+
+        self.assertNotEqual(0, completed.returncode)
+        result = result_json(completed)
+        self.assertEqual("blocked", result["status"])
+        self.assertEqual(
+            ["metadata_missing", "upstream_unreadable"],
+            [error["code"] for error in result["errors"]],
+        )
+        self.assertIn("ponytail-review.md", result["errors"][0]["message"])
+        self.assertIn("/code-review", result["errors"][1]["message"])
+        self.assertNotIn("pins", result)
+
     def test_routing_row_order_controls_dispatch_and_pin_order(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             skill_root = Path(temp_dir) / "skill"
@@ -1743,6 +1776,64 @@ class ParallelCodeReviewFreezeTests(unittest.TestCase):
         self.assertIn("requirements", result["errors"][0]["message"])
         self.assertIn("standards", result["errors"][0]["message"])
         self.assertFalse(bundle.exists())
+
+    def test_freeze_aggregates_adapter_upstream_and_all_input_file_failures(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            skill_root = Path(temp_dir) / "skill"
+            shutil.copytree(SKILL_ROOT, skill_root)
+            broken_adapter = (
+                skill_root / "references" / "tracks" / "ponytail-review.md"
+            )
+            broken_adapter.write_text(
+                "# Adapter without metadata\n",
+                encoding="utf-8",
+            )
+            missing_upstream = Path(temp_dir) / "missing-upstream.md"
+            missing_requirements = Path(temp_dir) / "missing-requirements.md"
+            second_missing_requirements = Path(temp_dir) / "missing-requirements-2.md"
+            unreadable_standards = Path(temp_dir) / "unreadable-standards.md"
+            unreadable_standards.write_bytes(b"\xff")
+            bundle = Path(temp_dir) / "bundle"
+            completed = run_contract(
+                "freeze",
+                "--output",
+                bundle,
+                "--patch",
+                skill_root / "references" / "acceptance-fixture.patch",
+                "--tree-root",
+                skill_root / "references" / "acceptance-tree",
+                "--requirements",
+                missing_requirements,
+                "--requirements",
+                second_missing_requirements,
+                "--standards",
+                unreadable_standards,
+                "--contract-root",
+                skill_root,
+                "--upstream",
+                f"/code-review={missing_upstream}",
+            )
+            bundle_created = bundle.exists()
+
+        self.assertNotEqual(0, completed.returncode)
+        result = result_json(completed)
+        self.assertEqual("blocked", result["status"])
+        self.assertEqual(
+            [
+                "manifest_input_missing",
+                "manifest_input_missing",
+                "manifest_input_invalid",
+                "metadata_missing",
+                "upstream_unreadable",
+            ],
+            [error["code"] for error in result["errors"]],
+        )
+        self.assertIn("missing-requirements.md", result["errors"][0]["message"])
+        self.assertIn("missing-requirements-2.md", result["errors"][1]["message"])
+        self.assertIn("unreadable-standards.md", result["errors"][2]["message"])
+        self.assertIn("ponytail-review.md", result["errors"][3]["message"])
+        self.assertIn("/code-review", result["errors"][4]["message"])
+        self.assertFalse(bundle_created)
 
     def test_freeze_requires_a_recorded_check_with_reason(self):
         with tempfile.TemporaryDirectory() as temp_dir:

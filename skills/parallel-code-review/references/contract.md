@@ -61,6 +61,10 @@ exact digest and size. Its normalized digest is optional normalized attestation
 and cannot substitute for exact-byte identity. Missing, duplicate, unreadable,
 empty, malformed, size-mismatched, or hash-mismatched resolutions fail before
 dispatch.
+Preflight and freeze-source validation collect all independently detectable
+adapter metadata, upstream resolution, and supplied input-file failures into
+one blocked result; valid adapter metadata still contributes resolution
+checks, and diagnostics retain routing, dependency, and argument order.
 
 Pin objects use `sha256` for the exact-byte digest, `size_bytes` for the exact
 byte count, and optional `normalized_sha256` for normalized text attestation.

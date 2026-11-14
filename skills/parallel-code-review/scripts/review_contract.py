@@ -323,6 +323,7 @@ def validate_upstream_resolutions(
     normalized_hashes,
     exact_hashes,
     sizes,
+    validate_unknown=True,
 ):
     errors = []
     expected = {dependency["name"] for dependency in dependencies}
@@ -330,7 +331,7 @@ def validate_upstream_resolutions(
     supplied_normalized_hashes = set(normalized_hashes)
     supplied_exact_hashes = set(exact_hashes)
     supplied_sizes = set(sizes)
-    unknown = sorted(supplied - expected)
+    unknown = sorted(supplied - expected) if validate_unknown else []
     if unknown:
         errors.append(
             ContractFailure(
@@ -338,7 +339,9 @@ def validate_upstream_resolutions(
                 f"Upstream resolutions do not match routed dependencies: {', '.join(unknown)}",
             )
         )
-    unknown_normalized_hashes = sorted(supplied_normalized_hashes - expected)
+    unknown_normalized_hashes = (
+        sorted(supplied_normalized_hashes - expected) if validate_unknown else []
+    )
     if unknown_normalized_hashes:
         errors.append(
             ContractFailure(
@@ -347,7 +350,9 @@ def validate_upstream_resolutions(
                 f"{', '.join(unknown_normalized_hashes)}",
             )
         )
-    unknown_exact_hashes = sorted(supplied_exact_hashes - expected)
+    unknown_exact_hashes = (
+        sorted(supplied_exact_hashes - expected) if validate_unknown else []
+    )
     if unknown_exact_hashes:
         errors.append(
             ContractFailure(
@@ -356,7 +361,7 @@ def validate_upstream_resolutions(
                 f"{', '.join(unknown_exact_hashes)}",
             )
         )
-    unknown_sizes = sorted(supplied_sizes - expected)
+    unknown_sizes = sorted(supplied_sizes - expected) if validate_unknown else []
     if unknown_sizes:
         errors.append(
             ContractFailure(
@@ -601,7 +606,9 @@ def collect_preflight(
             )
             continue
         except ContractFailure as exc:
-            errors.append(exc)
+            errors.append(
+                ContractFailure(exc.code, f"{adapter_text}: {exc.message}")
+            )
             continue
 
         tracks.append(
@@ -638,9 +645,6 @@ def collect_preflight(
                 )
             )
 
-    if errors:
-        return None, errors
-
     dependencies = []
     seen_dependencies = set()
     required_inputs = []
@@ -670,6 +674,7 @@ def collect_preflight(
             normalized_hashes,
             exact_hashes,
             sizes,
+            validate_unknown=len(tracks) == len(rows),
         )
         errors.extend(upstream_errors)
         if errors:
@@ -1196,6 +1201,7 @@ def ensure_output_outside_sources(output, source_roots):
 
 
 def validate_freeze_sources(args, repo, output):
+    errors = []
     source_roots = []
     if repo:
         source_roots.append(repo)
@@ -1228,26 +1234,37 @@ def validate_freeze_sources(args, repo, output):
         supplied_source = Path(path)
         source = supplied_source.resolve()
         if supplied_source.is_symlink() or not source.is_file():
-            raise ContractFailure("manifest_input_missing", f"Missing regular input file: {source}")
+            errors.append(
+                ContractFailure(
+                    "manifest_input_missing",
+                    f"Missing regular input file: {source}",
+                )
+            )
+            continue
         try:
             source.read_bytes().decode("utf-8")
-        except (OSError, UnicodeDecodeError) as exc:
-            raise ContractFailure(
-                "manifest_input_invalid",
-                f"Cannot read UTF-8 manifest input: {source}",
-            ) from exc
+        except (OSError, UnicodeDecodeError):
+            errors.append(
+                ContractFailure(
+                    "manifest_input_invalid",
+                    f"Cannot read UTF-8 manifest input: {source}",
+                )
+            )
     if args.contract_root:
-        contract, errors = collect_preflight(
-            Path(args.contract_root).resolve(),
-            upstream_values=args.upstream,
-            upstream_normalized_hashes=args.upstream_sha,
-            upstream_exact_hashes=args.upstream_exact_sha,
-            upstream_sizes=args.upstream_size,
-        )
-        if errors:
-            return errors, contract
-        return [], contract
-    return [], None
+        try:
+            contract, contract_errors = collect_preflight(
+                Path(args.contract_root).resolve(),
+                upstream_values=args.upstream,
+                upstream_normalized_hashes=args.upstream_sha,
+                upstream_exact_hashes=args.upstream_exact_sha,
+                upstream_sizes=args.upstream_size,
+            )
+        except ContractFailure as exc:
+            errors.append(exc)
+            return errors, None
+        errors.extend(contract_errors)
+        return errors, contract
+    return errors, None
 
 
 def validate_required_inputs(contract, args, checks):
