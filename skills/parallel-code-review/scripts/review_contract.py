@@ -749,6 +749,23 @@ def nul_paths(data):
     ]
 
 
+def validate_tree_mode(mode, path):
+    if isinstance(mode, bytes):
+        mode = mode.decode("ascii", errors="replace")
+    if mode in {"100644", "100755"}:
+        return
+    relative = safe_relative_path(path).as_posix()
+    if mode == "120000":
+        raise ContractFailure(
+            "tree_symlink_unsupported",
+            f"Tree symlink is not frozen: {relative}",
+        )
+    raise ContractFailure(
+        "tree_entry_unsupported",
+        f"Tree entry mode {mode} is not a regular file: {relative}",
+    )
+
+
 def git_tree_paths(repo, tree):
     paths = []
     for entry in git_output(repo, "ls-tree", "-r", "-z", tree).stdout.split(b"\0"):
@@ -757,11 +774,7 @@ def git_tree_paths(repo, tree):
         metadata, raw_path = entry.split(b"\t", 1)
         mode = metadata.split(b" ", 1)[0]
         relative = raw_path.decode("utf-8", errors="surrogateescape")
-        if mode == b"120000":
-            raise ContractFailure(
-                "tree_symlink_unsupported",
-                f"Tree symlink is not frozen: {relative}",
-            )
+        validate_tree_mode(mode, relative)
         paths.append(relative)
     return paths
 
@@ -1047,12 +1060,51 @@ def parse_summary_paths(output):
     text = output.decode("utf-8", errors="surrogateescape")
     for raw_line in text.splitlines():
         line = raw_line.strip()
-        if line.startswith("delete mode "):
-            parts = line.split(" ", 3)
-            if len(parts) == 4:
-                deleted.add(decode_git_path(parts[3]))
+        if line.startswith(("create mode ", "delete mode ")):
+            prefix = "create mode " if line.startswith("create mode ") else "delete mode "
+            mode, separator, path = line[len(prefix):].partition(" ")
+            if not separator:
+                raise ContractFailure("patch_parse_failed", "Patch summary mode is incomplete.")
+            path = decode_git_path(path)
+            validate_tree_mode(mode, path)
+            if prefix == "delete mode ":
+                deleted.add(path)
+            continue
+        if line.startswith("mode change "):
+            _old_mode, separator, remainder = line[len("mode change "):].partition(" => ")
+            mode, separator, path = remainder.partition(" ")
+            if not separator:
+                raise ContractFailure("patch_parse_failed", "Patch summary mode is incomplete.")
+            validate_tree_mode(mode, decode_git_path(path))
             continue
     return deleted
+
+
+def validate_patch_index_modes(patch):
+    pending_mode = None
+    text = patch.decode("utf-8", errors="surrogateescape")
+    for raw_line in text.splitlines():
+        if raw_line.startswith("diff --git "):
+            pending_mode = None
+            continue
+        if raw_line.startswith("index "):
+            fields = raw_line.split()
+            if (
+                len(fields) == 3
+                and re.fullmatch(r"[0-9a-f]+\.\.[0-9a-f]+", fields[1])
+                and re.fullmatch(r"\d{6}", fields[2])
+            ):
+                pending_mode = fields[2]
+            continue
+        if raw_line.startswith("+++ ") and pending_mode:
+            mode = pending_mode
+            pending_mode = None
+            path = decode_git_path(raw_line[4:])
+            if path == "/dev/null":
+                continue
+            if path.startswith("b/"):
+                path = path[2:]
+            validate_tree_mode(mode, path)
 
 
 def inspect_patch_paths(patch):
@@ -1060,6 +1112,7 @@ def inspect_patch_paths(patch):
     summary = run_git_apply_query(patch, "--summary")
     records = parse_numstat_zero_output(numstat)
     summary_deleted = parse_summary_paths(summary)
+    validate_patch_index_modes(patch)
     renames = parse_rename_headers(patch)
 
     changed = set()

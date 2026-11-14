@@ -204,10 +204,13 @@ Excluded paths are omitted from the frozen tree and recorded with their
 reasons. A patch that changes an excluded path fails the freeze instead of
 claiming the path was both reviewed and excluded.
 
-Symlinks are unsupported in every frozen tree. A Git-range freeze rejects
-tracked `120000` entries, and an explicit-tree freeze rejects filesystem
-symlinks; both fail closed with `tree_symlink_unsupported` and never store the
-link target text as a regular tree file.
+Both tree sources accept only regular-file Git modes `100644` and `100755`.
+A Git-range freeze inspects tracked tree modes before copying; an explicit-patch
+freeze inspects patch-summary and index-header modes before post-image
+validation, and an explicit-tree freeze also rejects filesystem symlinks. Mode
+`120000` fails with `tree_symlink_unsupported`; mode `160000` and every other
+unsupported mode fail closed with `tree_entry_unsupported`. Neither source
+stores non-regular content as a regular tree file.
 
 ## Common report envelope
 

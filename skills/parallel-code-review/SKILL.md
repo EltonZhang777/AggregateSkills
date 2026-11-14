@@ -104,7 +104,7 @@ must pass `--require-requirements`; missing pinned requirements then block with
 
 The bundle contains the exact patch, the frozen code tree, pinned input snapshots, a canonical manifest, and a separate patch/manifest attestation. The manifest records the manifest digest source, included sources, checks, exclusions, routing/adapter/upstream pins, and the scope identity. For an explicit patch, every non-deleted changed path must exist in the supplied tree, and the tree must match the patch's exact post-image, or the freeze fails. Do not reconstruct inputs from live workspace reads after the freeze.
 
-Symlinks are unsupported in either tree source: freeze fails closed with `tree_symlink_unsupported` rather than publishing the link target as a regular file.
+Both tree sources accept only regular-file Git modes `100644` and `100755`. Symlinks fail with `tree_symlink_unsupported`; gitlinks and every other unsupported mode fail closed with `tree_entry_unsupported` before copying or post-image validation.
 
 Every supplied `--repo` path is resolved immediately to its Git top level.
 The output directory must stay outside that reviewed repository and outside any

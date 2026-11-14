@@ -1056,9 +1056,11 @@ class ParallelCodeReviewFreezeTests(unittest.TestCase):
             base = git(repo, "rev-parse", "HEAD")
             write(repo, "src/example.py", "value = 2\n")
             write(repo, "tests/test_example.py", "def test_value():\n    assert True\n")
+            write(repo, "tool.sh", "#!/bin/sh\nexit 0\n")
             requirements = write(temp_dir, "requirements.md", "Value must be 2.\n")
             standards = write(temp_dir, "standards.md", "Use tests.\n")
             git(repo, "add", ".")
+            git(repo, "update-index", "--chmod=+x", "tool.sh")
             git(repo, "commit", "-m", "change")
             head = git(repo, "rev-parse", "HEAD")
             bundle = Path(temp_dir) / "bundle"
@@ -1102,13 +1104,17 @@ class ParallelCodeReviewFreezeTests(unittest.TestCase):
             self.assertEqual(hashlib.sha256(patch).hexdigest(), attestation["patch_sha256"])
             self.assertEqual(len(patch), attestation["patch_size_bytes"])
             self.assertEqual(
-                ["README.md", "src/example.py", "tests/test_example.py"],
+                ["README.md", "src/example.py", "tests/test_example.py", "tool.sh"],
                 manifest["scope"]["included_paths"],
             )
             self.assertEqual("git_range", manifest["scope"]["kind"])
             self.assertEqual(base, manifest["scope"]["base"])
             self.assertEqual(head, manifest["scope"]["head"])
             self.assertEqual("value = 2\n", tree_file.read_text(encoding="utf-8"))
+            self.assertEqual(
+                "#!/bin/sh\nexit 0\n",
+                (bundle / "tree" / "tool.sh").read_text(encoding="utf-8"),
+            )
             self.assertFalse((bundle / "tree" / "vendor" / "generated.py").exists())
             self.assertNotIn("vendor/generated.py", manifest["scope"]["included_paths"])
             self.assertEqual("passed", manifest["checks"][0]["result"])
@@ -1207,7 +1213,7 @@ class ParallelCodeReviewFreezeTests(unittest.TestCase):
             result_json(changed)["scope_sha256"],
         )
 
-    def test_git_range_freeze_fails_when_tree_entry_cannot_be_read(self):
+    def test_git_range_freeze_rejects_readable_gitlink(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             repo = self.make_repo(temp_dir)
             base = git(repo, "rev-parse", "HEAD")
@@ -1216,9 +1222,9 @@ class ParallelCodeReviewFreezeTests(unittest.TestCase):
                 "update-index",
                 "--add",
                 "--cacheinfo",
-                f"160000,{'1' * 40},missing-submodule",
+                f"160000,{base},vendor/submodule",
             )
-            git(repo, "commit", "-m", "point at missing submodule")
+            git(repo, "commit", "-m", "point at readable submodule commit")
             head = git(repo, "rev-parse", "HEAD")
             bundle = Path(temp_dir) / "bundle"
             before = snapshot_tree(repo)
@@ -1242,8 +1248,9 @@ class ParallelCodeReviewFreezeTests(unittest.TestCase):
 
             self.assertNotEqual(0, completed.returncode)
             error = result_json(completed)["errors"][0]
-            self.assertEqual("git_command_failed", error["code"])
-            self.assertIn("missing-submodule", error["message"])
+            self.assertEqual("tree_entry_unsupported", error["code"])
+            self.assertIn("vendor/submodule", error["message"])
+            self.assertFalse((bundle / "tree").exists())
             self.assertFalse((bundle / "manifest.json").exists())
             self.assertFalse((bundle / "attestation.json").exists())
             self.assertEqual(before, snapshot_tree(repo))
@@ -1360,10 +1367,17 @@ class ParallelCodeReviewFreezeTests(unittest.TestCase):
                 "+++ b/src/example.py\n"
                 "@@ -1 +1 @@\n"
                 "-value = 1\n"
-                "+value = 2\n",
+                "+value = 2\n"
+                "diff --git a/tool.sh b/tool.sh\n"
+                "new file mode 100755\n"
+                "--- /dev/null\n"
+                "+++ b/tool.sh\n"
+                "@@ -0,0 +1 @@\n"
+                "+#!/bin/sh\n",
             )
             tree_root = Path(temp_dir) / "tree-source"
             write(tree_root, "src/example.py", "value = 2\n")
+            write(tree_root, "tool.sh", "#!/bin/sh\n")
             bundle = Path(temp_dir) / "bundle"
 
             completed = run_contract(
@@ -1386,7 +1400,10 @@ class ParallelCodeReviewFreezeTests(unittest.TestCase):
             self.assertEqual(completed.returncode, 0, completed.stderr or completed.stdout)
             manifest = json.loads((bundle / "manifest.json").read_text(encoding="utf-8"))
             self.assertEqual("explicit_patch", manifest["scope"]["kind"])
-            self.assertEqual(["src/example.py"], manifest["scope"]["included_paths"])
+            self.assertEqual(
+                ["src/example.py", "tool.sh"],
+                manifest["scope"]["included_paths"],
+            )
             self.assertEqual(
                 patch_path.read_bytes(),
                 (bundle / "scope" / "patch.diff").read_bytes(),
@@ -1394,6 +1411,10 @@ class ParallelCodeReviewFreezeTests(unittest.TestCase):
             self.assertEqual(
                 "value = 2\n",
                 (bundle / "tree" / "src" / "example.py").read_text(encoding="utf-8"),
+            )
+            self.assertEqual(
+                "#!/bin/sh\n",
+                (bundle / "tree" / "tool.sh").read_text(encoding="utf-8"),
             )
 
             patch_path.write_text(patch_path.read_text(encoding="utf-8") + "\n", encoding="utf-8")
@@ -1408,6 +1429,62 @@ class ParallelCodeReviewFreezeTests(unittest.TestCase):
 
         self.assertNotEqual(0, verified.returncode)
         self.assertEqual("stale", result_json(verified)["status"])
+
+    def test_explicit_patch_rejects_symlink_materialized_as_regular_file(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            patches = {
+                "create": (
+                    "diff --git a/src/link.py b/src/link.py\n"
+                    "new file mode 120000\n"
+                    "--- /dev/null\n"
+                    "+++ b/src/link.py\n"
+                    "@@ -0,0 +1 @@\n"
+                    "+src/example.py\n"
+                    "\\ No newline at end of file\n"
+                ),
+                "update": (
+                    "diff --git a/src/link.py b/src/link.py\n"
+                    "index 1111111..2222222 120000\n"
+                    "--- a/src/link.py\n"
+                    "+++ b/src/link.py\n"
+                    "@@ -1 +1 @@\n"
+                    "-src/old.py\n"
+                    "\\ No newline at end of file\n"
+                    "+src/example.py\n"
+                    "\\ No newline at end of file\n"
+                ),
+            }
+            for name, patch in patches.items():
+                with self.subTest(name=name):
+                    patch_path = write(temp_dir, f"{name}.patch", patch)
+                    tree_root = Path(temp_dir) / f"{name}-tree"
+                    write(tree_root, "src/link.py", "src/example.py")
+                    bundle = Path(temp_dir) / f"{name}-bundle"
+
+                    completed = run_contract(
+                        "freeze",
+                        "--output",
+                        bundle,
+                        "--patch",
+                        patch_path,
+                        "--tree-root",
+                        tree_root,
+                        "--requirements",
+                        SKILL_ROOT / "references" / "acceptance-requirements.md",
+                        "--standards",
+                        SKILL_ROOT / "references" / "acceptance-standard.md",
+                        "--not-run",
+                        "repository tests=Synthetic patch is review-only.",
+                        *contract_args(),
+                    )
+
+                    self.assertNotEqual(0, completed.returncode)
+                    error = result_json(completed)["errors"][0]
+                    self.assertEqual("tree_symlink_unsupported", error["code"])
+                    self.assertIn("src/link.py", error["message"])
+                    self.assertFalse((bundle / "tree").exists())
+                    self.assertFalse((bundle / "manifest.json").exists())
+                    self.assertFalse((bundle / "attestation.json").exists())
 
     def test_explicit_patch_requires_tree_to_match_post_image(self):
         with tempfile.TemporaryDirectory() as temp_dir:
