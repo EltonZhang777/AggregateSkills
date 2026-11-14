@@ -71,6 +71,19 @@ def write(repo, relative_path, content):
     return path
 
 
+def make_repo(temp_dir):
+    repo = Path(temp_dir) / "repo"
+    repo.mkdir()
+    git(repo, "init")
+    git(repo, "config", "user.name", "Review Test")
+    git(repo, "config", "user.email", "review@example.com")
+    write(repo, "src/example.py", "value = 1\n")
+    write(repo, "README.md", "Example\n")
+    git(repo, "add", ".")
+    git(repo, "commit", "-m", "initial")
+    return repo
+
+
 def make_directory_link(link, target):
     try:
         link.symlink_to(target, target_is_directory=True)
@@ -146,6 +159,12 @@ def contract_args(skill_root=SKILL_ROOT, upstream=UPSTREAM_SOURCE, ponytail_upst
         str(skill_root),
         *upstream_args(skill_root, upstream, ponytail_upstream),
     ]
+
+
+def explicit_patch_args(
+    patch_path=SKILL_ROOT / "references" / "acceptance-fixture.patch",
+):
+    return ["--patch", str(patch_path)]
 
 
 def rewrite_manifest_with_attestation(bundle, manifest):
@@ -435,6 +454,55 @@ def review_run(code_attempts, ponytail_attempts, partial=None, checks=None):
         "checks": checks,
         "partial": partial,
     }
+
+
+def write_current_acceptance_run(temp_dir, bundle, name="run.json"):
+    manifest = json.loads((bundle / "manifest.json").read_text(encoding="utf-8"))
+    checked_source = next(
+        (
+            source
+            for source in manifest["scope"]["tree_sources"]
+            if source["path"] == "src/discounts.py"
+        ),
+        manifest["scope"]["tree_sources"][0],
+    )
+    checked_sha = checked_source["sha256"]
+    attestation = json.loads(
+        (bundle / "attestation.json").read_text(encoding="utf-8")
+    )
+    envelopes = [
+        valid_code_review_envelope(attestation, checked_sha),
+        valid_ponytail_review_envelope(attestation, checked_sha),
+    ]
+    attempts = []
+    for track_id, envelope in zip(
+        ("code-review", "ponytail-review"),
+        envelopes,
+    ):
+        envelope_path = write(
+            temp_dir,
+            f"{Path(name).stem}-{track_id}.json",
+            json.dumps(envelope),
+        )
+        attempts.append(
+            run_attempt(
+                envelope["invocation_id"],
+                track_request_sha256(manifest, attestation, track_id),
+                envelope=envelope_path.name,
+            )
+        )
+    run = review_run(
+        [attempts[0]],
+        [attempts[1]],
+        checks=[
+            {
+                "name": "independence_capability",
+                "result": "passed",
+                "reason": "Synthetic fixture records independence as passed.",
+            }
+        ],
+    )
+    return write(temp_dir, name, json.dumps(run)), envelopes
 
 
 def track_request_sha256(manifest, attestation, track_id):
@@ -977,16 +1045,7 @@ class ParallelCodeReviewPreflightTests(unittest.TestCase):
 
 class ParallelCodeReviewFreezeTests(unittest.TestCase):
     def make_repo(self, temp_dir):
-        repo = Path(temp_dir) / "repo"
-        repo.mkdir()
-        git(repo, "init")
-        git(repo, "config", "user.name", "Review Test")
-        git(repo, "config", "user.email", "review@example.com")
-        write(repo, "src/example.py", "value = 1\n")
-        write(repo, "README.md", "Example\n")
-        git(repo, "add", ".")
-        git(repo, "commit", "-m", "initial")
-        return repo
+        return make_repo(temp_dir)
 
     def test_git_range_produces_frozen_tree_manifest_and_attestation(self):
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -2659,6 +2718,496 @@ class ParallelCodeReviewEnvelopeTests(unittest.TestCase):
 
 
 class ParallelCodeReviewRunTests(unittest.TestCase):
+    def test_validate_run_rechecks_pinned_input_sources(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            requirements = write(
+                temp_dir,
+                "requirements-source.md",
+                "Requirement A.\n",
+            )
+            standards = write(
+                temp_dir,
+                "standards-source.md",
+                "Standard A.\n",
+            )
+            bundle = Path(temp_dir) / "bundle"
+            frozen = run_contract(
+                "freeze",
+                "--output",
+                bundle,
+                "--patch",
+                SKILL_ROOT / "references" / "acceptance-fixture.patch",
+                "--tree-root",
+                SKILL_ROOT / "references" / "acceptance-tree",
+                "--requirements",
+                requirements,
+                "--standards",
+                standards,
+                "--not-run",
+                "repository tests=Synthetic patch is review-only.",
+                *contract_args(),
+            )
+            self.assertEqual(frozen.returncode, 0, frozen.stderr or frozen.stdout)
+            run_path, envelopes = write_current_acceptance_run(temp_dir, bundle)
+            validate_args = [
+                "validate-run",
+                "--bundle",
+                bundle,
+                "--run",
+                run_path,
+                "--patch",
+                SKILL_ROOT / "references" / "acceptance-fixture.patch",
+                *contract_args(),
+            ]
+            current = run_contract(*validate_args)
+            self.assertEqual(current.returncode, 0, current.stderr or current.stdout)
+            self.assertEqual("complete", result_json(current)["status"])
+
+            requirements.write_text("Requirement B.\n", encoding="utf-8")
+            standards.write_text("Standard B.\n", encoding="utf-8")
+            changed = run_contract(*validate_args)
+            requirements.write_text("Requirement A.\n", encoding="utf-8")
+            standards.write_text("Standard A.\n", encoding="utf-8")
+
+            requirements.rename(requirements.with_suffix(".removed"))
+            standards.rename(standards.with_suffix(".removed"))
+            removed = run_contract(*validate_args)
+            requirements.with_suffix(".removed").rename(requirements)
+            standards.with_suffix(".removed").rename(standards)
+
+            requirements.rename(requirements.with_suffix(".unreadable"))
+            standards.rename(standards.with_suffix(".unreadable"))
+            requirements.mkdir()
+            standards.mkdir()
+            unreadable = run_contract(*validate_args)
+
+        for label, completed, reason in (
+            ("changed", changed, "Original pinned input source changed:"),
+            ("removed", removed, "Original pinned input source is missing or unreadable:"),
+            ("unreadable", unreadable, "Original pinned input source is missing or unreadable:"),
+        ):
+            with self.subTest(label):
+                self.assertEqual(1, completed.returncode)
+                result = result_json(completed)
+                self.assertEqual("blocked", result["status"])
+                self.assertEqual(envelopes, result["completed_reports"])
+                self.assertIn(
+                    "scope_stale",
+                    [error["code"] for error in result["errors"]],
+                )
+                messages = " ".join(
+                    error["message"] for error in result["errors"]
+                )
+                self.assertIn(reason, messages)
+                self.assertIn("requirements-source.md", messages)
+                self.assertIn("standards-source.md", messages)
+                self.assertIn("## Completed track reports", result["rendered"])
+
+    def test_validate_run_requires_scope_appropriate_live_locators(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            explicit_bundle = Path(temp_dir) / "explicit-bundle"
+            explicit = run_contract(
+                "freeze",
+                "--output",
+                explicit_bundle,
+                "--patch",
+                SKILL_ROOT / "references" / "acceptance-fixture.patch",
+                "--tree-root",
+                SKILL_ROOT / "references" / "acceptance-tree",
+                "--requirements",
+                SKILL_ROOT / "references" / "acceptance-requirements.md",
+                "--standards",
+                SKILL_ROOT / "references" / "acceptance-standard.md",
+                "--not-run",
+                "repository tests=Synthetic patch is review-only.",
+                *contract_args(),
+            )
+            self.assertEqual(explicit.returncode, 0, explicit.stderr or explicit.stdout)
+            missing_explicit = run_contract(
+                "validate-run",
+                "--bundle",
+                explicit_bundle,
+                "--run",
+                Path(temp_dir) / "missing-explicit-run.json",
+                *contract_args(),
+            )
+            wrong_explicit_locator = run_contract(
+                "validate-run",
+                "--bundle",
+                explicit_bundle,
+                "--run",
+                Path(temp_dir) / "missing-explicit-run.json",
+                "--repo",
+                temp_dir,
+                *contract_args(),
+            )
+
+            repo = make_repo(temp_dir)
+            write(repo, "src/example.py", "value = 2\n")
+            uncommitted_bundle = Path(temp_dir) / "uncommitted-bundle"
+            uncommitted = run_contract(
+                "freeze",
+                "--repo",
+                repo,
+                "--output",
+                uncommitted_bundle,
+                "--uncommitted",
+                "--requirements",
+                SKILL_ROOT / "references" / "acceptance-requirements.md",
+                "--standards",
+                SKILL_ROOT / "references" / "acceptance-standard.md",
+                "--not-run",
+                "repository tests=Synthetic patch is review-only.",
+                *contract_args(),
+            )
+            self.assertEqual(
+                uncommitted.returncode,
+                0,
+                uncommitted.stderr or uncommitted.stdout,
+            )
+            missing_uncommitted = run_contract(
+                "validate-run",
+                "--bundle",
+                uncommitted_bundle,
+                "--run",
+                Path(temp_dir) / "missing-uncommitted-run.json",
+                *contract_args(),
+            )
+            wrong_uncommitted_locator = run_contract(
+                "validate-run",
+                "--bundle",
+                uncommitted_bundle,
+                "--run",
+                Path(temp_dir) / "missing-uncommitted-run.json",
+                *explicit_patch_args(),
+                *contract_args(),
+            )
+
+            base = git(repo, "rev-parse", "HEAD")
+            git(repo, "add", ".")
+            git(repo, "commit", "-m", "change")
+            head = git(repo, "rev-parse", "HEAD")
+            range_bundle = Path(temp_dir) / "range-bundle"
+            ranged = run_contract(
+                "freeze",
+                "--repo",
+                repo,
+                "--output",
+                range_bundle,
+                "--range",
+                f"{base}...{head}",
+                "--requirements",
+                SKILL_ROOT / "references" / "acceptance-requirements.md",
+                "--standards",
+                SKILL_ROOT / "references" / "acceptance-standard.md",
+                "--not-run",
+                "repository tests=Synthetic patch is review-only.",
+                *contract_args(),
+            )
+            self.assertEqual(ranged.returncode, 0, ranged.stderr or ranged.stdout)
+            missing_range = run_contract(
+                "validate-run",
+                "--bundle",
+                range_bundle,
+                "--run",
+                Path(temp_dir) / "missing-range-run.json",
+                *contract_args(),
+            )
+            wrong_range_locator = run_contract(
+                "validate-run",
+                "--bundle",
+                range_bundle,
+                "--run",
+                Path(temp_dir) / "missing-range-run.json",
+                *explicit_patch_args(),
+                *contract_args(),
+            )
+
+        for label, completed, code in (
+            ("explicit omitted", missing_explicit, "patch_required"),
+            ("explicit wrong", wrong_explicit_locator, "patch_required"),
+            ("uncommitted omitted", missing_uncommitted, "repo_required"),
+            ("uncommitted wrong", wrong_uncommitted_locator, "repo_required"),
+            ("range omitted", missing_range, "repo_required"),
+            ("range wrong", wrong_range_locator, "repo_required"),
+        ):
+            with self.subTest(label=label, code=code):
+                result = result_json(completed)
+                self.assertEqual(1, completed.returncode)
+                self.assertEqual("blocked", result["status"])
+                self.assertIn(
+                    code,
+                    [error["code"] for error in result["errors"]],
+                )
+                self.assertNotIn(
+                    "run_missing",
+                    [error["code"] for error in result["errors"]],
+                )
+
+    def test_validate_run_rechecks_live_uncommitted_scope(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            repo = make_repo(temp_dir)
+            write(
+                repo,
+                "src/discounts.py",
+                (
+                    SKILL_ROOT
+                    / "references"
+                    / "acceptance-tree"
+                    / "src"
+                    / "discounts.py"
+                ).read_text(encoding="utf-8"),
+            )
+            bundle = Path(temp_dir) / "bundle"
+            frozen = run_contract(
+                "freeze",
+                "--repo",
+                repo,
+                "--output",
+                bundle,
+                "--uncommitted",
+                "--requirements",
+                SKILL_ROOT / "references" / "acceptance-requirements.md",
+                "--standards",
+                SKILL_ROOT / "references" / "acceptance-standard.md",
+                "--not-run",
+                "repository tests=Synthetic patch is review-only.",
+                *contract_args(),
+            )
+            self.assertEqual(frozen.returncode, 0, frozen.stderr or frozen.stdout)
+            run_path, envelopes = write_current_acceptance_run(temp_dir, bundle)
+            validate_args = [
+                "validate-run",
+                "--bundle",
+                bundle,
+                "--run",
+                run_path,
+                "--repo",
+                repo,
+                *contract_args(),
+            ]
+            current = run_contract(*validate_args)
+            self.assertEqual(current.returncode, 0, current.stderr or current.stdout)
+            self.assertEqual("complete", result_json(current)["status"])
+
+            write(repo, "src/example.py", "value = 3\n")
+            stale = run_contract(*validate_args)
+
+        self.assertEqual(1, stale.returncode)
+        result = result_json(stale)
+        self.assertEqual("blocked", result["status"])
+        self.assertEqual(envelopes, result["completed_reports"])
+        messages = " ".join(error["message"] for error in result["errors"])
+        self.assertIn("An uncommitted source changed: src/example.py", messages)
+
+    def test_validate_run_preserves_history_when_live_patch_touches_exclusion(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            repo = make_repo(temp_dir)
+            write(repo, "vendor/generated.py", "generated = 1\n")
+            git(repo, "add", ".")
+            git(repo, "commit", "-m", "add excluded source")
+            write(
+                repo,
+                "src/discounts.py",
+                (
+                    SKILL_ROOT
+                    / "references"
+                    / "acceptance-tree"
+                    / "src"
+                    / "discounts.py"
+                ).read_text(encoding="utf-8"),
+            )
+            bundle = Path(temp_dir) / "bundle"
+            frozen = run_contract(
+                "freeze",
+                "--repo",
+                repo,
+                "--output",
+                bundle,
+                "--uncommitted",
+                "--exclude",
+                "vendor/=third-party source",
+                "--requirements",
+                SKILL_ROOT / "references" / "acceptance-requirements.md",
+                "--standards",
+                SKILL_ROOT / "references" / "acceptance-standard.md",
+                "--not-run",
+                "repository tests=Synthetic patch is review-only.",
+                *contract_args(),
+            )
+            self.assertEqual(frozen.returncode, 0, frozen.stderr or frozen.stdout)
+            run_path, envelopes = write_current_acceptance_run(temp_dir, bundle)
+            validate_args = [
+                "validate-run",
+                "--bundle",
+                bundle,
+                "--run",
+                run_path,
+                "--repo",
+                repo,
+                *contract_args(),
+            ]
+            current = run_contract(*validate_args)
+            self.assertEqual(current.returncode, 0, current.stderr or current.stdout)
+            self.assertEqual("complete", result_json(current)["status"])
+
+            write(repo, "vendor/generated.py", "generated = 2\n")
+            stale = run_contract(*validate_args)
+
+        self.assertEqual(1, stale.returncode)
+        result = result_json(stale)
+        self.assertEqual("blocked", result["status"])
+        self.assertEqual(envelopes, result["completed_reports"])
+        self.assertIn(
+            "scope_stale",
+            [error["code"] for error in result["errors"]],
+        )
+        messages = " ".join(error["message"] for error in result["errors"])
+        self.assertIn("excluded_path_in_patch", messages)
+        self.assertIn("vendor/generated.py", messages)
+        self.assertIn("## Completed track reports", result["rendered"])
+        self.assertIn("Preview converts Decimal money to float", result["rendered"])
+
+    def test_validate_run_rechecks_live_git_range_head_tree(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            repo = make_repo(temp_dir)
+            base = git(repo, "rev-parse", "HEAD")
+            write(
+                repo,
+                "src/discounts.py",
+                (
+                    SKILL_ROOT
+                    / "references"
+                    / "acceptance-tree"
+                    / "src"
+                    / "discounts.py"
+                ).read_text(encoding="utf-8"),
+            )
+            git(repo, "add", ".")
+            git(repo, "commit", "-m", "change")
+            head = git(repo, "rev-parse", "HEAD")
+            bundle = Path(temp_dir) / "bundle"
+            frozen = run_contract(
+                "freeze",
+                "--repo",
+                repo,
+                "--output",
+                bundle,
+                "--range",
+                f"{base}...{head}",
+                "--requirements",
+                SKILL_ROOT / "references" / "acceptance-requirements.md",
+                "--standards",
+                SKILL_ROOT / "references" / "acceptance-standard.md",
+                "--not-run",
+                "repository tests=Synthetic patch is review-only.",
+                *contract_args(),
+            )
+            self.assertEqual(frozen.returncode, 0, frozen.stderr or frozen.stdout)
+            run_path, _ = write_current_acceptance_run(temp_dir, bundle)
+            validate_args = [
+                "validate-run",
+                "--bundle",
+                bundle,
+                "--run",
+                run_path,
+                "--repo",
+                repo,
+                *contract_args(),
+            ]
+            current = run_contract(*validate_args)
+            self.assertEqual(current.returncode, 0, current.stderr or current.stdout)
+            self.assertEqual("complete", result_json(current)["status"])
+
+            manifest = json.loads(
+                (bundle / "manifest.json").read_text(encoding="utf-8")
+            )
+            source = next(
+                item
+                for item in manifest["scope"]["tree_sources"]
+                if item["path"] == "src/discounts.py"
+            )
+            replacement = (
+                (bundle / source["snapshot_path"]).read_bytes() + b"\n"
+            )
+            (bundle / source["snapshot_path"]).write_bytes(replacement)
+            source["sha256"] = hashlib.sha256(replacement).hexdigest()
+            source["size_bytes"] = len(replacement)
+            rewrite_manifest_with_attestation(bundle, manifest)
+            drift_run, drift_envelopes = write_current_acceptance_run(
+                temp_dir,
+                bundle,
+                name="head-drift-run.json",
+            )
+            stale = run_contract(
+                "validate-run",
+                "--bundle",
+                bundle,
+                "--run",
+                drift_run,
+                "--repo",
+                repo,
+                *contract_args(),
+            )
+
+        self.assertEqual(1, stale.returncode)
+        result = result_json(stale)
+        self.assertEqual("blocked", result["status"])
+        self.assertEqual(drift_envelopes, result["completed_reports"])
+        messages = " ".join(error["message"] for error in result["errors"])
+        self.assertIn("A Git-range source changed: src/discounts.py", messages)
+
+    def test_validate_run_rechecks_live_explicit_patch(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            patch_path = Path(temp_dir) / "change.patch"
+            shutil.copyfile(
+                SKILL_ROOT / "references" / "acceptance-fixture.patch",
+                patch_path,
+            )
+            bundle = Path(temp_dir) / "bundle"
+            frozen = run_contract(
+                "freeze",
+                "--output",
+                bundle,
+                "--patch",
+                patch_path,
+                "--tree-root",
+                SKILL_ROOT / "references" / "acceptance-tree",
+                "--requirements",
+                SKILL_ROOT / "references" / "acceptance-requirements.md",
+                "--standards",
+                SKILL_ROOT / "references" / "acceptance-standard.md",
+                "--not-run",
+                "repository tests=Synthetic patch is review-only.",
+                *contract_args(),
+            )
+            self.assertEqual(frozen.returncode, 0, frozen.stderr or frozen.stdout)
+            run_path, envelopes = write_current_acceptance_run(temp_dir, bundle)
+            validate_args = [
+                "validate-run",
+                "--bundle",
+                bundle,
+                "--run",
+                run_path,
+                "--patch",
+                patch_path,
+                *contract_args(),
+            ]
+            current = run_contract(*validate_args)
+            self.assertEqual(current.returncode, 0, current.stderr or current.stdout)
+            self.assertEqual("complete", result_json(current)["status"])
+
+            original = patch_path.read_bytes()
+            patch_path.write_bytes(bytes([original[0] ^ 1]) + original[1:])
+            stale = run_contract(*validate_args)
+
+        self.assertEqual(1, stale.returncode)
+        result = result_json(stale)
+        self.assertEqual("blocked", result["status"])
+        self.assertEqual(envelopes, result["completed_reports"])
+        messages = " ".join(error["message"] for error in result["errors"])
+        self.assertIn("The explicit patch changed after the freeze.", messages)
+
     def test_run_success_preserves_route_order_and_separates_coverage_from_launch(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             frozen, bundle = freeze_acceptance_bundle(temp_dir)
@@ -2720,6 +3269,7 @@ class ParallelCodeReviewRunTests(unittest.TestCase):
                 bundle,
                 "--run",
                 run_path,
+                *explicit_patch_args(),
                 *contract_args(),
             )
 
@@ -2807,6 +3357,7 @@ class ParallelCodeReviewRunTests(unittest.TestCase):
                 bundle,
                 "--run",
                 run_path,
+                *explicit_patch_args(),
                 *contract_args(),
             )
 
@@ -2914,6 +3465,7 @@ class ParallelCodeReviewRunTests(unittest.TestCase):
                         bundle,
                         "--run",
                         run_path,
+                        *explicit_patch_args(),
                         *contract_args(),
                     )
                     self.assertNotEqual(0, rejected.returncode)
@@ -2943,6 +3495,7 @@ class ParallelCodeReviewRunTests(unittest.TestCase):
                 bundle,
                 "--run",
                 run_path,
+                *explicit_patch_args(),
                 *contract_args(),
             )
             self.assertNotEqual(0, rejected.returncode)
@@ -2979,6 +3532,7 @@ class ParallelCodeReviewRunTests(unittest.TestCase):
                         bundle,
                         "--run",
                         run_path,
+                        *explicit_patch_args(),
                         *contract_args(),
                     )
                     self.assertEqual(1, blocked.returncode)
@@ -3057,6 +3611,7 @@ class ParallelCodeReviewRunTests(unittest.TestCase):
                         bundle,
                         "--run",
                         run_path,
+                        *explicit_patch_args(),
                         *contract_args(),
                     )
                     self.assertEqual(
@@ -3191,6 +3746,7 @@ class ParallelCodeReviewRunTests(unittest.TestCase):
                         bundle,
                         "--run",
                         run_path,
+                        *explicit_patch_args(),
                         *contract_args(),
                     )
                     self.assertEqual(1, completed.returncode)
@@ -3222,6 +3778,7 @@ class ParallelCodeReviewRunTests(unittest.TestCase):
                 bundle,
                 "--run",
                 invalid_track_path,
+                *explicit_patch_args(),
                 *contract_args(),
             )
             self.assertEqual(1, blocked.returncode)
@@ -3276,6 +3833,7 @@ class ParallelCodeReviewRunTests(unittest.TestCase):
                 bundle,
                 "--run",
                 malformed_tracks_path,
+                *explicit_patch_args(),
                 *contract_args(),
             )
 
@@ -3309,6 +3867,7 @@ class ParallelCodeReviewRunTests(unittest.TestCase):
                 bundle,
                 "--run",
                 malformed_checks_path,
+                *explicit_patch_args(),
                 *contract_args(),
             )
 
@@ -3395,6 +3954,7 @@ class ParallelCodeReviewRunTests(unittest.TestCase):
                 bundle,
                 "--run",
                 run_path,
+                *explicit_patch_args(),
                 *contract_args(),
             )
             self.assertEqual(completed.returncode, 0, completed.stderr or completed.stdout)
@@ -3432,6 +3992,7 @@ class ParallelCodeReviewRunTests(unittest.TestCase):
                         bundle,
                         "--run",
                         run_path,
+                        *explicit_patch_args(),
                         *contract_args(),
                     )
                     self.assertEqual(1, blocked.returncode)
@@ -3512,6 +4073,7 @@ class ParallelCodeReviewRunTests(unittest.TestCase):
                         bundle,
                         "--run",
                         run_path,
+                        *explicit_patch_args(),
                         *contract_args(),
                     )
                     self.assertNotEqual(0, blocked.returncode)
@@ -3593,6 +4155,7 @@ class ParallelCodeReviewRunTests(unittest.TestCase):
                         bundle,
                         "--run",
                         run_path,
+                        *explicit_patch_args(),
                         *contract_args(),
                     )
                     self.assertNotEqual(0, blocked.returncode)
@@ -3677,6 +4240,7 @@ class ParallelCodeReviewRunTests(unittest.TestCase):
                         bundle,
                         "--run",
                         run_path,
+                        *explicit_patch_args(),
                         *contract_args(),
                     )
 
@@ -3741,6 +4305,7 @@ class ParallelCodeReviewRunTests(unittest.TestCase):
                 bundle,
                 "--run",
                 run_path,
+                *explicit_patch_args(),
                 *contract_args(),
             )
 
@@ -3804,6 +4369,7 @@ class ParallelCodeReviewRunTests(unittest.TestCase):
                 bundle,
                 "--run",
                 blocked_run_path,
+                *explicit_patch_args(),
                 *contract_args(),
             )
             self.assertEqual(1, blocked.returncode)
@@ -3839,6 +4405,7 @@ class ParallelCodeReviewRunTests(unittest.TestCase):
                 bundle,
                 "--run",
                 run_path,
+                *explicit_patch_args(),
                 *contract_args(),
             )
 
@@ -4082,6 +4649,7 @@ class ParallelCodeReviewRunTests(unittest.TestCase):
                         bundle,
                         "--run",
                         run_path,
+                        *explicit_patch_args(),
                         *contract_args(),
                     )
                     self.assertNotEqual(0, blocked.returncode)
@@ -4106,6 +4674,7 @@ class ParallelCodeReviewRunTests(unittest.TestCase):
                 bundle,
                 "--run",
                 same_pass_path,
+                *explicit_patch_args(),
                 *contract_args(),
             )
             self.assertNotEqual(0, rejected.returncode)
@@ -4168,6 +4737,7 @@ class ParallelCodeReviewRunTests(unittest.TestCase):
                 bundle,
                 "--run",
                 run_path,
+                *explicit_patch_args(),
                 *contract_args(),
             )
 
@@ -4211,6 +4781,7 @@ class ParallelCodeReviewRunTests(unittest.TestCase):
                 bundle,
                 "--run",
                 follow_up_path,
+                *explicit_patch_args(),
                 *contract_args(),
             )
 
@@ -4291,6 +4862,7 @@ class ParallelCodeReviewRunTests(unittest.TestCase):
                 bundle,
                 "--run",
                 run_path,
+                *explicit_patch_args(),
                 *contract_args(),
             )
 
@@ -4623,6 +5195,8 @@ class ParallelCodeReviewPackageTests(unittest.TestCase):
                 new_bundle,
                 "--run",
                 refreshed_run_path,
+                "--patch",
+                remediated_patch,
                 *contract_args(),
             )
             refreshed_result = result_json(refreshed_validation)
@@ -4843,6 +5417,8 @@ class ParallelCodeReviewPackageTests(unittest.TestCase):
                 bundle,
                 "--run",
                 run_path,
+                "--patch",
+                skill_root / "references" / "acceptance-fixture.patch",
                 "--contract-root",
                 skill_root,
                 *upstreams,

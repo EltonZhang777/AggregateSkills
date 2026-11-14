@@ -2189,53 +2189,57 @@ def attestation_mismatch_reasons(manifest_bytes, manifest, attestation):
     return reasons
 
 
-def command_verify(args):
+def require_live_scope_locator(args, scope):
+    kind = scope.get("kind")
+    if kind == "frozen_uncommitted" and not args.repo:
+        raise ContractFailure(
+            "repo_required",
+            "Freshness verification requires --repo for a frozen uncommitted scope.",
+        )
+    if kind == "git_range" and not args.repo:
+        raise ContractFailure(
+            "repo_required",
+            "Freshness verification requires --repo for a Git-range scope.",
+        )
+    if kind == "explicit_patch" and not args.patch:
+        raise ContractFailure(
+            "patch_required",
+            "Freshness verification requires --patch for an explicit-patch scope.",
+        )
+
+
+def load_verified_bundle(args):
     if not args.contract_root:
         raise ContractFailure(
             "contract_root_required",
-            "Verify requires --contract-root with an explicit --upstream resolution.",
+            "Freshness verification requires --contract-root with an explicit --upstream resolution.",
         )
     if not args.upstream:
         raise ContractFailure(
             "upstream_unresolved",
-            "Verify requires the frozen upstream resolution explicitly.",
+            "Freshness verification requires the frozen upstream resolution explicitly.",
         )
     bundle = Path(args.bundle).resolve()
     manifest, manifest_bytes, attestation = load_bundle(bundle)
     scope = manifest.get("scope", {})
     kind = scope.get("kind")
-    if kind == "frozen_uncommitted" and not args.repo:
-        raise ContractFailure(
-            "repo_required",
-            "Verify requires --repo for a frozen uncommitted scope.",
-        )
-    if kind == "git_range" and not args.repo:
-        raise ContractFailure(
-            "repo_required",
-            "Verify requires --repo for a Git-range scope.",
-        )
-    if kind == "explicit_patch" and not args.patch:
-        raise ContractFailure(
-            "patch_required",
-            "Verify requires --patch for an explicit-patch scope.",
-        )
+    require_live_scope_locator(args, scope)
 
     reasons = verify_bundle_integrity(bundle, manifest)
     reasons.extend(verify_manifest_input_sources(manifest))
     reasons.extend(attestation_mismatch_reasons(manifest_bytes, manifest, attestation))
 
-    if args.contract_root:
-        contract, errors = collect_preflight(
-            Path(args.contract_root).resolve(),
-            upstream_values=args.upstream,
-            upstream_normalized_hashes=args.upstream_sha,
-            upstream_exact_hashes=args.upstream_exact_sha,
-            upstream_sizes=args.upstream_size,
-        )
-        if errors:
-            return error_payload(errors), 1
-        if manifest.get("contract") != contract:
-            reasons.append("The routing, adapter, or upstream pins changed.")
+    contract, errors = collect_preflight(
+        Path(args.contract_root).resolve(),
+        upstream_values=args.upstream,
+        upstream_normalized_hashes=args.upstream_sha,
+        upstream_exact_hashes=args.upstream_exact_sha,
+        upstream_sizes=args.upstream_size,
+    )
+    if errors:
+        return None, error_payload(errors)
+    if manifest.get("contract") != contract:
+        reasons.append("The routing, adapter, or upstream pins changed.")
 
     frozen_patch = None
     try:
@@ -2248,8 +2252,8 @@ def command_verify(args):
     if kind == "frozen_uncommitted":
         repo = resolve_repo_root(Path(args.repo))
         if frozen_patch is not None:
-            reasons.extend(
-                verify_live_uncommitted(
+            try:
+                live_reasons = verify_live_uncommitted(
                     repo,
                     scope,
                     frozen_patch,
@@ -2258,7 +2262,13 @@ def command_verify(args):
                         for entry in manifest.get("exclusions", [])
                     ],
                 )
-            )
+            except ContractFailure as exc:
+                reasons.append(
+                    "The uncommitted scope became unverifiable "
+                    f"({exc.code}): {exc.message}"
+                )
+            else:
+                reasons.extend(live_reasons)
     elif kind == "git_range":
         repo = resolve_repo_root(Path(args.repo))
         if frozen_patch is not None:
@@ -2280,6 +2290,21 @@ def command_verify(args):
                 scope,
             )
         )
+    return (
+        bundle,
+        manifest,
+        manifest_bytes,
+        attestation,
+        reasons,
+    ), None
+
+
+def command_verify(args):
+    loaded, blocked = load_verified_bundle(args)
+    if blocked is not None:
+        return blocked, 1
+    _bundle, manifest, manifest_bytes, _attestation, reasons = loaded
+    scope = manifest.get("scope", {})
 
     if reasons:
         return {"status": "stale", "reasons": reasons}, 1
@@ -3599,10 +3624,10 @@ def command_validate_envelope(args):
 
 
 def command_validate_run(args):
-    loaded, blocked, exit_code = load_current_review_bundle(args)
+    loaded, blocked = load_verified_bundle(args)
     if blocked is not None:
-        return blocked, exit_code
-    bundle, manifest, attestation = loaded
+        return blocked, 1
+    bundle, manifest, _manifest_bytes, attestation, freshness_reasons = loaded
 
     run_path = Path(args.run).resolve()
     if not run_path.is_file():
@@ -3618,6 +3643,14 @@ def command_validate_run(args):
         attestation,
         run_path,
     )
+    if freshness_reasons:
+        run_errors = result.setdefault("errors", [])
+        run_errors.extend(
+            {"code": "scope_stale", "message": reason}
+            for reason in freshness_reasons
+        )
+        result["status"] = "blocked"
+        result["partial"] = None
     result["rendered"] = render_run(result)
     return result, 0 if result["status"] == "complete" else 1
 
@@ -3728,6 +3761,8 @@ def build_parser():
     )
     run.add_argument("--bundle", required=True)
     run.add_argument("--run", required=True)
+    run.add_argument("--repo")
+    run.add_argument("--patch")
     run.add_argument("--contract-root")
     add_upstream_arguments(run)
     run.set_defaults(handler=command_validate_run)
