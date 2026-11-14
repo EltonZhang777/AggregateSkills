@@ -191,6 +191,8 @@ python scripts/review_contract.py validate-run --bundle <bundle> --run <run reco
 
 Run aggregation repeats the complete freshness verification used before each track. Git-range and uncommitted scopes require `--repo`; explicit-patch scope requires `--patch`. Omitting the required locator blocks before the run record is read. Changed, removed, or unreadable pinned sources and live tree, head-tree, patch, or contract drift make the result blocked; preserve every valid completed envelope as historical evidence without presenting it as current.
 
+Stale or unverifiable scope is reported before run-record validity is required. Even when the run record is missing or malformed, return the blocked `scope_stale` result rather than making `run_missing` or `run_invalid` authoritative. If a readable valid run exists, keep its completed reports only as historical, non-current evidence.
+
 A missing, unstarted, invalid, blank, truncated, scope-mismatched, or otherwise unverifiable required track makes the overall status blocked. Preserve every completed track report for a recognized routed track in routing-table order and show the blocked result before asking for any degradation. Duplicate, unknown, unidentified, or non-object track entries and malformed `checks` containers or records are run-level errors; continue aggregation instead of discarding valid reports. Only a run structure that cannot be enumerated or interpreted may fail before aggregation. Never launch a substitute reviewer, synthesize a missing report, or silently continue with fewer tracks.
 
 The command exits zero only for `complete`; treat both `blocked` and `partial` output as non-passing even when the JSON is structurally valid.

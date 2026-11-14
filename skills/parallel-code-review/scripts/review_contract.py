@@ -2909,14 +2909,7 @@ def evaluate_run_track(track, bundle, manifest, attestation, run_dir):
         envelope = None
 
     if not effective:
-        return {
-            "track_id": track["track_id"],
-            "status": "missing",
-            "launch_status": "not_launched",
-            "coverage_status": "not_assessed",
-            "finding_count": 0,
-            "attempts": [],
-        }, None
+        return missing_track_result(track["track_id"]), None
 
     final = effective[-1]
     if final["status"] == "completed" and envelope is None:
@@ -2955,6 +2948,17 @@ def failed_track_result(track, message):
                 "failure": {"class": "invalid_result", "evidence": message},
             }
         ],
+    }
+
+
+def missing_track_result(track_id):
+    return {
+        "track_id": track_id,
+        "status": "missing",
+        "launch_status": "not_launched",
+        "coverage_status": "not_assessed",
+        "finding_count": 0,
+        "attempts": [],
     }
 
 
@@ -3399,6 +3403,34 @@ def validate_run_record(run, bundle, manifest, attestation, run_path):
     return result
 
 
+def stale_run_result(manifest, reasons):
+    tracks = [
+        missing_track_result(track["track_id"])
+        for track in manifest["contract"]["tracks"]
+    ]
+    missing_tracks = [track["track_id"] for track in tracks]
+    return {
+        "status": "blocked",
+        "tracks": tracks,
+        "completed_reports": [],
+        "missing_tracks": missing_tracks,
+        "coverage": [
+            {
+                "track_id": track_id,
+                "status": "not_assessed",
+                "reason": "Required review track did not complete.",
+            }
+            for track_id in missing_tracks
+        ],
+        "checks": [],
+        "partial": None,
+        "errors": [
+            {"code": "scope_stale", "message": reason}
+            for reason in reasons
+        ],
+    }
+
+
 def render_envelope(envelope, heading="# Parallel Code Review"):
     lines = [
         heading,
@@ -3551,7 +3583,14 @@ def render_run(result):
         lines.append("The original completed reports follow without truncation.")
 
     if result["completed_reports"]:
-        lines.extend(["", "## Completed track reports"])
+        historical = any(
+            error["code"] == "scope_stale"
+            for error in result.get("errors", [])
+        )
+        heading = "## Completed track reports"
+        if historical:
+            heading += " (historical; not current)"
+        lines.extend(["", heading])
         for envelope in result["completed_reports"]:
             lines.extend(
                 [
@@ -3623,34 +3662,52 @@ def command_validate_envelope(args):
     }, 0
 
 
-def command_validate_run(args):
-    loaded, blocked = load_verified_bundle(args)
-    if blocked is not None:
-        return blocked, 1
-    bundle, manifest, _manifest_bytes, attestation, freshness_reasons = loaded
-
-    run_path = Path(args.run).resolve()
+def load_validated_run(run_path, bundle, manifest, attestation):
     if not run_path.is_file():
         raise ContractFailure("run_missing", f"Review run is missing: {run_path}")
     try:
         run = json.loads(run_path.read_text(encoding="utf-8"))
     except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
-        raise ContractFailure("run_invalid", f"Cannot read review run: {exc}") from exc
-    result = validate_run_record(
+        raise ContractFailure(
+            "run_invalid",
+            f"Cannot read review run: {exc}",
+        ) from exc
+    return validate_run_record(
         run,
         bundle,
         manifest,
         attestation,
         run_path,
     )
+
+
+def command_validate_run(args):
+    loaded, blocked = load_verified_bundle(args)
+    if blocked is not None:
+        return blocked, 1
+    bundle, manifest, _manifest_bytes, attestation, freshness_reasons = loaded
+
     if freshness_reasons:
-        run_errors = result.setdefault("errors", [])
-        run_errors.extend(
-            {"code": "scope_stale", "message": reason}
-            for reason in freshness_reasons
+        result = stale_run_result(manifest, freshness_reasons)
+        try:
+            run_path = Path(args.run).resolve()
+            historical = load_validated_run(
+                run_path,
+                bundle,
+                manifest,
+                attestation,
+            )
+        except (ContractFailure, OSError, RuntimeError):
+            pass
+        else:
+            result["completed_reports"] = historical["completed_reports"]
+    else:
+        result = load_validated_run(
+            Path(args.run).resolve(),
+            bundle,
+            manifest,
+            attestation,
         )
-        result["status"] = "blocked"
-        result["partial"] = None
     result["rendered"] = render_run(result)
     return result, 0 if result["status"] == "complete" else 1
 

@@ -2802,6 +2802,70 @@ class ParallelCodeReviewRunTests(unittest.TestCase):
                 self.assertIn("requirements-source.md", messages)
                 self.assertIn("standards-source.md", messages)
                 self.assertIn("## Completed track reports", result["rendered"])
+                self.assertIn("historical", result["rendered"])
+                self.assertIn("not current", result["rendered"])
+
+    def test_validate_run_stale_scope_precedes_missing_or_malformed_run(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            requirements = write(
+                temp_dir,
+                "requirements-source.md",
+                "Requirement A.\n",
+            )
+            bundle = Path(temp_dir) / "bundle"
+            frozen = run_contract(
+                "freeze",
+                "--output",
+                bundle,
+                "--patch",
+                SKILL_ROOT / "references" / "acceptance-fixture.patch",
+                "--tree-root",
+                SKILL_ROOT / "references" / "acceptance-tree",
+                "--requirements",
+                requirements,
+                "--standards",
+                SKILL_ROOT / "references" / "acceptance-standard.md",
+                "--not-run",
+                "repository tests=Synthetic patch is review-only.",
+                *contract_args(),
+            )
+            self.assertEqual(frozen.returncode, 0, frozen.stderr or frozen.stdout)
+            requirements.write_text("Requirement B.\n", encoding="utf-8")
+            malformed_path = write(
+                temp_dir,
+                "malformed-run.json",
+                '{"contract_version":',
+            )
+
+            missing = run_contract(
+                "validate-run",
+                "--bundle",
+                bundle,
+                "--run",
+                Path(temp_dir) / "missing-run.json",
+                *explicit_patch_args(),
+                *contract_args(),
+            )
+            malformed = run_contract(
+                "validate-run",
+                "--bundle",
+                bundle,
+                "--run",
+                malformed_path,
+                *explicit_patch_args(),
+                *contract_args(),
+            )
+
+        for label, completed in (
+            ("missing", missing),
+            ("malformed", malformed),
+        ):
+            with self.subTest(label=label):
+                self.assertEqual(1, completed.returncode)
+                result = result_json(completed)
+                self.assertEqual("blocked", result["status"])
+                error_codes = [error["code"] for error in result["errors"]]
+                self.assertEqual(["scope_stale"], error_codes)
 
     def test_validate_run_requires_scope_appropriate_live_locators(self):
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -2840,6 +2904,15 @@ class ParallelCodeReviewRunTests(unittest.TestCase):
                 "--repo",
                 temp_dir,
                 *contract_args(),
+            )
+            unresolved_contract = run_contract(
+                "validate-run",
+                "--bundle",
+                explicit_bundle,
+                "--run",
+                Path(temp_dir) / "missing-explicit-run.json",
+                "--contract-root",
+                SKILL_ROOT,
             )
 
             repo = make_repo(temp_dir)
@@ -2926,6 +2999,7 @@ class ParallelCodeReviewRunTests(unittest.TestCase):
         for label, completed, code in (
             ("explicit omitted", missing_explicit, "patch_required"),
             ("explicit wrong", wrong_explicit_locator, "patch_required"),
+            ("contract unresolved", unresolved_contract, "upstream_unresolved"),
             ("uncommitted omitted", missing_uncommitted, "repo_required"),
             ("uncommitted wrong", wrong_uncommitted_locator, "repo_required"),
             ("range omitted", missing_range, "repo_required"),

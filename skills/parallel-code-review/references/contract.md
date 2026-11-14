@@ -327,12 +327,14 @@ review by command status alone.
 Before aggregating, `validate-run` runs the same complete freshness
 verification as `verify`. Frozen-uncommitted and Git-range scopes require
 `--repo`; explicit-patch scope requires `--patch`. A missing required locator
-or invalid contract resolution fails before the run record is read. Changed,
-removed, or unreadable pinned sources and live tree, head-tree, patch, or
-contract drift make the overall result `blocked`, with `scope_stale` run
-errors. Any otherwise valid completed envelopes remain in their original form
-under `completed_reports` and in the rendered output as historical evidence;
-they are not current and cannot make the run complete.
+or invalid contract resolution fails before the run record is read. A stale or
+unverifiable scope remains authoritative when the run record is missing,
+malformed, or otherwise invalid, so the result is still `blocked` with
+`scope_stale` run errors. Changed, removed, or unreadable pinned sources and
+live tree, head-tree, patch, or contract drift make the overall result
+`blocked`. Any otherwise valid completed envelopes from a readable run remain
+in their original form under `completed_reports` and in the rendered output as
+historical, non-current evidence; they cannot make the run complete.
 
 Each attempt is `completed` or `failed`. A completed attempt names its
 envelope and must use `launch_status: launched`; its envelope track and
