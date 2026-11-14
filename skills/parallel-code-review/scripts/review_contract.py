@@ -1243,13 +1243,46 @@ def validate_freeze_sources(args, repo, output):
         supplied_patch = Path(args.patch)
         patch_path = supplied_patch.resolve()
         if supplied_patch.is_symlink() or not patch_path.is_file():
-            raise ContractFailure("patch_missing", f"Patch is not a regular file: {patch_path}")
+            errors.append(
+                ContractFailure(
+                    "patch_missing",
+                    f"Patch is not a regular file: {patch_path}",
+                )
+            )
+        else:
+            try:
+                patch = patch_path.read_bytes()
+            except OSError:
+                errors.append(
+                    ContractFailure(
+                        "patch_missing",
+                        f"Patch is not a readable file: {patch_path}",
+                    )
+                )
+            else:
+                if not patch:
+                    errors.append(
+                        ContractFailure("patch_empty", "The explicit patch is empty.")
+                    )
+                else:
+                    try:
+                        inspect_patch_paths(patch)
+                    except ContractFailure as exc:
+                        errors.append(exc)
     if args.tree_root:
         tree_root = Path(args.tree_root)
-        if tree_root.is_symlink() or not tree_root.resolve().is_dir():
-            raise ContractFailure(
-                "tree_root_invalid",
-                f"Tree root is not a regular directory: {args.tree_root}",
+        try:
+            tree_root_invalid = (
+                tree_root.is_symlink() or not tree_root.resolve().is_dir()
+            )
+        except OSError:
+            tree_root_invalid = True
+        if tree_root_invalid:
+            errors.append(
+                ContractFailure(
+                    "tree_root_invalid",
+                    f"Tree root is not a regular directory: {args.tree_root}",
+                )
             )
     for path in args.requirements + args.standards:
         supplied_source = Path(path)

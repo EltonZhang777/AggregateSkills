@@ -2088,6 +2088,185 @@ class ParallelCodeReviewFreezeTests(unittest.TestCase):
         )
         self.assertFalse(bundle_created)
 
+    def test_freeze_aggregates_missing_patch_with_contract_and_input_failures(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            skill_root = Path(temp_dir) / "skill"
+            shutil.copytree(SKILL_ROOT, skill_root)
+            broken_adapter = (
+                skill_root / "references" / "tracks" / "ponytail-review.md"
+            )
+            broken_adapter.write_text(
+                "# Adapter without metadata\n",
+                encoding="utf-8",
+            )
+            missing_upstream = Path(temp_dir) / "missing-upstream.md"
+            missing_requirements = Path(temp_dir) / "missing-requirements.md"
+            bundle = Path(temp_dir) / "bundle"
+            completed = run_contract(
+                "freeze",
+                "--output",
+                bundle,
+                "--patch",
+                Path(temp_dir) / "missing.patch",
+                "--tree-root",
+                SKILL_ROOT / "references" / "acceptance-tree",
+                "--requirements",
+                missing_requirements,
+                "--standards",
+                SKILL_ROOT / "references" / "acceptance-standard.md",
+                "--contract-root",
+                skill_root,
+                "--upstream",
+                f"/code-review={missing_upstream}",
+            )
+            manifest_published = (bundle / "manifest.json").exists()
+            attestation_published = (bundle / "attestation.json").exists()
+
+        self.assertNotEqual(0, completed.returncode)
+        result = result_json(completed)
+        self.assertEqual("blocked", result["status"])
+        self.assertEqual(
+            [
+                "patch_missing",
+                "manifest_input_missing",
+                "metadata_missing",
+                "upstream_unreadable",
+                "manifest_input_missing",
+            ],
+            [error["code"] for error in result["errors"]],
+        )
+        self.assertIn("missing.patch", result["errors"][0]["message"])
+        self.assertIn("missing-requirements.md", result["errors"][1]["message"])
+        self.assertIn("ponytail-review.md", result["errors"][2]["message"])
+        self.assertIn("/code-review", result["errors"][3]["message"])
+        self.assertIn("checks", result["errors"][4]["message"])
+        self.assertFalse(manifest_published)
+        self.assertFalse(attestation_published)
+
+    def test_freeze_aggregates_invalid_tree_root_with_contract_and_input_failures(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            skill_root = Path(temp_dir) / "skill"
+            shutil.copytree(SKILL_ROOT, skill_root)
+            broken_adapter = (
+                skill_root / "references" / "tracks" / "ponytail-review.md"
+            )
+            broken_adapter.write_text(
+                "# Adapter without metadata\n",
+                encoding="utf-8",
+            )
+            missing_upstream = Path(temp_dir) / "missing-upstream.md"
+            missing_requirements = Path(temp_dir) / "missing-requirements.md"
+            unreadable_standards = Path(temp_dir) / "unreadable-standards.md"
+            unreadable_standards.write_bytes(b"\xff")
+            bundle = Path(temp_dir) / "bundle"
+            completed = run_contract(
+                "freeze",
+                "--output",
+                bundle,
+                "--patch",
+                SKILL_ROOT / "references" / "acceptance-fixture.patch",
+                "--tree-root",
+                Path(temp_dir) / "missing-tree",
+                "--requirements",
+                missing_requirements,
+                "--standards",
+                unreadable_standards,
+                "--contract-root",
+                skill_root,
+                "--upstream",
+                f"/code-review={missing_upstream}",
+            )
+            manifest_published = (bundle / "manifest.json").exists()
+            attestation_published = (bundle / "attestation.json").exists()
+
+        self.assertNotEqual(0, completed.returncode)
+        result = result_json(completed)
+        self.assertEqual("blocked", result["status"])
+        self.assertEqual(
+            [
+                "tree_root_invalid",
+                "manifest_input_missing",
+                "manifest_input_invalid",
+                "metadata_missing",
+                "upstream_unreadable",
+                "manifest_input_missing",
+            ],
+            [error["code"] for error in result["errors"]],
+        )
+        self.assertIn("missing-tree", result["errors"][0]["message"])
+        self.assertIn("missing-requirements.md", result["errors"][1]["message"])
+        self.assertIn("unreadable-standards.md", result["errors"][2]["message"])
+        self.assertIn("ponytail-review.md", result["errors"][3]["message"])
+        self.assertIn("/code-review", result["errors"][4]["message"])
+        self.assertIn("checks", result["errors"][5]["message"])
+        self.assertFalse(manifest_published)
+        self.assertFalse(attestation_published)
+
+    def test_freeze_aggregates_unsafe_patch_with_contract_and_input_failures(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            skill_root = Path(temp_dir) / "skill"
+            shutil.copytree(SKILL_ROOT, skill_root)
+            broken_adapter = (
+                skill_root / "references" / "tracks" / "ponytail-review.md"
+            )
+            broken_adapter.write_text(
+                "# Adapter without metadata\n",
+                encoding="utf-8",
+            )
+            unsafe_patch = write(
+                temp_dir,
+                "unsafe.patch",
+                "diff --git a/../../outside.py b/../../outside.py\n"
+                "--- a/../../outside.py\n"
+                "+++ b/../../outside.py\n"
+                "@@ -1 +1 @@\n"
+                "-value = 1\n"
+                "+value = 2\n",
+            )
+            missing_upstream = Path(temp_dir) / "missing-upstream.md"
+            missing_requirements = Path(temp_dir) / "missing-requirements.md"
+            bundle = Path(temp_dir) / "bundle"
+            completed = run_contract(
+                "freeze",
+                "--output",
+                bundle,
+                "--patch",
+                unsafe_patch,
+                "--tree-root",
+                SKILL_ROOT / "references" / "acceptance-tree",
+                "--requirements",
+                missing_requirements,
+                "--standards",
+                SKILL_ROOT / "references" / "acceptance-standard.md",
+                "--contract-root",
+                skill_root,
+                "--upstream",
+                f"/code-review={missing_upstream}",
+            )
+            manifest_published = (bundle / "manifest.json").exists()
+            attestation_published = (bundle / "attestation.json").exists()
+
+        self.assertNotEqual(0, completed.returncode)
+        result = result_json(completed)
+        self.assertEqual("blocked", result["status"])
+        self.assertEqual(
+            [
+                "path_unsafe",
+                "manifest_input_missing",
+                "metadata_missing",
+                "upstream_unreadable",
+                "manifest_input_missing",
+            ],
+            [error["code"] for error in result["errors"]],
+        )
+        self.assertIn("outside.py", result["errors"][0]["message"])
+        self.assertIn("missing-requirements.md", result["errors"][1]["message"])
+        self.assertIn("ponytail-review.md", result["errors"][2]["message"])
+        self.assertIn("/code-review", result["errors"][3]["message"])
+        self.assertIn("checks", result["errors"][4]["message"])
+        self.assertFalse(manifest_published)
+        self.assertFalse(attestation_published)
+
     def test_freeze_requires_a_recorded_check_with_reason(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             missing_bundle = Path(temp_dir) / "missing-checks"
