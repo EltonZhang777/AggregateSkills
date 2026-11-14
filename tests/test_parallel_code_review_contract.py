@@ -1080,6 +1080,74 @@ class ParallelCodeReviewFreezeTests(unittest.TestCase):
         self.assertEqual(verified.returncode, 0, verified.stderr or verified.stdout)
         self.assertEqual("current", result_json(verified)["status"])
 
+    def test_freeze_and_current_verify_emit_canonical_scope_digest(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            frozen, bundle = freeze_acceptance_bundle(temp_dir)
+            self.assertEqual(frozen.returncode, 0, frozen.stderr or frozen.stdout)
+            frozen_result = result_json(frozen)
+            manifest = json.loads(
+                (bundle / "manifest.json").read_text(encoding="utf-8")
+            )
+            expected = hashlib.sha256(
+                json.dumps(
+                    manifest["scope"],
+                    ensure_ascii=False,
+                    separators=(",", ":"),
+                    sort_keys=True,
+                ).encode("utf-8")
+            ).hexdigest()
+
+            verified = run_contract(
+                "verify",
+                "--bundle",
+                bundle,
+                "--patch",
+                SKILL_ROOT / "references" / "acceptance-fixture.patch",
+                *contract_args(),
+            )
+
+        self.assertRegex(frozen_result["scope_sha256"], r"^[0-9a-f]{64}$")
+        self.assertEqual(expected, frozen_result["scope_sha256"])
+        self.assertEqual(verified.returncode, 0, verified.stderr or verified.stdout)
+        self.assertEqual(
+            frozen_result["scope_sha256"],
+            result_json(verified)["scope_sha256"],
+        )
+
+    def test_scope_digest_changes_when_frozen_scope_changes(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            frozen, _ = freeze_acceptance_bundle(temp_dir)
+            changed_tree = Path(temp_dir) / "changed-tree"
+            shutil.copytree(
+                SKILL_ROOT / "references" / "acceptance-tree",
+                changed_tree,
+            )
+            write(changed_tree, "tests/test_extra.py", "def test_extra():\n    pass\n")
+            changed_bundle = Path(temp_dir) / "changed-bundle"
+            changed = run_contract(
+                "freeze",
+                "--output",
+                changed_bundle,
+                "--patch",
+                SKILL_ROOT / "references" / "acceptance-fixture.patch",
+                "--tree-root",
+                changed_tree,
+                "--requirements",
+                SKILL_ROOT / "references" / "acceptance-requirements.md",
+                "--standards",
+                SKILL_ROOT / "references" / "acceptance-standard.md",
+                "--not-run",
+                "repository tests=Synthetic patch is review-only.",
+                *contract_args(),
+            )
+
+        self.assertEqual(frozen.returncode, 0, frozen.stderr or frozen.stdout)
+        self.assertEqual(changed.returncode, 0, changed.stderr or changed.stdout)
+        self.assertNotEqual(
+            result_json(frozen)["scope_sha256"],
+            result_json(changed)["scope_sha256"],
+        )
+
     def test_git_range_freeze_fails_when_tree_entry_cannot_be_read(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             repo = self.make_repo(temp_dir)

@@ -118,6 +118,17 @@ The manifest is canonical UTF-8 JSON with sorted keys and is itself outside
 the digest it describes. The separate attestation records the exact manifest
 SHA-256, patch SHA-256 and byte size, and included paths.
 
+Successful `freeze` output and current `verify` output report `scope_sha256`:
+the lowercase hexadecimal SHA-256 of the UTF-8 bytes of canonical JSON for the
+manifest `scope` object. Canonical JSON sorts object keys recursively, keeps
+array order, uses `,` and `:` separators without surrounding whitespace,
+emits non-ASCII characters directly, and adds no trailing newline. This is
+equivalent to Python `json.dumps(scope, ensure_ascii=False,
+separators=(",", ":"), sort_keys=True).encode("utf-8")`. The value is derived
+output only: it is not stored in the manifest or attestation, changes neither
+schema, and does not change the contract version. The manifest `scope` remains
+authoritative.
+
 The manifest records:
 
 - `contract_version`;

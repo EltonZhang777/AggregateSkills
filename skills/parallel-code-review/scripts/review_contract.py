@@ -130,6 +130,10 @@ def canonical_json_bytes(payload):
     ).encode("utf-8")
 
 
+def scope_sha256(scope):
+    return sha256_bytes(canonical_json_bytes(scope))
+
+
 def error_payload(errors):
     return {
         "status": "blocked",
@@ -1623,6 +1627,7 @@ def command_freeze(args):
         "manifest_sha256": manifest_sha256,
         "patch_sha256": scope["patch"]["sha256"],
         "patch_size_bytes": scope["patch"]["size_bytes"],
+        "scope_sha256": scope_sha256(scope),
         "included_paths": scope["included_paths"],
     }, 0
 
@@ -2258,6 +2263,7 @@ def command_verify(args):
         "status": "current",
         "manifest_sha256": sha256_bytes(manifest_bytes),
         "patch_sha256": scope.get("patch", {}).get("sha256"),
+        "scope_sha256": scope_sha256(scope),
         "included_paths": scope.get("included_paths", []),
     }, 0
 
