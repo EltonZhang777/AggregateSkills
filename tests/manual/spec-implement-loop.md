@@ -44,6 +44,18 @@ With complete track reports containing P0/P1/P2 findings from different tracks, 
 
 In separate runs, fail a track launch, change a frozen input after review, and return incomplete coverage; confirm none of those results passes the final-review gate or normal root completion, and complete current reports remain evidence only. Confirm the root completion checkpoint remains required. If the host cannot execute the live caller seam or independent track execution, record that check as `not run`.
 
+## Partial root exception
+
+Create a blocked one-track partial final review and obtain its explicit partial-mode approval. Confirm that approval does not authorize the root exception, issue comments, root status synchronization, or completion.
+
+Use the completed report for remediation. Change code, then confirm the previous review is stale and the loop refreshes requirements, standards, checks, and exclusions, re-freezes, and reruns every routed track. If one track is again missing, confirm the loop shows a new blocked result and obtains a new partial-mode approval bound to that artifact; neither the old reports nor the old approval are reused.
+
+After remediation and final verification, draft the wrapper with `/conventional-git-messages` under the target repository's root `AGENTS.md` before any approval. Show the proposed exception and report content, then obtain the root-exception approval. Confirm the record adds that approval's source and evidence, the start and final OIDs, manifest and scope digests, latest partial-mode approval and blocked-artifact digest, missing track, loss of independence, residual risk, and permanent partial state, plus the one complete completed-track report exactly as received. Confirm declining the exception leaves the root incomplete.
+
+Freeze and show the final comment series, then separately approve issue-comment writes for that same series. Confirm neither approval permits rewriting the wrapper or report, and the recorded report remains byte-for-byte unchanged. Use an oversized complete report and confirm the final series contains the report exactly once across ordered `part N/M` comments, each with only its slice and no truncation, duplication, or lost content. Inject an uncertain write, confirm the loop re-reads existing comments and appends only missing parts before retrying transient failures, and confirm status synchronization waits until every part is confirmed.
+
+After the record is complete, confirm root status synchronization may proceed, but the review is still labeled partial and the root completion checkpoint remains mandatory. Confirm no labels, links, pull requests, merges, or other GitHub writes occur.
+
 ## Task-scoped commits and pushes
 
 Prepare one root and two small tickets, then approve one task-start authorization listing the root, repository, integration branch/worktree, ticket assignments and worker branches/worktrees, focused commits and normal pushes to the integration ref, and status sync for the root and those tickets. Confirm no ticket starts before approval, each ticket gets one focused integration commit after acceptance and internal review, and its confirmed commit is pushed without another commit or push prompt. Confirm ticket status sync follows the internal review and confirmed push under the same grant, with no per-ticket authorization request.

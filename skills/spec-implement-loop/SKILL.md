@@ -72,16 +72,17 @@ Track the active root, ticket, lifecycle state, and resume point in the current 
 | ready | Fill available worker slots from the current ready frontier and prepare fresh ticket branches only for tickets whose blockers, acceptance criteria, approvals, permissions, and environment are ready. Before dispatch, freeze the selected batch and request one task-start authorization. Dispatch only after a single grant covers all required scope; refill slots only within that grant. Scope changes require renewed authorization for affected work. |
 | implement | Change only the assigned ticket's scope in its worker slot. Workers do not change refs, commit, or push. Move to verify when implementation is ready. |
 | verify | Run the ticket acceptance checks in its worker slot. After serial integration, rerun the relevant checks on the integration branch. A failure enters blocked with evidence and a safe resume point. |
-| review | Review the ticket changes. A passing review moves to commit; findings enter remediate only through the review approval gates. A current, complete final `/parallel-code-review` with no unhandled P0/P1 findings moves to root_status_sync; recorded and deferred P2 findings do not block that transition. A failed, stale, or incomplete final review cannot pass the final-review gate or normal root completion. |
+| review | Review the ticket changes. A passing review moves to commit; findings enter remediate only through the review approval gates. A current, complete final `/parallel-code-review` with no unhandled P0/P1 findings moves to root_status_sync; recorded and deferred P2 findings do not block that transition. A current one-track partial result with no unhandled P0/P1 findings moves to root_exception after remediation and final verification. A failed, stale, or incomplete final review cannot pass the final-review gate or normal root completion. |
 | remediate | Work only on approved review repairs through the normal ticket loop. Move to verify, then review the repaired batch; do not review a partial batch. |
 | commit | Follow the serial integration procedure in the graph plan to create one focused commit on the integration branch; do not rewrite branch history. |
 | push | Push the confirmed integration commit to the exact listed integration branch under the task-start grant. Follow bounded retries; reconcile an uncertain result before retrying. |
 | ticket_checkpoint | After the confirmed push, record acceptance, review, commit, and push evidence and complete the ticket checkpoint internally; it does not wait for human approval. Move to status_sync under the task-start grant. |
 | status_sync | After the internal ticket checkpoint and confirmed push, follow the status-sync procedure in Issue loop. Then return to ready to fill newly available slots within the grant, or to final verification when no eligible ticket remains. |
-| root_status_sync | After final verification and a current complete root review with no unhandled P0/P1 findings, sync the root issue's completed status under the task-start grant without a separate approval pause, using the same retry and reconciliation rules as ticket status sync. Then move to root_checkpoint. |
+| root_exception | After a current, explicitly approved one-track partial final review has passed remediation and final verification, it remains incomplete. Obtain the separate per-root user exception, then create the complete append-only record on the root issue under separate issue-comment write approval. Move to root_status_sync only after every record part is confirmed. A complete review skips this state. |
+| root_status_sync | After final verification and either a current complete root review with no unhandled P0/P1 findings or an approved one-track partial review with its confirmed per-root exception and record, sync the root issue's completed status under the task-start grant without a separate approval pause, using the same retry and reconciliation rules as ticket status sync. Then move to root_checkpoint. |
 | root_checkpoint | Present the final evidence and pause for explicit approval to declare the root complete. If the synced root status is already complete while approval is pending, leave it in place. If work resumes, reopen the root during the next status sync. |
 | blocked | Stop the affected dependency chain and record the reason class, evidence, recovery condition, and safe resume state. Resume only after the condition is met and issue and Git state are reconciled. |
-| completed | Every non-deferred ticket and approved repair is complete; acceptance checks and the required full suite pass; final review passes with no unhandled P0/P1 findings; pushes and status syncs are confirmed; and the root checkpoint is approved. |
+| completed | Every non-deferred ticket and approved repair is complete; acceptance checks and the required full suite pass; final review passes with no unhandled P0/P1 findings, or an approved one-track partial review has its confirmed per-root exception and record; pushes and status syncs are confirmed; and the root checkpoint is approved. |
 
 Classify dependency when a required blocker remains unsatisfied; technical for an implementation or verification failure; external-service for a known service or network failure; operator-decision when a required user decision is unresolved, such as approval for a non-status issue write or pull request; decomposition when scope needs further ticketing; and needs-reconcile when a side-effect result is uncertain. A review repair uses remediate, not a generic blocked state. A blocker pauses only its dependent work.
 
@@ -131,6 +132,28 @@ The final-review gate passes only when the frozen bundle is current and every ro
 
 Hand every current complete track report unchanged, in route order, with its findings, native metadata, severities, and rationales preserved, to the [final-review remediation procedure](references/final-review-remediation.md) when the review is blocked or incomplete or any current complete report contains findings. When every current complete report has no findings, skip empty remediation. Preserve the blocked or incomplete state and missing-track evidence through handoff; handoff never converts the round into a pass. Do not merge, remove, rerank, reclassify, or assign new severity during handoff.
 
+### Partial root exception
+
+An explicitly approved one-track partial review remains an incomplete final review. Its partial-mode approval is not a root exception and does not authorize issue comments, status synchronization, or completion.
+
+After every remediation code change, refresh the requirement and standards inputs, re-freeze the scope and checks, and rerun every routed track; reports from before the change are historical only. If the rerun remains partial, show its new blocked result and obtain a new partial-mode approval bound to that run's blocked artifact; the prior partial-mode approval and artifact are historical only. Only after the latest review is current and final verification is complete may the loop ask for a separate per-root user exception.
+
+Before showing that request, invoke `/conventional-git-messages` with the target root repository's root `AGENTS.md` and the exact facts. Draft the complete wrapper and the exact report content; split it if needed. Show the proposed exception and report content. The request and final record series must name:
+
+- the frozen scope: starting OID, final OID, manifest digest, and scope digest;
+- the latest partial-mode approval source and evidence plus the blocked result path and SHA-256;
+- the root-exception approval source and evidence, added after that approval;
+- the missing track and the resulting loss of independence;
+- the residual risk, including the review perspective that was not executed;
+- the permanent partial state and its effect on completion;
+- one complete completed-track report exactly as received, including its normalized findings and native metadata, unchanged.
+
+Obtain the separate per-root exception approval. Add only its exact source and evidence to the record metadata, freeze the final comment series, and show it. Then request separate issue-comment write approval for that exact series; do not infer approval from the partial-mode approval, silence, or the task-start grant. After both approvals, write the approved append-only series verbatim; do not edit, delete, or rewrite a comment. If any content or part count changes, stop and obtain renewed approvals.
+
+If the record exceeds one comment, split it into an ordered `part N/M` series. Each part carries its part label and only its slice; the series contains exactly one complete report, with no duplication, truncation, change, or omission. The exception is effective only when every part is confirmed.
+
+Re-read the root issue after each write. If a write is uncertain, reconcile the existing comments before retrying; append only missing parts. Retry only clearly transient failures up to three total attempts, and stop before root status synchronization while any part is unresolved. After every part is confirmed, proceed through root_status_sync; the root completion checkpoint remains mandatory. The exception never makes the review complete or passing and authorizes no other GitHub writes. Declining the exception or leaving its record incomplete keeps the root in root_exception; do not sync completed status.
+
 ## Completion and report
 
 Report `complete` only when all of these hold:
@@ -138,7 +161,7 @@ Report `complete` only when all of these hold:
 - no uncompleted, non-deferred ticket remains;
 - every completed ticket meets its acceptance criteria;
 - the full suite required by `/implement` passes after the final implementation batch;
-- a current, complete `/parallel-code-review` final review passes with no unhandled P0/P1 findings;
+- a current, complete `/parallel-code-review` final review passes with no unhandled P0/P1 findings, or a current one-track partial review has a separately approved per-root exception and a fully confirmed append-only record;
 - every approved P0/P1 repair is complete;
 - low-priority findings are recorded as deferred tickets;
 - root and ticket statuses are synchronised;

@@ -1680,6 +1680,124 @@ class SpecImplementLoopBehaviorTests(unittest.TestCase):
         )
         self.assertTrue(interruption)
 
+    def test_partial_root_exception_requires_current_review_and_separate_approval(self):
+        text = skill("spec-implement-loop").lower().replace(chr(96), "")
+        lifecycle = section(text, "## root-run lifecycle")
+        final_review = section(text, "## final review")
+        exception = section(final_review, "### partial root exception")
+        lifecycle_rule = next(
+            line for line in lifecycle.splitlines() if "| root_exception |" in line
+        )
+
+        self.assertTrue(mentions_concepts(
+            lifecycle_rule, ("one-track partial",), ("remains incomplete",),
+            ("separate",), ("root",), ("exception",), ("root_status_sync",),
+        ))
+        self.assertLess(lifecycle.index("| review"), lifecycle.index("| root_exception"))
+        self.assertLess(lifecycle.index("| root_exception"), lifecycle.index("| root_status_sync"))
+        self.assertLess(lifecycle.index("| root_status_sync"), lifecycle.index("| root_checkpoint"))
+
+        self.assertIn("partial-mode approval is not a root exception", exception)
+        self.assertIn(
+            "does not authorize issue comments, status synchronization, or completion",
+            exception,
+        )
+        self.assertIn("after every remediation code change", exception)
+        self.assertIn("re-freeze", exception)
+        self.assertIn("rerun every routed track", exception)
+        self.assertIn("new partial-mode approval", exception)
+        self.assertIn("bound to that run's blocked artifact", exception)
+        self.assertIn(
+            "only after the latest review is current and final verification is complete",
+            exception,
+        )
+        for field in (
+            "starting oid",
+            "final oid",
+            "manifest digest",
+            "scope digest",
+            "missing track",
+            "residual risk",
+            "loss of independence",
+            "permanent partial state",
+        ):
+            self.assertIn(field, exception)
+        self.assertIn("do not infer approval", exception)
+
+    def test_partial_root_exception_record_is_append_only_and_blocks_status(self):
+        text = skill("spec-implement-loop").lower().replace(chr(96), "")
+        exception = section(section(text, "## final review"), "### partial root exception")
+        remediation = skill_reference(
+            "spec-implement-loop",
+            "final-review-remediation.md",
+        ).lower().replace(chr(96), "")
+
+        self.assertIn("separate issue-comment write approval", exception)
+        self.assertIn("/conventional-git-messages", exception)
+        self.assertIn("target root repository's root agents.md", exception)
+        self.assertIn("latest partial-mode approval source and evidence", exception)
+        self.assertIn("blocked result path and sha-256", exception)
+        self.assertIn("root-exception approval source and evidence", exception)
+        self.assertIn("append-only", exception)
+        self.assertIn("exactly as received", exception)
+        self.assertIn("normalized findings and native metadata", exception)
+        self.assertIn("exactly one complete report", exception)
+        self.assertIn("each part carries its part label and only its slice", exception)
+        self.assertIn("part n/m", exception)
+        self.assertIn("no duplication, truncation, change, or omission", exception)
+        self.assertIn("every part is confirmed", exception)
+        self.assertIn("before root status synchronization", exception)
+        self.assertIn("reconcile", exception)
+        self.assertIn("three total attempts", exception)
+        self.assertIn("root completion checkpoint remains mandatory", exception)
+        self.assertIn("no other github writes", exception)
+        self.assertLess(
+            exception.index("invoke /conventional-git-messages"),
+            exception.index("obtain the separate per-root exception approval"),
+        )
+        self.assertLess(
+            exception.index("obtain the separate per-root exception approval"),
+            exception.index("freeze the final comment series"),
+        )
+        self.assertLess(
+            exception.index("freeze the final comment series"),
+            exception.index("separate issue-comment write approval"),
+        )
+        self.assertIn(
+            "partial root exception",
+            (ROOT / "GLOSSARY.md").read_text(encoding="utf-8").lower(),
+        )
+        self.assertIn("one-track partial review", remediation)
+        self.assertIn("separate per-root exception", remediation)
+        self.assertIn("new partial-mode approval bound to its latest blocked artifact", remediation)
+        self.assertIn("exactly as received", remediation)
+        self.assertIn("does not make the review complete or passing", remediation)
+
+    def test_manual_partial_root_exception_covers_record_and_checkpoint(self):
+        manual = (
+            ROOT / "tests" / "manual" / "spec-implement-loop.md"
+        ).read_text(encoding="utf-8").lower()
+        scenario = section(manual, "## partial root exception")
+
+        self.assertIn("partial-mode approval", scenario)
+        self.assertIn("does not authorize the root exception", scenario)
+        self.assertIn("use the completed report for remediation", scenario)
+        self.assertIn("change code", scenario)
+        self.assertIn("reruns every routed track", scenario)
+        self.assertIn("new partial-mode approval bound to that artifact", scenario)
+        self.assertIn("neither the old reports nor the old approval are reused", scenario)
+        self.assertIn("exactly as received", scenario)
+        self.assertIn("/conventional-git-messages", scenario)
+        self.assertIn("before any approval", scenario)
+        self.assertIn("blocked-artifact digest", scenario)
+        self.assertIn("root-exception approval", scenario)
+        self.assertIn("exactly once across ordered", scenario)
+        self.assertIn("byte-for-byte unchanged", scenario)
+        self.assertIn("part n/m", scenario)
+        self.assertIn("re-read", scenario)
+        self.assertIn("status synchronization waits", scenario)
+        self.assertIn("root completion checkpoint", scenario)
+
     def test_manual_status_scenario_covers_repository_and_operation_boundaries(self):
         manual = (ROOT / "tests" / "manual" / "spec-implement-loop.md").read_text(encoding="utf-8").lower()
         scenario = section(manual, "## task-scoped commits and pushes")
