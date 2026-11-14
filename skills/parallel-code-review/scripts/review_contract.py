@@ -1299,7 +1299,14 @@ def verify_live_uncommitted(repo, scope, patch, exclusions):
         if not live_path.is_file() or live_path.is_symlink():
             reasons.append(f"An uncommitted source disappeared: {source['path']}")
             continue
-        if sha256_bytes(live_path.read_bytes()) != source["sha256"]:
+        try:
+            data = live_path.read_bytes()
+        except OSError:
+            reasons.append(f"An uncommitted source became unreadable: {source['path']}")
+            continue
+        if len(data) != source["size_bytes"]:
+            reasons.append(f"An uncommitted source size changed: {source['path']}")
+        if sha256_bytes(data) != source["sha256"]:
             reasons.append(f"An uncommitted source changed: {source['path']}")
     return reasons
 
@@ -1343,6 +1350,51 @@ def build_git_range_scope(repo, range_value, bundle=None, exclusions=None):
         "included_paths": included_paths,
         "tree_sources": tree_sources,
     }, patch
+
+
+def verify_live_git_range(repo, scope, patch, exclusions):
+    try:
+        current_scope, current_patch = build_git_range_scope(
+            repo,
+            f"{scope['base']}...{scope['head']}",
+            exclusions=exclusions,
+        )
+    except ContractFailure as exc:
+        return [f"The Git-range scope became unreadable: {exc.message}"]
+
+    reasons = []
+    if any(
+        current_scope[field] != scope[field]
+        for field in ("base", "head", "merge_base")
+    ):
+        reasons.append("The Git-range Git identities changed after the freeze.")
+    if current_scope["included_paths"] != scope["included_paths"]:
+        reasons.append("The Git-range included paths changed after the freeze.")
+    if current_patch != patch:
+        reasons.append("The reviewed scope changed after the freeze.")
+
+    head_tree_paths = {
+        path
+        for path in nul_paths(
+            git_output(repo, "ls-tree", "-r", "--name-only", "-z", scope["head"]).stdout
+        )
+        if not is_excluded(path, exclusions)
+    }
+    if head_tree_paths != {source["path"] for source in scope["tree_sources"]}:
+        reasons.append("The exact head tree path set changed after the freeze.")
+
+    for source in scope["tree_sources"]:
+        relative = safe_relative_path(source["path"]).as_posix()
+        try:
+            data = git_output(repo, "show", f"{scope['head']}:{relative}").stdout
+        except ContractFailure:
+            reasons.append(f"A Git-range source disappeared: {relative}")
+            continue
+        if len(data) != source["size_bytes"]:
+            reasons.append(f"A Git-range source size changed: {relative}")
+        if sha256_bytes(data) != source["sha256"]:
+            reasons.append(f"A Git-range source changed: {relative}")
+    return reasons
 
 
 def build_explicit_patch_scope(patch_path, tree_root, bundle, exclusions):
@@ -1999,7 +2051,10 @@ def verify_bundle_integrity(bundle, manifest):
         return ["The manifest patch path is unsafe."]
     if not patch_path.is_file():
         return ["The frozen patch is missing."]
-    patch = patch_path.read_bytes()
+    try:
+        patch = patch_path.read_bytes()
+    except OSError:
+        return ["The frozen patch is unreadable."]
     if sha256_bytes(patch) != patch_entry.get("sha256"):
         reasons.append("The frozen patch hash changed.")
     if len(patch) != patch_entry.get("size_bytes"):
@@ -2014,7 +2069,11 @@ def verify_bundle_integrity(bundle, manifest):
         if not path.is_file():
             reasons.append(f"Frozen tree source is missing: {source.get('path', '')}")
             continue
-        data = path.read_bytes()
+        try:
+            data = path.read_bytes()
+        except OSError:
+            reasons.append(f"Frozen tree source is unreadable: {source.get('path', '')}")
+            continue
         if sha256_bytes(data) != source.get("sha256") or len(data) != source.get("size_bytes"):
             reasons.append(f"Frozen tree source changed: {source.get('path', '')}")
 
@@ -2027,11 +2086,46 @@ def verify_bundle_integrity(bundle, manifest):
         if not path.is_file():
             reasons.append(f"Pinned input is missing: {entry.get('path', '')}")
             continue
-        data = path.read_bytes()
+        try:
+            data = path.read_bytes()
+        except OSError:
+            reasons.append(f"Pinned input is unreadable: {entry.get('path', '')}")
+            continue
         if len(data) != entry.get("size_bytes"):
             reasons.append(f"Pinned input size changed: {entry.get('path', '')}")
         if sha256_bytes(data) != entry.get("sha256"):
             reasons.append(f"Pinned input changed: {entry.get('path', '')}")
+    return reasons
+
+
+def verify_manifest_input_sources(manifest):
+    reasons = []
+    for entry in manifest.get("inputs", []):
+        path = Path(entry["path"])
+        try:
+            data = path.read_bytes()
+        except (OSError, ValueError):
+            reasons.append(
+                f"Original pinned input source is missing or unreadable: {entry['path']}"
+            )
+            continue
+        if len(data) != entry["size_bytes"]:
+            reasons.append(f"Original pinned input source size changed: {entry['path']}")
+        if sha256_bytes(data) != entry["sha256"]:
+            reasons.append(f"Original pinned input source changed: {entry['path']}")
+    return reasons
+
+
+def verify_live_explicit_patch(patch_path, scope):
+    try:
+        data = Path(patch_path).resolve().read_bytes()
+    except (OSError, RuntimeError, ValueError):
+        return [f"The explicit patch is missing or unreadable: {patch_path}"]
+    reasons = []
+    if len(data) != scope["patch"]["size_bytes"]:
+        reasons.append("The explicit patch size changed after the freeze.")
+    if sha256_bytes(data) != scope["patch"]["sha256"]:
+        reasons.append("The explicit patch changed after the freeze.")
     return reasons
 
 
@@ -2062,9 +2156,27 @@ def command_verify(args):
         )
     bundle = Path(args.bundle).resolve()
     manifest, manifest_bytes, attestation = load_bundle(bundle)
-    reasons = verify_bundle_integrity(bundle, manifest)
-    reasons.extend(attestation_mismatch_reasons(manifest_bytes, manifest, attestation))
     scope = manifest.get("scope", {})
+    kind = scope.get("kind")
+    if kind == "frozen_uncommitted" and not args.repo:
+        raise ContractFailure(
+            "repo_required",
+            "Verify requires --repo for a frozen uncommitted scope.",
+        )
+    if kind == "git_range" and not args.repo:
+        raise ContractFailure(
+            "repo_required",
+            "Verify requires --repo for a Git-range scope.",
+        )
+    if kind == "explicit_patch" and not args.patch:
+        raise ContractFailure(
+            "patch_required",
+            "Verify requires --patch for an explicit-patch scope.",
+        )
+
+    reasons = verify_bundle_integrity(bundle, manifest)
+    reasons.extend(verify_manifest_input_sources(manifest))
+    reasons.extend(attestation_mismatch_reasons(manifest_bytes, manifest, attestation))
 
     if args.contract_root:
         contract, errors = collect_preflight(
@@ -2079,34 +2191,49 @@ def command_verify(args):
         if manifest.get("contract") != contract:
             reasons.append("The routing, adapter, or upstream pins changed.")
 
-    if args.repo:
-        repo = resolve_repo_root(Path(args.repo))
-        kind = scope.get("kind")
-        if kind == "frozen_uncommitted":
-            current_patch = build_uncommitted_scope(
-                repo,
-                exclusions=[
-                    entry["path"] for entry in manifest.get("exclusions", [])
-                ],
-            )[1]
-        elif kind == "git_range":
-            range_value = f"{scope['base']}...{scope['head']}"
-            current_patch = build_git_range_scope(
-                repo,
-                range_value,
-                exclusions=[
-                    entry["path"] for entry in manifest.get("exclusions", [])
-                ],
-            )[1]
-        else:
-            current_patch = None
-        if current_patch is not None and current_patch != bundle.joinpath(*safe_relative_path(PATCH_PATH).parts).read_bytes():
-            reasons.append("The reviewed scope changed after the freeze.")
+    frozen_patch = None
+    try:
+        patch_relative = scope["patch"]["path"]
+        frozen_patch_path = bundle.joinpath(*safe_relative_path(patch_relative).parts)
+        frozen_patch = frozen_patch_path.read_bytes()
+    except (ContractFailure, OSError):
+        pass
 
-    if args.patch:
-        patch = Path(args.patch).resolve().read_bytes()
-        if sha256_bytes(patch) != scope.get("patch", {}).get("sha256"):
-            reasons.append("The explicit patch changed after the freeze.")
+    if kind == "frozen_uncommitted":
+        repo = resolve_repo_root(Path(args.repo))
+        if frozen_patch is not None:
+            reasons.extend(
+                verify_live_uncommitted(
+                    repo,
+                    scope,
+                    frozen_patch,
+                    [
+                        entry["path"]
+                        for entry in manifest.get("exclusions", [])
+                    ],
+                )
+            )
+    elif kind == "git_range":
+        repo = resolve_repo_root(Path(args.repo))
+        if frozen_patch is not None:
+            reasons.extend(
+                verify_live_git_range(
+                    repo,
+                    scope,
+                    frozen_patch,
+                    [
+                        entry["path"]
+                        for entry in manifest.get("exclusions", [])
+                    ],
+                )
+            )
+    elif kind == "explicit_patch":
+        reasons.extend(
+            verify_live_explicit_patch(
+                args.patch,
+                scope,
+            )
+        )
 
     if reasons:
         return {"status": "stale", "reasons": reasons}, 1

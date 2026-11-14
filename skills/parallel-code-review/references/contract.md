@@ -136,6 +136,17 @@ it never replaces the exact comparison. A line-ending-only byte change is
 stale. The patch remains exact-byte hashed. Verify requires the contract root
 and upstream resolution explicitly.
 
+Verify re-reads every pinned-input snapshot and its original recorded source
+path, plus every tree-source snapshot. Missing, unreadable, size-mismatched,
+or hash-mismatched bytes make the bundle stale; size and exact-byte SHA-256 are
+both checked. Verify also requires a live locator for the frozen scope:
+uncommitted and Git-range scopes require `--repo`, while explicit-patch scope
+requires `--patch`. A missing locator blocks verification and never returns
+current. Uncommitted verification reruns the complete HEAD, included-path,
+patch, and source-hash comparison. Git-range verification rechecks the exact
+frozen head tree and patch. Explicit-patch verification rechecks the supplied
+patch bytes and size.
+
 `input_status` is derived from the frozen manifest, not accepted as an
 independent claim:
 

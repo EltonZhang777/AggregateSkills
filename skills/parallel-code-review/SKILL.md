@@ -106,13 +106,17 @@ Git repository containing the frozen tree.
 Before each track starts, run:
 
 ```text
-python scripts/review_contract.py verify --bundle <bundle> \
+python scripts/review_contract.py verify --bundle <bundle> --repo <repo> \
+  --contract-root <skill package root> \
+  --upstream /code-review=<resolved source> \
+  --upstream /ponytail-review=<resolved source>
+python scripts/review_contract.py verify --bundle <bundle> --patch <patch> \
   --contract-root <skill package root> \
   --upstream /code-review=<resolved source> \
   --upstream /ponytail-review=<resolved source>
 ```
 
-A changed patch, tree source, pinned input bytes, manifest, route table, adapter document, or upstream pin makes the run stale. Stop and report stale; do not present stale findings as current and do not silently re-freeze mid-run.
+Git-range and uncommitted scopes require `--repo`; explicit-patch scope requires `--patch`. Omitting the required live locator blocks verification and never returns current. Verify re-hashes every pinned input snapshot and its original recorded source path, plus every tree-source snapshot. A changed or unreadable source, snapshot, patch, tree source, manifest, route table, adapter document, or upstream pin makes the run stale. Stop and report stale; do not present stale findings as current and do not silently re-freeze mid-run.
 
 Verify and `validate-envelope` always require `--upstream`; do not fall back to
 the manifest copy. For a remote upstream, pass the same exact digest and size
