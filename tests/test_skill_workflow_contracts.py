@@ -1670,9 +1670,18 @@ class SpecImplementLoopBehaviorTests(unittest.TestCase):
         self.assertIn("apply the shared bounded retry rules to status sync", ticket_sync_rule)
         root_sync_rule = next(line for line in issue_loop.splitlines() if line.lstrip().startswith("7."))
         self.assertTrue(mentions_concepts(
-            root_sync_rule, ("final verification",), ("root status",), ("before",),
-            ("root completion checkpoint", "completion checkpoint"),
+            root_sync_rule, ("current complete root review",), ("sync the root status", "root status synchronization"),
+            ("after either path",), ("root completion checkpoint", "completion checkpoint"),
         ))
+        partial_branch = root_sync_rule.index("a current one-track partial review")
+        exception_gate = root_sync_rule.index("root_exception", partial_branch)
+        partial_sync = root_sync_rule.index("permit root status synchronization only after", exception_gate)
+        approval_gate = root_sync_rule.index("separate per-root exception is approved", partial_sync)
+        record_gate = root_sync_rule.index("every append-only record part is confirmed", approval_gate)
+        self.assertLess(partial_branch, exception_gate)
+        self.assertLess(exception_gate, partial_sync)
+        self.assertLess(partial_sync, approval_gate)
+        self.assertLess(approval_gate, record_gate)
 
         interruption = sentence_with_concepts(
             lifecycle, ("restart", "interruption", "resume"), ("reconcile", "re-read"),
@@ -1808,6 +1817,15 @@ class SpecImplementLoopBehaviorTests(unittest.TestCase):
         self.assertIn("part n/m", scenario)
         self.assertIn("re-read", scenario)
         self.assertIn("status synchronization waits", scenario)
+        self.assertIn("for a current complete review", scenario)
+        self.assertIn("before the separate root completion checkpoint", scenario)
+        partial_gate = scenario.index("for a partial review, confirm root status does not synchronize")
+        exception_gate = scenario.index("separate per-root exception is approved", partial_gate)
+        record_gate = scenario.index("every append-only record part is confirmed", exception_gate)
+        sync_gate = scenario.index("after synchronization", record_gate)
+        self.assertLess(partial_gate, exception_gate)
+        self.assertLess(exception_gate, record_gate)
+        self.assertLess(record_gate, sync_gate)
         self.assertIn("root completion checkpoint", scenario)
 
     def test_manual_status_scenario_covers_repository_and_operation_boundaries(self):

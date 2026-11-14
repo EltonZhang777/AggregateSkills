@@ -54,7 +54,7 @@ After remediation and final verification, draft the wrapper with `/conventional-
 
 Freeze and show the final comment series, then separately approve issue-comment writes for that same series. Confirm neither approval permits rewriting the wrapper or report, and the recorded report remains byte-for-byte unchanged. Use an oversized complete report and confirm the final series contains the report exactly once across ordered `part N/M` comments, each with only its slice and no truncation, duplication, or lost content. Inject an uncertain write, confirm the loop re-reads existing comments and appends only missing parts before retrying transient failures, and confirm status synchronization waits until every part is confirmed.
 
-After the record is complete, confirm root status synchronization may proceed, but the review is still labeled partial and the root completion checkpoint remains mandatory. Confirm no labels, links, pull requests, merges, or other GitHub writes occur.
+For a current complete review with no unhandled P0/P1 findings, confirm root status synchronization proceeds under the task-start grant before the separate root completion checkpoint. For a partial review, confirm root status does not synchronize until the separate per-root exception is approved and every append-only record part is confirmed; after synchronization, keep the review labeled partial and require the root completion checkpoint. Confirm neither path treats status synchronization as completion approval, and that no labels, links, pull requests, merges, or other GitHub writes occur.
 
 ## Task-scoped commits and pushes
 
