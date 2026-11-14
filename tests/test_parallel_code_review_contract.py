@@ -366,6 +366,22 @@ def valid_ponytail_review_envelope(attestation, checked_sha="e" * 64):
     }
 
 
+def valid_third_review_envelope(attestation, checked_sha="e" * 64):
+    envelope = valid_ponytail_review_envelope(attestation, checked_sha)
+    envelope["track_id"] = "third-review"
+    envelope["invocation_id"] = "third-review-001"
+    envelope["native"] = {
+        "title": "/third-review",
+        "sections": [
+            {
+                "name": "Third-track findings",
+                "finding_ids": ["1", "2", "3"],
+            }
+        ],
+    }
+    return envelope
+
+
 def run_attempt(
     invocation_id,
     request_sha256,
@@ -3617,6 +3633,435 @@ class ParallelCodeReviewPackageTests(unittest.TestCase):
             "not live evidence",
         ):
             self.assertIn(phrase, scenario)
+
+    def test_remediation_change_stales_review_and_requires_a_new_bundle(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            frozen, bundle = freeze_acceptance_bundle(temp_dir)
+            self.assertEqual(frozen.returncode, 0, frozen.stderr or frozen.stdout)
+            original_manifest = json.loads(
+                (bundle / "manifest.json").read_text(encoding="utf-8")
+            )
+            original_patch = (
+                SKILL_ROOT / "references" / "acceptance-fixture.patch"
+            ).read_bytes()
+            remediated_bytes = original_patch.replace(
+                b'Decimal("0.9")',
+                b'Decimal("0.90")',
+            )
+            self.assertNotEqual(original_patch, remediated_bytes)
+            remediated_patch = Path(temp_dir) / "remediated.patch"
+            remediated_patch.write_bytes(remediated_bytes)
+            remediated_tree = Path(temp_dir) / "remediated-tree"
+            shutil.copytree(
+                SKILL_ROOT / "references" / "acceptance-tree",
+                remediated_tree,
+            )
+            remediated_source = remediated_tree / "src" / "discounts.py"
+            remediated_source.write_text(
+                remediated_source.read_text(encoding="utf-8").replace(
+                    'Decimal("0.9")',
+                    'Decimal("0.90")',
+                ),
+                encoding="utf-8",
+            )
+            stale = run_contract(
+                "verify",
+                "--bundle",
+                bundle,
+                "--patch",
+                remediated_patch,
+                *contract_args(),
+            )
+            new_bundle = Path(temp_dir) / "remediated-bundle"
+            refreshed = run_contract(
+                "freeze",
+                "--output",
+                new_bundle,
+                "--patch",
+                remediated_patch,
+                "--tree-root",
+                remediated_tree,
+                "--requirements",
+                SKILL_ROOT / "references" / "acceptance-requirements.md",
+                "--standards",
+                SKILL_ROOT / "references" / "acceptance-standard.md",
+                "--not-run",
+                "repository tests=Synthetic patch is review-only.",
+                *contract_args(),
+            )
+            refreshed_manifest = json.loads(
+                (new_bundle / "manifest.json").read_text(encoding="utf-8")
+            )
+            refreshed_manifest_sha256 = hashlib.sha256(
+                (new_bundle / "manifest.json").read_bytes()
+            ).hexdigest()
+            refreshed_checked_sha = refreshed_manifest["scope"][
+                "tree_sources"
+            ][0]["sha256"]
+            refreshed_attestation = json.loads(
+                (new_bundle / "attestation.json").read_text(encoding="utf-8")
+            )
+            refreshed_envelopes = [
+                valid_code_review_envelope(
+                    refreshed_attestation,
+                    refreshed_checked_sha,
+                ),
+                valid_ponytail_review_envelope(
+                    refreshed_attestation,
+                    refreshed_checked_sha,
+                ),
+            ]
+            refreshed_attempts = []
+            for track_id, envelope in zip(
+                ("code-review", "ponytail-review"),
+                refreshed_envelopes,
+            ):
+                envelope_path = write(
+                    temp_dir,
+                    f"refreshed-{track_id}.json",
+                    json.dumps(envelope),
+                )
+                refreshed_attempts.append(
+                    run_attempt(
+                        envelope["invocation_id"],
+                        track_request_sha256(
+                            refreshed_manifest,
+                            refreshed_attestation,
+                            track_id,
+                        ),
+                        envelope=envelope_path.name,
+                    )
+                )
+            refreshed_run = review_run(
+                [refreshed_attempts[0]],
+                [refreshed_attempts[1]],
+            )
+            refreshed_run_path = write(
+                temp_dir,
+                "refreshed-run.json",
+                json.dumps(refreshed_run),
+            )
+            refreshed_validation = run_contract(
+                "validate-run",
+                "--bundle",
+                new_bundle,
+                "--run",
+                refreshed_run_path,
+                *contract_args(),
+            )
+            refreshed_result = result_json(refreshed_validation)
+
+        self.assertEqual(1, stale.returncode)
+        stale_result = result_json(stale)
+        self.assertEqual("stale", stale_result["status"])
+        self.assertIn(
+            "The explicit patch changed after the freeze.",
+            stale_result["reasons"],
+        )
+        self.assertEqual(
+            refreshed.returncode,
+            0,
+            refreshed.stderr or refreshed.stdout,
+        )
+        self.assertNotEqual(
+            original_manifest["scope"]["patch"]["sha256"],
+            refreshed_manifest["scope"]["patch"]["sha256"],
+        )
+        self.assertEqual(
+            ["code-review", "ponytail-review"],
+            [
+                track["track_id"]
+                for track in refreshed_manifest["contract"]["tracks"]
+            ],
+        )
+        self.assertEqual(
+            refreshed_validation.returncode,
+            0,
+            refreshed_validation.stderr or refreshed_validation.stdout,
+        )
+        self.assertEqual("complete", refreshed_result["status"])
+        self.assertEqual(
+            refreshed_envelopes,
+            refreshed_result["completed_reports"],
+        )
+        for envelope in refreshed_result["completed_reports"]:
+            self.assertEqual(
+                refreshed_attestation["manifest_sha256"],
+                envelope["attestation"]["manifest_sha256"],
+            )
+        self.assertEqual(
+            refreshed_manifest_sha256,
+            refreshed_attestation["manifest_sha256"],
+        )
+
+    def test_third_track_extension_needs_one_adapter_and_one_routing_row(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            skill_root = Path(temp_dir) / "skill"
+            shutil.copytree(SKILL_ROOT, skill_root)
+            common_paths = (
+                "SKILL.md",
+                "references/contract.md",
+                "references/acceptance-scenario.md",
+                "scripts/review_contract.py",
+            )
+            common_before = {
+                path: (skill_root / path).read_bytes()
+                for path in common_paths
+            }
+            third_adapter = write_adapter(
+                skill_root,
+                "third-review.md",
+                metadata(
+                    "/third-review",
+                    source="<third-review-publisher-source>",
+                    inputs=[
+                        "patch",
+                        "tree",
+                        "requirements",
+                        "standards",
+                        "checks",
+                        "exclusions",
+                    ],
+                ),
+                extra=(
+                    "\nReturn the same frozen-scope evidence in the common "
+                    "envelope. This disposable adapter is acceptance-test "
+                    "data, not a live reviewer.\n"
+                ),
+            )
+            routing = write_routing(
+                skill_root,
+                [
+                    ("code-review", "references/tracks/code-review.md"),
+                    ("ponytail-review", "references/tracks/ponytail-review.md"),
+                    ("third-review", "references/tracks/third-review.md"),
+                ],
+            )
+            self.assertTrue(third_adapter.is_file())
+            self.assertIn(
+                "| third-review | references/tracks/third-review.md |",
+                routing.read_text(encoding="utf-8"),
+            )
+            common_after = {
+                path: (skill_root / path).read_bytes()
+                for path in common_paths
+            }
+            self.assertEqual(common_before, common_after)
+
+            upstreams = [
+                "--upstream",
+                f"/code-review={UPSTREAM_SOURCE}",
+                "--upstream",
+                f"/ponytail-review={skill_root / 'references/tracks/ponytail-review.md'}",
+                "--upstream",
+                f"/third-review={UPSTREAM_SOURCE}",
+            ]
+            preflight = run_contract(
+                "preflight",
+                "--skill-root",
+                skill_root,
+                *upstreams,
+            )
+            self.assertEqual(
+                preflight.returncode,
+                0,
+                preflight.stderr or preflight.stdout,
+            )
+            preflight_result = result_json(preflight)
+            expected_order = [
+                "code-review",
+                "ponytail-review",
+                "third-review",
+            ]
+            self.assertEqual(
+                expected_order,
+                [track["track_id"] for track in preflight_result["tracks"]],
+            )
+            self.assertEqual(
+                expected_order,
+                [
+                    pin["track_id"]
+                    for pin in preflight_result["pins"]["adapters"]
+                ],
+            )
+
+            bundle = Path(temp_dir) / "bundle"
+            frozen = run_contract(
+                "freeze",
+                "--output",
+                bundle,
+                "--patch",
+                skill_root / "references" / "acceptance-fixture.patch",
+                "--tree-root",
+                skill_root / "references" / "acceptance-tree",
+                "--requirements",
+                skill_root / "references" / "acceptance-requirements.md",
+                "--standards",
+                skill_root / "references" / "acceptance-standard.md",
+                "--not-run",
+                "repository tests=Synthetic patch is review-only.",
+                "--contract-root",
+                skill_root,
+                *upstreams,
+            )
+            self.assertEqual(
+                frozen.returncode,
+                0,
+                frozen.stderr or frozen.stdout,
+            )
+            manifest = json.loads(
+                (bundle / "manifest.json").read_text(encoding="utf-8")
+            )
+            checked_sha = manifest["scope"]["tree_sources"][0]["sha256"]
+            attestation = json.loads(
+                (bundle / "attestation.json").read_text(encoding="utf-8")
+            )
+            envelopes = {
+                "code-review": valid_code_review_envelope(
+                    attestation,
+                    checked_sha,
+                ),
+                "ponytail-review": valid_ponytail_review_envelope(
+                    attestation,
+                    checked_sha,
+                ),
+                "third-review": valid_third_review_envelope(
+                    attestation,
+                    checked_sha,
+                ),
+            }
+            attempts = {}
+            for track_id, envelope in envelopes.items():
+                envelope_path = write(
+                    temp_dir,
+                    f"{track_id}.json",
+                    json.dumps(envelope),
+                )
+                attempts[track_id] = run_attempt(
+                    envelope["invocation_id"],
+                    track_request_sha256(manifest, attestation, track_id),
+                    envelope=envelope_path.name,
+                )
+            run = {
+                "contract_version": 1,
+                "tracks": [
+                    {"track_id": track_id, "attempts": [attempts[track_id]]}
+                    for track_id in reversed(expected_order)
+                ],
+                "checks": [
+                    {
+                        "name": "independence_capability",
+                        "result": "not_run",
+                        "reason": (
+                            "Static acceptance envelopes do not demonstrate "
+                            "live independent execution."
+                        ),
+                    }
+                ],
+                "partial": None,
+            }
+            run_path = write(temp_dir, "third-track-run.json", json.dumps(run))
+            completed = run_contract(
+                "validate-run",
+                "--bundle",
+                bundle,
+                "--run",
+                run_path,
+                "--contract-root",
+                skill_root,
+                *upstreams,
+            )
+
+        self.assertEqual(
+            completed.returncode,
+            0,
+            completed.stderr or completed.stdout,
+        )
+        result = result_json(completed)
+        self.assertEqual("complete", result["status"])
+        self.assertEqual(
+            expected_order,
+            [track["track_id"] for track in result["tracks"]],
+        )
+        self.assertEqual(
+            [envelopes[track_id] for track_id in expected_order],
+            result["completed_reports"],
+        )
+        rendered = result["rendered"]
+        positions = [
+            rendered.index(f"## Track report: `{track_id}`")
+            for track_id in expected_order
+        ]
+        self.assertEqual(positions, sorted(positions))
+
+    def test_acceptance_package_covers_spec_loop_seam_and_root_exception(self):
+        scenario = " ".join(
+            (SKILL_ROOT / "references" / "acceptance-scenario.md")
+            .read_text(encoding="utf-8")
+            .lower()
+            .split()
+        )
+        for phrase in (
+            "remediation code change",
+            "new freeze",
+            "rerun every routed track",
+            "separate per-root exception",
+            "confirmed append-only record",
+            "root status synchronization",
+            "root completion checkpoint",
+            "one third-track adapter",
+            "one routing-table row",
+            "no common dispatch",
+            "`/spec-implement-loop` caller seam",
+            "exactly once",
+            "ticket review remains on `/code-review`",
+            "every complete track report",
+            "unchanged",
+            "live caller",
+            "not run",
+        ):
+            self.assertIn(phrase, scenario)
+        for field in (
+            "starting oid",
+            "final oid",
+            "manifest digest",
+            "scope digest",
+            "blocked result path and sha-256",
+            "root-exception approval source and evidence",
+        ):
+            self.assertIn(field, scenario)
+        approval_order = (
+            "show the proposed exception",
+            "obtain the separate per-root exception approval",
+            "add only its exact root-exception approval source and evidence",
+            "freeze and show the final append-only comment series",
+            "separate issue-comment write approval",
+        )
+        positions = [scenario.index(phrase) for phrase in approval_order]
+        self.assertEqual(positions, sorted(positions))
+        self.assertIn(
+            "<third-review-publisher-source>",
+            scenario,
+        )
+
+        spec = (
+            ROOT / "skills" / "spec-implement-loop" / "SKILL.md"
+        ).read_text(encoding="utf-8").lower()
+        self.assertIn(
+            "ticket review remains on this `/code-review` path",
+            spec,
+        )
+        self.assertIn(
+            "call `/parallel-code-review` exactly once",
+            spec,
+        )
+        self.assertIn(
+            "hand every current complete track report unchanged",
+            spec,
+        )
+        self.assertIn("separate per-root user exception", spec)
+        self.assertIn("complete append-only record", spec)
+        self.assertIn("root completion checkpoint remains mandatory", spec)
 
     def test_readme_lists_the_new_skill(self):
         readme = (ROOT / "README.md").read_text(encoding="utf-8")

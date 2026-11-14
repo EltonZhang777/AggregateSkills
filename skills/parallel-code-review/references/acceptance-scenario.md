@@ -107,12 +107,140 @@ independent execution, or recovery capability.
    `not_run` with a reason. Static records and subprocess contract tests are
    not live evidence.
 
+## Remediation freshness
+
+A remediation code change makes the previous frozen review historical. In the
+disposable copy, change one line in a copy of the synthetic patch, then run
+`verify --bundle <old-bundle> --patch <remediated-patch>` with the same
+contract root and upstream pins. Confirm the result is `stale` because the
+explicit patch changed after the freeze.
+
+```text
+python scripts/review_contract.py verify --bundle <old-bundle> \
+  --patch <remediated-patch> --contract-root <skill-root> \
+  --upstream /code-review=<resolved> \
+  --upstream /ponytail-review=<resolved>
+```
+
+Do not attach old track reports to the remediated code. Create a new freeze
+from the remediated patch and the refreshed requirement, standards, checks,
+and exclusion inputs, then rerun every routed track. Build a new run record
+from new completed envelopes and validate it against the new bundle. Confirm
+overall `complete`, route order, the new manifest and patch attestations, and
+that every routed-track report belongs to the new run rather than the stale
+bundle.
+
+## Partial root exception and permanent record
+
+After a blocked result is shown, the separate partial-mode approval retains
+one completed report but remains incomplete and cannot pass
+`/spec-implement-loop`. For root completion, the loop must obtain a separate
+per-root exception after remediation and final verification.
+
+Show the proposed exception, wrapper, and completed report before requesting
+approval. Confirm the exception names:
+
+- the starting OID, final OID, manifest digest, and scope digest;
+- the latest partial-mode approval source and evidence, plus the blocked
+  result path and SHA-256;
+- the missing track, loss of independence, residual risk, and permanent
+  partial state;
+- the one complete completed-track report, exactly as received and unchanged.
+
+Obtain the separate per-root exception approval. Add only its exact
+root-exception approval source and evidence to the record metadata. Freeze and
+show the final append-only comment series. Then obtain separate issue-comment
+write approval for that exact series. Root status synchronization waits until
+every part of the confirmed append-only record is present, and the separate
+root completion checkpoint remains mandatory.
+
+The review stays labeled `partial`; approval never turns it into a complete
+parallel review. This package performs no GitHub write. Treat the live
+append-only record and status transition as `not run` unless a separately
+authorized host scenario supplies real issue evidence.
+
+## `/spec-implement-loop` caller seam
+
+Exercise this boundary only in a disposable root. Ticket review remains on
+`/code-review` and does not add a parallel track. At final review,
+`/spec-implement-loop` makes one final routed review call to
+`/parallel-code-review` exactly once with the exact starting and final commit
+object IDs.
+
+Confirm every complete track report enters final-review remediation unchanged,
+in route order, with native structure, finding order, P0/P1/P2 severity, and
+rationale preserved. A blocked or stale result stays non-passing. If the host
+cannot execute the live caller seam, record that check as `not run`; passing
+the static contract assertions is not live caller evidence.
+
+## Third-track extension
+
+Use a disposable copy of the skill package. Activate the third track with one
+third-track adapter and one routing-table row only:
+
+1. Add `references/tracks/third-review.md` with one metadata block:
+
+   ````markdown
+   <!-- parallel-code-review-track-metadata -->
+
+   ```json
+   {
+     "contract_version": 1,
+     "upstream": {
+       "name": "/third-review",
+       "source": "<third-review-publisher-source>"
+     },
+     "required_inputs": [
+       "patch",
+       "tree",
+       "requirements",
+       "standards",
+       "checks",
+       "exclusions"
+     ]
+   }
+   ```
+
+   # `/third-review` Track Adapter
+
+   Resolve the declared upstream and review the same frozen bundle. Return the
+   common envelope without changing its native content or finding order.
+   ````
+
+2. Add one row after `ponytail-review`:
+
+   ```markdown
+   | third-review | references/tracks/third-review.md |
+   ```
+
+3. Replace `<third-review-publisher-source>` with the actual publisher source,
+   then resolve `/third-review` through the host and SkillRoute. Run preflight
+   with one `--upstream` per row, including
+   `--upstream /third-review=<resolved-third-review-skill>`. Confirm route
+   order is `code-review`, `ponytail-review`, then `third-review`, and that
+   adapter pins use the same order.
+
+4. Freeze the same synthetic patch and tree with all three upstreams. Submit a
+   run record whose input row order is deliberately different. Confirm
+   `validate-run` still returns route order and preserves all three original
+   completed reports. Confirm the third-track report has its own track and
+   invocation IDs and that no finding was merged or reranked.
+
+The extension requires no common dispatch, failure-handling, envelope
+validation, formatting, or aggregation code change. The disposable adapter
+and static envelope prove activation and coordinator behavior only. If the
+host cannot launch the third independent reviewer, record that live check as
+`not run`.
+
 ## Expected findings
 
 Routing order and normalized order are fixed for this synthetic bundle:
 
 1. `code-review` findings: `STD-01`, then `SPEC-01`.
 2. `ponytail-review` findings: `1`, `2`, then `3`.
+3. `third-review` static envelope: the same evidence-bearing fixture findings
+   under its own track identity. This is extension contract data, not a live
+   third reviewer.
 
 Code review:
 
@@ -143,4 +271,6 @@ evidence that two independent reviewers ran.
 
 If the host cannot demonstrate live model discovery, two independent sub-agent
 launches, or GitHub behavior, record the affected check as `not run`. Static
-package evidence does not turn those live checks into passes.
+package evidence does not turn those live checks into passes. The same applies
+to a live third-track launch, the `/spec-implement-loop` caller seam, and the
+authorized append-only root record.
