@@ -122,6 +122,11 @@ For each ready ticket:
 
 When no non-deferred ready ticket remains, resolve the recorded starting `HEAD` and the final `HEAD` to full commit object IDs with `git rev-parse --verify`, then read and follow the original `SKILL.md` for `/parallel-code-review` before invoking it. Call `/parallel-code-review` exactly once for that final-review round with `--range <starting-oid>...<final-oid>`, using those exact object IDs rather than branch or tag names.
 
+Pass `--require-requirements` when freezing the final-review scope. After
+freezing, require `manifest.input_status.requirements` to be `included`; a
+current root review whose pinned requirements are missing or `not_assessed`
+cannot pass the final-review gate, partial mode, or the root exception.
+
 Before freezing, require `git merge-base <starting-oid> <final-oid>` to equal `<starting-oid>`. If the command fails or returns another object, block without re-basing or substituting a merge-base. After freezing, require `manifest.scope.base` and `manifest.scope.merge_base` to equal `<starting-oid>` and `manifest.scope.head` to equal `<final-oid>`; any mismatch blocks before dispatch.
 
 Before freezing, materialize only non-file requirement inputs outside the reviewed repository. For each GitHub issue, write the exact issue body and each applicable comment that adds a requirement, decision, correction, or accepted clarification as a separate UTF-8 file; name it with its source identity and content hash, and reuse identical content or use a round-qualified name. Pass those files with repeatable `--requirements`; pass local requirement files by their original paths. For `--standards`, pass the documented source paths directly: applicable root and nested `AGENTS.md`; root `GLOSSARY.md` or `GLOSSARY-MAP.md` and each relevant glossary it names; `docs/agents/domain.md`; applicable ADRs; formatter, lint, type-check, build, and test configuration; and any additional standards source required by `/parallel-code-review`, its routed adapters, or the target repository's documentation. Do not create a second content-addressed standards snapshot layer; `freeze` copies and hashes every supplied requirement and standards input into the bundle, and the manifest remains the hash record. If a source changes, re-freeze from the original standards paths and refreshed requirement materialization; do not reuse stale inputs.
@@ -161,7 +166,7 @@ Report `complete` only when all of these hold:
 - no uncompleted, non-deferred ticket remains;
 - every completed ticket meets its acceptance criteria;
 - the full suite required by `/implement` passes after the final implementation batch;
-- a current, complete `/parallel-code-review` final review passes with no unhandled P0/P1 findings, or a current one-track partial review has a separately approved per-root exception and a fully confirmed append-only record;
+- a current, complete `/parallel-code-review` final review with `manifest.input_status.requirements: included` passes with no unhandled P0/P1 findings, or a current one-track partial review has a separately approved per-root exception and a fully confirmed append-only record;
 - every approved P0/P1 repair is complete;
 - low-priority findings are recorded as deferred tickets;
 - root and ticket statuses are synchronised;

@@ -52,7 +52,7 @@ An upstream identity is `(name, source)`. Adapters may share the same identity,
 but a declared name must not map to multiple sources; that conflict fails with
 `upstream_identity_conflict` before resolution or pin creation.
 
-For every routed row, read its fixed-marker JSON metadata, resolve the declared upstream skill through the current host and SkillRoute, and collect its required manifest inputs. Report every adapter metadata error, missing upstream dependency, and missing or unreadable supplied input file together, then stop. Do not dispatch a track while any required dependency or input is unresolved. Verify that every metadata block uses the exact shared contract version before starting work.
+For every routed row, read its fixed-marker JSON metadata, resolve the declared upstream skill through the current host and SkillRoute, and collect its required manifest inputs. Report every adapter metadata error, missing upstream dependency, and missing or unreadable supplied input file together, then stop. Do not dispatch a track while any required dependency or input other than standalone `requirements` is unresolved. Verify that every metadata block uses the exact shared contract version before starting work.
 
 The validator does not run SkillRoute or fetch remote text. Pass the
 coordinator-resolved upstream source explicitly. A local skill file or skill
@@ -97,6 +97,11 @@ repeatable `--requirements` and `--standards`. When the routed adapters require
 use `--not-run` with a non-empty reason. Record every exclusion with `--exclude
 PATH=REASON`.
 
+A standalone freeze may omit `--requirements`; the manifest records
+`requirements` as `not_assessed`. A `/spec-implement-loop` final-review freeze
+must pass `--require-requirements`; missing pinned requirements then block with
+`manifest_input_missing`.
+
 The bundle contains the exact patch, the frozen code tree, pinned input snapshots, a canonical manifest, and a separate patch/manifest attestation. The manifest records the manifest digest source, included sources, checks, exclusions, routing/adapter/upstream pins, and the scope identity. For an explicit patch, every non-deleted changed path must exist in the supplied tree, and the tree must match the patch's exact post-image, or the freeze fails. Do not reconstruct inputs from live workspace reads after the freeze.
 
 Symlinks are unsupported in either tree source: freeze fails closed with `tree_symlink_unsupported` rather than publishing the link target as a regular file.
@@ -126,7 +131,7 @@ pin used by freeze.
 
 ## Dispatch each review track
 
-For each route-table row, in row order, load the referenced adapter and start its review track in its own independent sub-agent. Give every track the identical bundle, manifest digest, patch attestation, included paths, requirements, standards, checks, and exclusions. Do not let a track read a live ref or live workspace file in place of the frozen bundle.
+For each route-table row, in row order, load the referenced adapter and start its review track in its own independent sub-agent. Give every track the identical bundle, manifest digest, patch attestation, included paths, requirements or their recorded `not_assessed` status, standards, checks, and exclusions. Do not let a track read a live ref or live workspace file in place of the frozen bundle.
 
 The `/code-review` adapter keeps its upstream review track and internal Standards and Spec sub-agents and aggregation. Read the original upstream `/code-review` skill before invoking it. Execute that review contract against the sealed patch and frozen tree. Preserve both review axes and their original order.
 

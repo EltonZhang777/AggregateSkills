@@ -682,7 +682,7 @@ def collect_preflight(
         )
         errors.extend(upstream_errors)
         if errors:
-            return None, errors
+            return {"required_inputs": required_inputs}, errors
 
         for dependency in dependencies:
             pin = upstream_pins[(dependency["name"], dependency["source"])]
@@ -1296,12 +1296,13 @@ def validate_required_inputs(contract, args, checks):
         "tree": bool(repo_arg(args) or args.tree_root),
         "requirements": bool(args.requirements),
         "standards": bool(args.standards),
-        "checks": bool(checks),
+        "checks": bool(checks or args.check or args.not_run),
         "exclusions": True,
     }
     missing = [
         input_name
         for input_name in contract["required_inputs"]
+        if input_name != "requirements" or args.require_requirements
         if not availability.get(input_name, False)
     ]
     if missing:
@@ -1553,6 +1554,16 @@ def command_freeze(args):
     exclusions = collect_exclusions(args.exclude)
     exclusion_paths = [entry["path"] for entry in exclusions]
     errors, contract = validate_freeze_sources(args, repo, output)
+    checks = []
+    try:
+        checks = collect_checks(args.check, args.not_run)
+    except ContractFailure as exc:
+        errors.append(exc)
+    if contract:
+        try:
+            validate_required_inputs(contract, args, checks)
+        except ContractFailure as exc:
+            errors.append(exc)
     if errors:
         return error_payload(errors), 1
     if not args.contract_root:
@@ -1560,9 +1571,6 @@ def command_freeze(args):
             "contract_root_required",
             "Freeze requires --contract-root with an explicit --upstream resolution.",
         )
-    checks = collect_checks(args.check, args.not_run)
-    validate_required_inputs(contract, args, checks)
-
     if args.range_value:
         if repo is None:
             raise ContractFailure("repo_required", "--range requires --repo.")
@@ -1603,6 +1611,7 @@ def command_freeze(args):
         unresolved = [
             input_name
             for input_name in contract["required_inputs"]
+            if input_name != "requirements" or args.require_requirements
             if input_status.get(input_name) in {None, "not_assessed"}
         ]
         if unresolved:
@@ -1911,6 +1920,8 @@ def validate_manifest_input_consistency(manifest):
     for track in manifest["contract"]["tracks"]:
         for input_name in track["required_inputs"]:
             state = input_status[input_name]
+            if input_name == "requirements" and state == "not_assessed":
+                continue
             if input_name == "checks":
                 if state != "recorded" or not checks:
                     raise ContractFailure(
@@ -3689,6 +3700,7 @@ def build_parser():
     freeze.add_argument("--not-run", action="append", default=[])
     freeze.add_argument("--exclude", action="append", default=[])
     freeze.add_argument("--contract-root")
+    freeze.add_argument("--require-requirements", action="store_true")
     add_upstream_arguments(freeze)
     freeze.set_defaults(handler=command_freeze)
 

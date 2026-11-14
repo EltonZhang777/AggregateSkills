@@ -65,6 +65,10 @@ Preflight and freeze-source validation collect all independently detectable
 adapter metadata, upstream resolution, and supplied input-file failures into
 one blocked result; valid adapter metadata still contributes resolution
 checks, and diagnostics retain routing, dependency, and argument order.
+Freeze reports supplied requirement and standards file failures in argument
+order, then adapter and routing metadata errors in row order, upstream
+resolution errors in dependency order, check-argument errors, and finally
+required-input availability errors.
 
 Pin objects use `sha256` for the exact-byte digest, `size_bytes` for the exact
 byte count, and optional `normalized_sha256` for normalized text attestation.
@@ -88,13 +92,20 @@ The fixed input categories are:
 | --- | --- |
 | `patch` | Exact frozen patch bytes and SHA-256. |
 | `tree` | Frozen code tree snapshot at the reviewed revision. |
-| `requirements` | Pinned issue/spec/acceptance sources. |
+| `requirements` | Pinned issue/spec/acceptance sources when supplied; standalone absence is recorded as `not_assessed`. |
 | `standards` | Pinned repository rules and applicable decisions. |
 | `checks` | Observed check results, or `not_run` with a reason. |
 | `exclusions` | Every excluded path with a reason. |
 
 An adapter may require a subset of this registry. A new category needs an
 explicit contract change and version increment.
+
+`requirements` is the sole conditional category for a standalone freeze. If no
+requirement source is supplied, a standalone freeze records
+`requirements: not_assessed` and may proceed. `freeze --require-requirements`
+makes the category mandatory again; `/spec-implement-loop` uses it for final
+review, whose gate rejects a current root review whose requirements are missing
+or `not_assessed`.
 
 When `checks` is required, at least one check or `not_run` record is required.
 Observed results are `passed`, `failed`, or `not_assessed`. A `not_run` record
@@ -170,16 +181,18 @@ independent claim:
 - `tree` is `included` only when frozen tree sources exist; otherwise it is
   `not_assessed`.
 - `requirements` and `standards` are `included` only when matching input
-  snapshots exist; otherwise they are `not_assessed`.
+  snapshots exist; otherwise they are `not_assessed`. A standalone bundle may
+  retain `requirements: not_assessed`; a final-loop review may not pass with it.
 - `checks` is `recorded` only when at least one check or `not_run` record
   exists; otherwise it is `not_assessed`.
 - `exclusions` is always `recorded`, including an explicit empty exclusion
   list.
 
 Every routed adapter's `required_inputs` must resolve consistently with this
-mapping. An included category must have its frozen input, a tracked adapter
-cannot require `not_assessed` content, and a required `checks` category needs
-at least one record. Any mismatch makes the bundle invalid.
+mapping. An included category must have its frozen input, `requirements` is the
+only category a routed adapter may consume as `not_assessed` for a standalone
+review, and a required `checks` category needs at least one record. Any other
+mismatch makes the bundle invalid.
 
 An explicit patch also requires a separately supplied frozen tree. Every
 non-deleted changed path must exist in that tree, and the tree must match the

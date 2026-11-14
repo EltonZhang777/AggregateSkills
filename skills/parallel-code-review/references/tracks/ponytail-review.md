@@ -28,6 +28,10 @@ review against the same frozen bundle supplied to every routed track. Replace
 its moving patch or worktree target with the sealed patch and frozen tree; do
 not read a live ref or live workspace file as review input.
 
+When a standalone bundle records `requirements` as `not_assessed`, report that
+limited coverage and do not invent requirements or claim requirement
+compliance. A final-loop bundle never dispatches with missing requirements.
+
 Use the same frozen bundle without modifying it. Echo its manifest digest,
 patch attestation, included paths, requirements, standards, checks, exclusions,
 and checked source hashes in the common envelope. Do not freeze a second scope.

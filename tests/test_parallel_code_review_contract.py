@@ -1877,7 +1877,74 @@ class ParallelCodeReviewFreezeTests(unittest.TestCase):
         self.assertEqual("path_unsafe", result_json(completed)["errors"][0]["code"])
         self.assertFalse(bundle.exists())
 
-    def test_required_inputs_fail_before_bundle_creation(self):
+    def test_standalone_freeze_records_missing_requirements_as_not_assessed(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            bundle = Path(temp_dir) / "bundle"
+            completed = run_contract(
+                "freeze",
+                "--output",
+                bundle,
+                "--patch",
+                SKILL_ROOT / "references" / "acceptance-fixture.patch",
+                "--tree-root",
+                SKILL_ROOT / "references" / "acceptance-tree",
+                "--standards",
+                SKILL_ROOT / "references" / "acceptance-standard.md",
+                "--not-run",
+                "repository tests=Synthetic patch is review-only.",
+                *contract_args(),
+            )
+            verified = run_contract(
+                "verify",
+                "--bundle",
+                bundle,
+                "--patch",
+                SKILL_ROOT / "references" / "acceptance-fixture.patch",
+                *contract_args(),
+            )
+            manifest = (
+                json.loads((bundle / "manifest.json").read_text(encoding="utf-8"))
+                if (bundle / "manifest.json").is_file()
+                else None
+            )
+
+        self.assertEqual(0, completed.returncode, completed.stderr)
+        self.assertEqual("frozen", result_json(completed)["status"])
+        self.assertEqual(0, verified.returncode, verified.stderr)
+        self.assertEqual("current", result_json(verified)["status"])
+        self.assertIsNotNone(manifest)
+        self.assertEqual("not_assessed", manifest["input_status"]["requirements"])
+        self.assertFalse(
+            any(entry["role"] == "requirements" for entry in manifest["inputs"])
+        )
+
+    def test_final_loop_freeze_requires_pinned_requirements(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            bundle = Path(temp_dir) / "bundle"
+            completed = run_contract(
+                "freeze",
+                "--output",
+                bundle,
+                "--patch",
+                SKILL_ROOT / "references" / "acceptance-fixture.patch",
+                "--tree-root",
+                SKILL_ROOT / "references" / "acceptance-tree",
+                "--standards",
+                SKILL_ROOT / "references" / "acceptance-standard.md",
+                "--not-run",
+                "repository tests=Synthetic patch is review-only.",
+                "--require-requirements",
+                *contract_args(),
+            )
+
+        self.assertNotEqual(0, completed.returncode)
+        self.assertTrue(completed.stdout, completed.stderr)
+        result = result_json(completed)
+        self.assertEqual("manifest_input_missing", result["errors"][0]["code"])
+        self.assertIn("requirements", result["errors"][0]["message"])
+        self.assertFalse(bundle.exists())
+
+    def test_standalone_freeze_requires_standards_and_checks(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             bundle = Path(temp_dir) / "bundle"
             completed = run_contract(
@@ -1894,8 +1961,9 @@ class ParallelCodeReviewFreezeTests(unittest.TestCase):
         self.assertNotEqual(0, completed.returncode)
         result = result_json(completed)
         self.assertEqual("manifest_input_missing", result["errors"][0]["code"])
-        self.assertIn("requirements", result["errors"][0]["message"])
         self.assertIn("standards", result["errors"][0]["message"])
+        self.assertIn("checks", result["errors"][0]["message"])
+        self.assertNotIn("requirements", result["errors"][0]["message"])
         self.assertFalse(bundle.exists())
 
     def test_freeze_aggregates_adapter_upstream_and_all_input_file_failures(self):
@@ -1946,6 +2014,7 @@ class ParallelCodeReviewFreezeTests(unittest.TestCase):
                 "manifest_input_invalid",
                 "metadata_missing",
                 "upstream_unreadable",
+                "manifest_input_missing",
             ],
             [error["code"] for error in result["errors"]],
         )
@@ -1954,6 +2023,10 @@ class ParallelCodeReviewFreezeTests(unittest.TestCase):
         self.assertIn("unreadable-standards.md", result["errors"][2]["message"])
         self.assertIn("ponytail-review.md", result["errors"][3]["message"])
         self.assertIn("/code-review", result["errors"][4]["message"])
+        self.assertEqual(
+            "Required manifest inputs were not supplied: checks",
+            result["errors"][5]["message"],
+        )
         self.assertFalse(bundle_created)
 
     def test_freeze_requires_a_recorded_check_with_reason(self):

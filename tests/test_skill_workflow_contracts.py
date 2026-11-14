@@ -1724,6 +1724,18 @@ class SpecImplementLoopBehaviorTests(unittest.TestCase):
             self.assertIn(field, exception)
         self.assertIn("do not infer approval", exception)
 
+    def test_final_review_requires_pinned_requirements(self):
+        final_review = section(
+            skill("spec-implement-loop").lower().replace(chr(96), ""),
+            "## final review",
+        )
+
+        self.assertIn("--require-requirements", final_review)
+        self.assertIn("manifest.input_status.requirements", final_review)
+        self.assertIn("included", final_review)
+        self.assertIn("not_assessed", final_review)
+        self.assertIn("cannot pass", final_review)
+
     def test_partial_root_exception_record_is_append_only_and_blocks_status(self):
         text = skill("spec-implement-loop").lower().replace(chr(96), "")
         exception = section(section(text, "## final review"), "### partial root exception")

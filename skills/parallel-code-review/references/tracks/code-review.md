@@ -29,6 +29,10 @@ moving Git fixed point with the sealed patch and frozen tree; do not read a
 live ref or live workspace file as review input. Keep `/code-review`'s internal
 parallel sub-agents and aggregation.
 
+When a standalone bundle records `requirements` as `not_assessed`, report that
+limited coverage and do not invent requirements or claim requirement
+compliance. A final-loop bundle never dispatches with missing requirements.
+
 Return the Standards and Spec sections in their original order. Preserve every
 finding's native axis, ID, severity, and order in the common report envelope.
 Normalize each finding to P0/P1/P2 using the shared evidence rules without
