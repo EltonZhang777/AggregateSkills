@@ -2081,6 +2081,137 @@ class ParallelCodeReviewFreezeTests(unittest.TestCase):
         self.assertIn("requirements", result["errors"][0]["message"])
         self.assertFalse(bundle.exists())
 
+    def test_final_loop_freeze_rejects_empty_requirements(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            empty = write(temp_dir, "empty-requirements.md", "")
+            whitespace = write(
+                temp_dir,
+                "whitespace-requirements.md",
+                " \r\n\t\r\n",
+            )
+            cases = {
+                "zero byte": ([empty], "empty-requirements.md"),
+                "whitespace only": (
+                    [whitespace],
+                    "whitespace-requirements.md",
+                ),
+                "mixed with valid": (
+                    [
+                        SKILL_ROOT
+                        / "references"
+                        / "acceptance-requirements.md",
+                        empty,
+                    ],
+                    "empty-requirements.md",
+                ),
+            }
+            failed = {}
+            for label, (requirements, invalid_name) in cases.items():
+                bundle = Path(temp_dir) / f"bundle-{label.replace(' ', '-')}"
+                args = [
+                    "freeze",
+                    "--output",
+                    bundle,
+                    "--patch",
+                    SKILL_ROOT / "references" / "acceptance-fixture.patch",
+                    "--tree-root",
+                    SKILL_ROOT / "references" / "acceptance-tree",
+                    "--standards",
+                    SKILL_ROOT / "references" / "acceptance-standard.md",
+                    "--not-run",
+                    "repository tests=Synthetic patch is review-only.",
+                    "--require-requirements",
+                ]
+                for requirement in requirements:
+                    args.extend(("--requirements", requirement))
+                completed = run_contract(*args, *contract_args())
+                published = any(
+                    (bundle / name).exists()
+                    for name in ("manifest.json", "attestation.json")
+                )
+                failed[label] = (completed, invalid_name, published)
+
+            valid_bundle = Path(temp_dir) / "valid-bundle"
+            valid = run_contract(
+                "freeze",
+                "--output",
+                valid_bundle,
+                "--patch",
+                SKILL_ROOT / "references" / "acceptance-fixture.patch",
+                "--tree-root",
+                SKILL_ROOT / "references" / "acceptance-tree",
+                "--requirements",
+                SKILL_ROOT / "references" / "acceptance-requirements.md",
+                "--standards",
+                SKILL_ROOT / "references" / "acceptance-standard.md",
+                "--not-run",
+                "repository tests=Synthetic patch is review-only.",
+                "--require-requirements",
+                *contract_args(),
+            )
+
+        self.assertEqual(valid.returncode, 0, valid.stderr or valid.stdout)
+        self.assertEqual("frozen", result_json(valid)["status"])
+        for label, (completed, invalid_name, published) in failed.items():
+            with self.subTest(label):
+                self.assertNotEqual(0, completed.returncode)
+                result = result_json(completed)
+                self.assertEqual("blocked", result["status"])
+                self.assertEqual(
+                    "manifest_input_invalid",
+                    result["errors"][0]["code"],
+                )
+                self.assertIn(
+                    invalid_name,
+                    result["errors"][0]["message"],
+                )
+                self.assertFalse(published)
+
+    def test_final_loop_freeze_aggregates_supplied_input_failures(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            first = write(temp_dir, "first-empty.md", "")
+            second = write(temp_dir, "second-blank.md", " \r\n\t")
+            missing = Path(temp_dir) / "missing-standard.md"
+            bundle = Path(temp_dir) / "bundle"
+            completed = run_contract(
+                "freeze",
+                "--output",
+                bundle,
+                "--patch",
+                SKILL_ROOT / "references" / "acceptance-fixture.patch",
+                "--tree-root",
+                SKILL_ROOT / "references" / "acceptance-tree",
+                "--requirements",
+                first,
+                "--requirements",
+                second,
+                "--standards",
+                missing,
+                "--not-run",
+                "repository tests=Synthetic patch is review-only.",
+                "--require-requirements",
+                *contract_args(),
+            )
+            published = any(
+                (bundle / name).exists()
+                for name in ("manifest.json", "attestation.json")
+            )
+
+        self.assertNotEqual(0, completed.returncode)
+        errors = result_json(completed)["errors"]
+        self.assertEqual(
+            [
+                "manifest_input_invalid",
+                "manifest_input_invalid",
+                "manifest_input_missing",
+            ],
+            [error["code"] for error in errors],
+        )
+        self.assertIn("first-empty.md", errors[0]["message"])
+        self.assertIn("second-blank.md", errors[1]["message"])
+        self.assertIn("missing-standard.md", errors[2]["message"])
+        self.assertFalse(published)
+
     def test_standalone_freeze_requires_standards_and_checks(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             bundle = Path(temp_dir) / "bundle"

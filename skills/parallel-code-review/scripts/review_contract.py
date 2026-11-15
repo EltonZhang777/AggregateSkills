@@ -1138,7 +1138,7 @@ def inspect_patch_paths(patch):
     return sorted(changed), {safe_relative_path(path).as_posix() for path in deleted}
 
 
-def collect_inputs(paths, role, bundle):
+def collect_inputs(paths, role, bundle, require_nonempty=False):
     entries = []
     for index, value in enumerate(paths, start=1):
         path = Path(value).resolve()
@@ -1152,6 +1152,11 @@ def collect_inputs(paths, role, bundle):
                 "manifest_input_invalid",
                 f"{role} input is not UTF-8 text: {path}",
             ) from exc
+        if require_nonempty and not text.strip():
+            raise ContractFailure(
+                "manifest_input_invalid",
+                f"Required requirements input is empty or whitespace-only: {path}",
+            )
         normalized = text.replace("\r\n", "\n").replace("\r", "\n").encode("utf-8")
         snapshot_path = f"inputs/{role}/{index:03d}-{path.name}"
         write_bundle_file(bundle, snapshot_path, data)
@@ -1337,7 +1342,12 @@ def validate_freeze_sources(args, repo, output):
                     f"Tree root is not a regular directory: {args.tree_root}",
                 )
             )
-    for path in args.requirements + args.standards:
+    inputs = [
+        ("requirements", path) for path in args.requirements
+    ] + [
+        ("standards", path) for path in args.standards
+    ]
+    for role, path in inputs:
         supplied_source = Path(path)
         source = supplied_source.resolve()
         if supplied_source.is_symlink() or not source.is_file():
@@ -1349,7 +1359,7 @@ def validate_freeze_sources(args, repo, output):
             )
             continue
         try:
-            source.read_bytes().decode("utf-8")
+            text = source.read_bytes().decode("utf-8")
         except (OSError, UnicodeDecodeError):
             errors.append(
                 ContractFailure(
@@ -1357,6 +1367,19 @@ def validate_freeze_sources(args, repo, output):
                     f"Cannot read UTF-8 manifest input: {source}",
                 )
             )
+        else:
+            if (
+                role == "requirements"
+                and args.require_requirements
+                and not text.strip()
+            ):
+                errors.append(
+                    ContractFailure(
+                        "manifest_input_invalid",
+                        "Required requirements input is empty or "
+                        f"whitespace-only: {source}",
+                    )
+                )
     if args.contract_root:
         try:
             contract, contract_errors = collect_preflight(
@@ -1681,7 +1704,14 @@ def command_freeze(args):
     if not patch:
         raise ContractFailure("patch_empty", "The frozen scope produced an empty patch.")
     inputs = []
-    inputs.extend(collect_inputs(args.requirements, "requirements", output))
+    inputs.extend(
+        collect_inputs(
+            args.requirements,
+            "requirements",
+            output,
+            require_nonempty=args.require_requirements,
+        )
+    )
     inputs.extend(collect_inputs(args.standards, "standards", output))
     input_status = manifest_input_status(scope, inputs, checks)
     manifest = {

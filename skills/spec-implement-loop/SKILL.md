@@ -124,8 +124,9 @@ When no non-deferred ready ticket remains, resolve the recorded starting `HEAD` 
 
 Pass `--require-requirements` when freezing the final-review scope. After
 freezing, require `manifest.input_status.requirements` to be `included`; a
-current root review whose pinned requirements are missing or `not_assessed`
-cannot pass the final-review gate, partial mode, or the root exception.
+current root review whose pinned requirements are missing, empty,
+whitespace-only, or `not_assessed` cannot pass the final-review gate, partial
+mode, or the root exception.
 
 Before freezing, require `git merge-base <starting-oid> <final-oid>` to equal `<starting-oid>`. If the command fails or returns another object, block without re-basing or substituting a merge-base. After freezing, require `manifest.scope.base` and `manifest.scope.merge_base` to equal `<starting-oid>` and `manifest.scope.head` to equal `<final-oid>`; any mismatch blocks before dispatch.
 

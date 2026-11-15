@@ -99,8 +99,9 @@ PATH=REASON`.
 
 A standalone freeze may omit `--requirements`; the manifest records
 `requirements` as `not_assessed`. A `/spec-implement-loop` final-review freeze
-must pass `--require-requirements`; missing pinned requirements then block with
-`manifest_input_missing`.
+must pass `--require-requirements`; missing pinned requirements block with
+`manifest_input_missing`, and empty or whitespace-only pinned requirements
+block with `manifest_input_invalid`.
 
 The bundle contains the exact patch, the frozen code tree, pinned input snapshots, a canonical manifest, and a separate patch/manifest attestation. The manifest records the manifest digest source, included sources, checks, exclusions, routing/adapter/upstream pins, and the scope identity. For an explicit patch, every non-deleted changed path must exist in the supplied tree, and the tree must match the patch's exact post-image, or the freeze fails. Do not reconstruct inputs from live workspace reads after the freeze.
 

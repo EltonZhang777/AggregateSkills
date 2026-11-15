@@ -103,9 +103,10 @@ explicit contract change and version increment.
 `requirements` is the sole conditional category for a standalone freeze. If no
 requirement source is supplied, a standalone freeze records
 `requirements: not_assessed` and may proceed. `freeze --require-requirements`
-makes the category mandatory again; `/spec-implement-loop` uses it for final
-review, whose gate rejects a current root review whose requirements are missing
-or `not_assessed`.
+makes the category mandatory again and requires every supplied requirements
+snapshot to contain non-whitespace UTF-8 text. `/spec-implement-loop` uses it
+for final review, whose gate rejects a current root review whose requirements
+are missing, empty, whitespace-only, or `not_assessed`.
 
 When `checks` is required, at least one check or `not_run` record is required.
 Observed results are `passed`, `failed`, or `not_assessed`. A `not_run` record
