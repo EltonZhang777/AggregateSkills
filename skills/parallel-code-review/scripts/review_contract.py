@@ -2556,6 +2556,19 @@ def validate_coverage(coverage, manifest):
         raise ContractFailure("envelope_invalid", "coverage.checks must be a list.")
     for check in coverage["checks"]:
         validate_check_record(check)
+    expected_checks = [
+        {
+            "name": check["name"],
+            "result": check["result"],
+            "reason": check["reason"],
+        }
+        for check in manifest["checks"]
+    ]
+    if coverage["checks"] != expected_checks:
+        raise ContractFailure(
+            "coverage_check_mismatch",
+            "coverage.checks must exactly match the frozen manifest checks.",
+        )
 
 
 def validate_envelope(envelope, manifest, attestation):

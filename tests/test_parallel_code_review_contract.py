@@ -117,7 +117,7 @@ def toggle_line_endings(path):
     return True
 
 
-def freeze_acceptance_bundle(temp_dir):
+def freeze_acceptance_bundle(temp_dir, extra_args=()):
     bundle = Path(temp_dir) / "bundle"
     completed = run_contract(
         "freeze",
@@ -133,6 +133,7 @@ def freeze_acceptance_bundle(temp_dir):
         SKILL_ROOT / "references" / "acceptance-standard.md",
         "--not-run",
         "repository tests=Synthetic patch is review-only.",
+        *extra_args,
         *contract_args(),
     )
     return completed, bundle
@@ -219,7 +220,7 @@ def valid_code_review_envelope(attestation, checked_sha="e" * 64):
                 {
                     "name": "repository tests",
                     "result": "not_run",
-                    "reason": "The synthetic patch is review-only.",
+                    "reason": "Synthetic patch is review-only.",
                 }
             ],
         },
@@ -305,7 +306,7 @@ def valid_ponytail_review_envelope(attestation, checked_sha="e" * 64):
                 {
                     "name": "repository tests",
                     "result": "not_run",
-                    "reason": "The synthetic patch is review-only.",
+                    "reason": "Synthetic patch is review-only.",
                 }
             ],
         },
@@ -2939,6 +2940,91 @@ class ParallelCodeReviewEnvelopeTests(unittest.TestCase):
                     self.assertEqual("blocked", result_json(completed)["status"])
                     self.assertIn(
                         expected_code,
+                        [error["code"] for error in result_json(completed)["errors"]],
+                    )
+
+    def test_envelope_requires_exact_frozen_check_records(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            frozen, bundle = freeze_acceptance_bundle(
+                temp_dir,
+                ("--check", "unit tests=failed"),
+            )
+            self.assertEqual(frozen.returncode, 0, frozen.stderr or frozen.stdout)
+            manifest = json.loads((bundle / "manifest.json").read_text(encoding="utf-8"))
+            checked_sha = manifest["scope"]["tree_sources"][0]["sha256"]
+            attestation = json.loads((bundle / "attestation.json").read_text(encoding="utf-8"))
+            baseline = valid_code_review_envelope(attestation, checked_sha)
+            baseline["coverage"]["checks"] = [
+                {
+                    "name": check["name"],
+                    "result": check["result"],
+                    "reason": check["reason"],
+                }
+                for check in manifest["checks"]
+            ]
+            self.assertEqual("unit tests", baseline["coverage"]["checks"][0]["name"])
+
+            valid_path = write(temp_dir, "matching-checks.json", json.dumps(baseline))
+            valid = run_contract(
+                "validate-envelope",
+                "--bundle",
+                bundle,
+                "--envelope",
+                valid_path,
+                *contract_args(),
+            )
+            self.assertEqual(valid.returncode, 0, valid.stderr or valid.stdout)
+
+            cases = {}
+            bad = copy.deepcopy(baseline)
+            bad["coverage"]["checks"] = []
+            cases["empty checks"] = bad
+
+            bad = copy.deepcopy(baseline)
+            bad["coverage"]["checks"].pop(0)
+            cases["omitted failed check"] = bad
+
+            bad = copy.deepcopy(baseline)
+            bad["coverage"]["checks"].append(
+                {"name": "extra check", "result": "passed", "reason": ""}
+            )
+            cases["extra check"] = bad
+
+            bad = copy.deepcopy(baseline)
+            bad["coverage"]["checks"][0]["result"] = "passed"
+            cases["altered result"] = bad
+
+            bad = copy.deepcopy(baseline)
+            bad["coverage"]["checks"][0]["reason"] = "A different reason."
+            cases["altered reason"] = bad
+
+            bad = copy.deepcopy(baseline)
+            bad["coverage"]["checks"].append(copy.deepcopy(bad["coverage"]["checks"][0]))
+            cases["duplicate check"] = bad
+
+            bad = copy.deepcopy(baseline)
+            bad["coverage"]["checks"].reverse()
+            cases["reordered checks"] = bad
+
+            for label, payload in cases.items():
+                with self.subTest(label):
+                    envelope_path = write(
+                        temp_dir,
+                        f"checks-{label.replace(' ', '-')}.json",
+                        json.dumps(payload),
+                    )
+                    completed = run_contract(
+                        "validate-envelope",
+                        "--bundle",
+                        bundle,
+                        "--envelope",
+                        envelope_path,
+                        *contract_args(),
+                    )
+                    self.assertNotEqual(0, completed.returncode)
+                    self.assertEqual("blocked", result_json(completed)["status"])
+                    self.assertIn(
+                        "coverage_check_mismatch",
                         [error["code"] for error in result_json(completed)["errors"]],
                     )
 

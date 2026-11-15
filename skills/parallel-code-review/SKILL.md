@@ -152,7 +152,7 @@ python scripts/review_contract.py validate-envelope --bundle <bundle> --envelope
   --upstream /ponytail-review=<resolved source>
 ```
 
-The coordinator validates the schema, routed track ID, contract version, and attestation. It must validate but do not reclassify or reorder findings, change native severity or grouping, merge findings, or choose a cross-track winner. A malformed, truncated, blank, stale, or attestation-mismatched report blocks the run.
+The coordinator validates the schema, routed track ID, contract version, and attestation. Each envelope's `coverage.checks` must echo the frozen manifest checks exactly by name, result, reason, and order. It must validate but do not reclassify or reorder findings, change native severity or grouping, merge findings, or choose a cross-track winner. A malformed, truncated, blank, stale, or attestation-mismatched report blocks the run.
 
 Checked source hashes must match the frozen manifest. Every finding location
 must exist in the frozen tree at a valid line, and every citation must match

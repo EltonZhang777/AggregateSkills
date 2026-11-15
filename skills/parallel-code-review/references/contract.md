@@ -248,7 +248,12 @@ hash must match the frozen tree. Finding locations must resolve to a valid line
 in the frozen tree, and each citation must match a frozen tree or pinned input
 path, line, and exact quoted text. Repository-relative citation paths resolve
 against the frozen bundle; callers do not need absolute host paths. A check
-whose result is `not_run` must carry a non-empty reason.
+whose result is `not_run` must carry a non-empty reason. After each record
+passes shape validation, the envelope's `coverage.checks` must exactly match
+the manifest checks by `name`, `result`, and `reason`, in manifest order. A
+schema-valid list that differs fails with `coverage_check_mismatch`, including
+when the difference is an empty list, omitted record, extra record, altered
+value, duplicated record, or reordered record.
 
 Each finding has:
 
