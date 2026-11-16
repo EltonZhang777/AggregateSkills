@@ -31,7 +31,7 @@ def section(text, heading):
 class SkillPrerequisiteInvocationTests(unittest.TestCase):
     def test_all_entrypoints_put_the_bounded_invocation_rule_first(self):
         entrypoints = sorted((ROOT / "skills").glob("*/SKILL.md"))
-        self.assertEqual(11, len(entrypoints))
+        self.assertEqual(13, len(entrypoints))
 
         for path in entrypoints:
             with self.subTest(skill=path.parent.name):
@@ -64,13 +64,23 @@ class SkillPrerequisiteInvocationTests(unittest.TestCase):
         self.assertIn("does not invoke selected workflows", text)
 
     def test_user_only_workflows_keep_invocation_metadata(self):
-        for name in ("requirements-to-spec-tickets", "spec-implement-loop"):
+        for name in (
+            "extra-setup-matt-pocock-skills",
+            "requirements-to-spec-tickets",
+            "spec-implement-loop",
+        ):
             with self.subTest(skill=name):
                 frontmatter = skill(name).split("---", 2)[1]
                 self.assertIn("disable-model-invocation: true", frontmatter)
 
     def test_implicit_discovery_remains_disabled_where_configured(self):
-        for name in ("requirements-to-spec-tickets", "review-duo", "skill-scout", "spec-implement-loop"):
+        for name in (
+            "extra-setup-matt-pocock-skills",
+            "requirements-to-spec-tickets",
+            "review-duo",
+            "skill-scout",
+            "spec-implement-loop",
+        ):
             with self.subTest(skill=name):
                 policy = (ROOT / "skills" / name / "agents" / "openai.yaml").read_text(encoding="utf-8")
                 self.assertIn("allow_implicit_invocation: false", policy)

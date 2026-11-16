@@ -24,6 +24,7 @@ After installation, follow your coding agent's skill workflow to activate a skil
 
 - [compress-docs](skills/compress-docs/SKILL.md) compresses approved documents into candidates and applies them through version-conditional storage backends.
 - [conventional-git-messages](skills/conventional-git-messages/SKILL.md) drafts concise commit, pull request, and issue text without performing Git or GitHub operations.
+- [extra-setup-matt-pocock-skills](skills/extra-setup-matt-pocock-skills/SKILL.md) extends an existing repository setup with portable checkout, issue, handoff, and closure rules.
 - [grill-duo](skills/grill-duo/SKILL.md) coordinates an independent reviewer during a multi-round grilling session.
 - [grill-duo-with-docs](skills/grill-duo-with-docs/SKILL.md) records confirmed project terms and decisions during two-agent grilling.
 - [parallel-code-review](skills/parallel-code-review/SKILL.md) freezes one review scope, validates its routing contract, and runs `/code-review` and `/ponytail-review` as independent routed tracks.
