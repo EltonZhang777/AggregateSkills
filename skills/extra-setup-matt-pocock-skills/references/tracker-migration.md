@@ -96,5 +96,5 @@ GitHub shares one number space across issues and PRs, so a bare `#42` may be eit
 Replace the Wayfinding frontier bullet with:
 
 ```Markdown
-- **Frontier query**: use `gh issue list --state open --limit <bound> --json number,title,state,labels,assignees,updatedAt,url`, scoped to the map's sub-issues or task list. Drop any child with an assignee. For each remaining child, read only `gh issue view <number> --json number,state,blockedBy`; drop any open `blockedBy` entry or open issue in a `Blocked by` fallback line. First in map order wins.
+- **Frontier query**: use `gh issue list --state open --limit <bound> --json number,title,state,labels,assignees,updatedAt,url`, scoped to the map's sub-issues or task list. Drop any child with an assignee. For each remaining child, read only `gh issue view <number> --json number,state,blockedBy`; drop any open `blockedBy` entry. When native dependencies are unavailable, make a focused `gh issue view <number> --json body` escalation for that candidate and read only its top `Blocked by:` line to find referenced issues; resolve each one through its summary read and drop any open issue referenced there. First in map order wins.
 ```

@@ -116,10 +116,13 @@ the issue summary and neither path requests a body or comments. Exercise an
 external-PR list and a Wayfinding frontier query. Confirm each list uses
 `--limit <bound>` (or explicit pagination), the external-PR list requests the
 shared summary fields plus `authorAssociation` without bodies or comments, and
-the frontier reads only `number,state,blockedBy` for each candidate. Pass the
-valid commands and each unsafe full-body, unbounded-list, and fixed-length
-negative fixture through the contract validator; confirm every unsafe fixture
-fails even when valid commands are present.
+the frontier reads only `number,state,blockedBy` for each candidate first. When
+native dependencies are unavailable, confirm the focused body escalation reads
+only the top `Blocked by:` line and an open issue referenced by the fallback
+removes that candidate. Pass the valid commands and each unsafe full-body,
+unbounded-list, and fixed-length negative fixture through the contract
+validator; confirm every unsafe fixture fails even when valid commands are
+present.
 
 Review the optional navigation-only cache template separately. Opt in once and
 confirm it remains non-authoritative for writes, assignment, labels, closure,

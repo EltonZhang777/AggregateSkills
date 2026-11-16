@@ -39,17 +39,19 @@ REVIEWED_TRACKER_REPLACEMENTS = (
     "- **Read a PR**: use summary-only `gh pr view <number>` from [Issue operations](#issue-operations); request a full body, comments, or `gh pr diff <number>` only for a named triage need.",
     "- **List external PRs for triage**: use `gh pr list --state open --limit <bound> --json number,title,state,labels,assignees,updatedAt,url,authorAssociation`, keep only `authorAssociation` values `CONTRIBUTOR`, `FIRST_TIME_CONTRIBUTOR`, or `NONE`, and paginate or narrow the query when the bound is reached.",
     "GitHub shares one number space across issues and PRs, so a bare `#42` may be either: resolve it with summary-only `gh pr view <number>` and fall back to summary-only `gh issue view <number>` from [Issue operations](#issue-operations). Request the full body or comments only after this summary identifies the routing need.",
-    "- **Frontier query**: use `gh issue list --state open --limit <bound> --json number,title,state,labels,assignees,updatedAt,url`, scoped to the map's sub-issues or task list. Drop any child with an assignee. For each remaining child, read only `gh issue view <number> --json number,state,blockedBy`; drop any open `blockedBy` entry or open issue in a `Blocked by` fallback line. First in map order wins.",
+    "- **Frontier query**: use `gh issue list --state open --limit <bound> --json number,title,state,labels,assignees,updatedAt,url`, scoped to the map's sub-issues or task list. Drop any child with an assignee. For each remaining child, read only `gh issue view <number> --json number,state,blockedBy`; drop any open `blockedBy` entry. When native dependencies are unavailable, make a focused `gh issue view <number> --json body` escalation for that candidate and read only its top `Blocked by:` line to find referenced issues; resolve each one through its summary read and drop any open issue referenced there. First in map order wins.",
 )
 MIGRATED_TRACKER_POINTERS = REVIEWED_TRACKER_REPLACEMENTS[:2]
 TRACKER_SUMMARY_FIELDS = "number,title,state,labels,assignees,updatedAt,url"
 PR_TRIAGE_FIELDS = f"{TRACKER_SUMMARY_FIELDS},authorAssociation"
+FOCUSED_BODY_READ_COMMAND = "gh issue view <number> --json body"
 SAFE_TRACKER_READ_COMMANDS = (
     f"gh issue view <number> --json {TRACKER_SUMMARY_FIELDS}",
     f"gh issue list --state open --limit <bound> --json {TRACKER_SUMMARY_FIELDS}",
     f"gh pr view <number> --json {TRACKER_SUMMARY_FIELDS}",
     f"gh pr list --state open --limit <bound> --json {PR_TRIAGE_FIELDS}",
     "gh issue view <number> --json number,state,blockedBy",
+    FOCUSED_BODY_READ_COMMAND,
 )
 FIXED_OBJECT_ID_PATTERNS = (
     r"\bfixed-length object ID\b",
@@ -280,7 +282,7 @@ class ExtraSetupDeploymentTests(unittest.TestCase):
             outside_managed_digest(ROOT / "GLOSSARY.md", "glossary"),
         )
         self.assertEqual(
-            "276c9c96283381316494a0650b8626a35659f39a87ed610f89b4c245943797eb",
+            "392b7393ba4dba625ad87e8b0257060ee0a0cd1d3d367e94a96a07954d592aa4",
             outside_managed_digest(
                 ROOT / "docs" / "agents" / "issue-tracker.md",
                 "issue-operations",
@@ -768,6 +770,34 @@ class ExtraSetupContractTests(unittest.TestCase):
             with self.subTest(invalid=invalid):
                 self.assertTrue(tracker_contract_errors(valid + "\n" + invalid))
 
+    def test_wayfinding_fallback_uses_focused_body_escalation(self):
+        tracker = read(ROOT / "docs" / "agents" / "issue-tracker.md")
+        migration = read(REFERENCE_DIR / "tracker-migration.md")
+
+        for text in (tracker, migration):
+            with self.subTest(destination=text[:40]):
+                self.assertIn("When native dependencies are unavailable", text)
+                self.assertIn(
+                    f"focused `{FOCUSED_BODY_READ_COMMAND}` escalation", text
+                )
+                self.assertIn("read only its top `Blocked by:` line", text)
+                self.assertIn("drop any open issue referenced there", text)
+
+        valid = "\n".join(
+            (
+                f"gh issue list --state open --limit <bound> --json {TRACKER_SUMMARY_FIELDS}",
+                "gh issue view <number> --json number,state,blockedBy",
+                FOCUSED_BODY_READ_COMMAND,
+            )
+        )
+        self.assertEqual([], tracker_contract_errors(valid))
+        for invalid in (
+            "gh issue list --state open --json number,title,state",
+            "gh issue view <number> --json number,title,body",
+        ):
+            with self.subTest(invalid=invalid):
+                self.assertTrue(tracker_contract_errors(valid + "\n" + invalid))
+
     def test_portable_defaults_reject_unsafe_universal_requirements(self):
         text = "\n".join(
             read(path)
@@ -877,6 +907,8 @@ class ExtraSetupManualAcceptanceTests(unittest.TestCase):
             "ambiguous",
             "bare issue-or-PR number",
             "Wayfinding frontier query",
+            "focused body escalation",
+            "open issue referenced by the fallback",
             "PR detail and triage commands",
             "authorAssociation",
             "through the contract validator",
