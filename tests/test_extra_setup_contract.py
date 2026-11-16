@@ -19,8 +19,9 @@ MARKER = re.compile(
 MARKER_TOKEN = re.compile(
     r"<!-- extra-setup-matt-pocock-skills:(?P<section>[\w-]+):(?P<edge>start|end) -->"
 )
-MARKER_COMMENT = re.compile(
-    r"<!-- extra-setup-matt-pocock-skills:.*?-->",
+HTML_COMMENT = re.compile(r"<!--.*?(?:-->|\Z)", re.DOTALL)
+MANAGED_COMMENT = re.compile(
+    r"\A<!--\s*extra-setup-matt-pocock-skills:",
     re.DOTALL,
 )
 LEGACY_TRACKER_DEFAULTS = (
@@ -115,7 +116,9 @@ def is_english_prose(text):
 def marker_error(text):
     stack = []
     seen = set()
-    for comment in MARKER_COMMENT.finditer(text):
+    for comment in HTML_COMMENT.finditer(text):
+        if MANAGED_COMMENT.match(comment.group()) is None:
+            continue
         match = MARKER_TOKEN.fullmatch(comment.group())
         if match is None:
             return "malformed marker"
@@ -524,8 +527,47 @@ class ExtraSetupWorkflowTests(unittest.TestCase):
             read(SKILL_DIR / "SKILL.md"),
             read(REFERENCE_DIR / "tracker-migration.md"),
         ):
-            self.assertIn("complete HTML comments across line breaks", text)
+            text = " ".join(text.split())
+            self.assertIn("complete and unterminated HTML comments", text)
             self.assertIn("exact one-line marker grammar", text)
+
+    def test_managed_comment_discovery_rejects_hidden_malformed_markers(self):
+        malformed_comments = (
+            "<!--\nextra-setup-matt-pocock-skills:issue-operations:start -->",
+            "<!--  extra-setup-matt-pocock-skills:issue-operations:start -->",
+            "<!-- extra-setup-matt-pocock-skills:issue-operations:start",
+            "<!-- extra-setup-matt-pocock-skills:issue-operations:start extra -->",
+        )
+        for malformed in malformed_comments:
+            with self.subTest(malformed=malformed):
+                self.assertEqual("malformed marker", marker_error(malformed))
+                self.assertEqual(
+                    "ambiguous",
+                    tracker_migration_state(
+                        "\n".join((*LEGACY_TRACKER_DEFAULTS, malformed))
+                    ),
+                )
+
+        for text in (
+            read(SKILL_DIR / "SKILL.md"),
+            read(REFERENCE_DIR / "tracker-migration.md"),
+        ):
+            text = " ".join(text.split())
+            self.assertIn("complete and unterminated HTML comments", text)
+            self.assertIn(
+                "after the opening delimiter and before the namespace", text
+            )
+        self.assertIn(
+            "newline after the opening delimiter, extra whitespace before the namespace, and a missing closing delimiter",
+            " ".join(
+                read(
+                    ROOT
+                    / "tests"
+                    / "manual"
+                    / "extra-setup-matt-pocock-skills.md"
+                ).split()
+            ),
+        )
 
     def test_summary_disabled_leaves_legacy_reads_and_write_text_absent(self):
         workflow = read(SKILL_DIR / "SKILL.md")
