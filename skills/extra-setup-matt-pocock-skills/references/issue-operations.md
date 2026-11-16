@@ -40,9 +40,14 @@ Record closure evidence with:
 - remaining scope;
 - follow-up links where applicable.
 
-If a merged change is part of the claim, also record the final merged object ID. A later object or content change makes the evidence stale. Missing, stale, or incomplete required evidence is `PARTIAL`; `PASS` requires all required current evidence for the named change.
+If a merged change is part of the claim, also record the final merged object ID. A later object or content change makes the evidence stale. Re-run verification from the new exact full HEAD; in a Git-backed repository, that is the 40-character commit object ID. If the evidence cannot be refreshed, `PARTIAL` is allowed only when:
 
-`PARTIAL` keeps the issue open by default. Close it only with separate explicit approval that records delivered scope, remaining scope, and either existing follow-up coverage or explicitly accepted risk. Never close automatically.
+- all original ticket deliverables are complete, but some required verification evidence is missing; or
+- remaining scope has a clearly linked follow-up issue.
+
+Otherwise, keep the issue open. `PASS` requires all required current evidence for the named change.
+
+`PARTIAL` keeps the issue open by default. Close it only with separate explicit approval that records delivered scope, remaining scope, and either current evidence or linked follow-up coverage. Unlinked accepted risk does not authorize closure. Never close automatically.
 
 `runtime: N/A` is valid only when the change has no application or product runtime surface and the record cites at least one non-runtime evidence source. It does not waive automated tests, static checks, or manual acceptance for executable or agent-workflow behavior.
 <!-- extra-setup-matt-pocock-skills:issue-operations:end -->

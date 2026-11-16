@@ -112,10 +112,13 @@ consumption state is stored separately and secrets are never recorded.
 
 Record a passing result for an exact repository-native full object ID and tested
 tree state, then change the object or content and confirm the old evidence
-becomes stale. Remove one required evidence item and confirm the result is
-`PARTIAL`, not `PASS`. Confirm PARTIAL keeps the issue open without a separate,
-explicit closure approval; when that approval is supplied, require delivered
-scope, remaining scope, and follow-up coverage or accepted risk.
+becomes stale. Remove one required evidence item after all original ticket
+deliverables are complete, and confirm the result is `PARTIAL`, not `PASS`.
+Repeat with remaining scope that has a clearly linked follow-up issue. Confirm
+PARTIAL keeps the issue open without separate, explicit closure approval; when
+that approval is supplied, require delivered scope, remaining scope, and
+current or linked follow-up coverage. Confirm unlinked accepted risk does not
+authorize closure.
 
 Exercise `runtime: N/A` once for a text-only change with non-runtime evidence
 and once for an executable or agent-workflow change. Confirm the second case

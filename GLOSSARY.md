@@ -103,5 +103,5 @@ A record with `source`, `action`, `normalized_target`, `lifetime`, and `invalida
 The repository tree state covered by a verification result, recorded with the repository-native full object ID that produced it. See [Closure evidence](docs/agents/issue-tracker.md#closure-evidence).
 
 **PARTIAL closure evidence**:
-Closure evidence whose required coverage is missing, stale, or incomplete; it keeps the issue open unless separate approval records remaining scope and follow-up coverage or accepted risk. See [Closure evidence](docs/agents/issue-tracker.md#closure-evidence).
+Closure evidence allowed only when all original ticket deliverables are complete but required verification evidence is missing, or when remaining scope has a clearly linked follow-up issue. It keeps the issue open unless separate approval records remaining scope and current or linked follow-up coverage. See [Closure evidence](docs/agents/issue-tracker.md#closure-evidence).
 <!-- extra-setup-matt-pocock-skills:glossary:end -->

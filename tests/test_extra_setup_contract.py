@@ -335,16 +335,22 @@ class ExtraSetupContractTests(unittest.TestCase):
             "follow-up links",
             "final merged object ID",
             "makes the evidence stale",
+            "exact full HEAD",
+            "`PARTIAL` is allowed only when",
+            "all original ticket deliverables are complete",
+            "some required verification evidence is missing",
+            "remaining scope has a clearly linked follow-up issue",
             "`PARTIAL`",
             "`PASS`",
             "keeps the issue open by default",
             "separate explicit approval",
-            "explicitly accepted risk",
+            "Unlinked accepted risk does not authorize closure",
             "Never close automatically",
             "`runtime: N/A`",
             "does not waive automated tests, static checks, or manual acceptance",
         ):
             self.assertIn(evidence_field, text)
+        self.assertNotIn("explicitly accepted risk", text)
 
     def test_checkout_and_handoff_approval_contract(self):
         text = read(REFERENCE_DIR / "root-session-checkout-handoff.md")
@@ -402,12 +408,15 @@ class ExtraSetupContractTests(unittest.TestCase):
             r"\brequires? GitHub\b",
             r"\bpersistent issue cache is required\b",
             r"\bruntime smoke is required\b",
-            r"\b40[- ]character\b",
             r"\bfixed-length object ID\b",
         )
         for pattern in forbidden:
             with self.subTest(pattern=pattern):
                 self.assertIsNone(re.search(pattern, text, re.IGNORECASE))
+        self.assertIn(
+            "in a Git-backed repository, that is the 40-character commit object ID",
+            text,
+        )
 
     def test_new_project_text_is_english(self):
         paths = [
