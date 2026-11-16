@@ -97,7 +97,7 @@ A fresh direct read of tracker state used for requirements, writes, or closure d
 An optional, non-authoritative index that may speed discovery but cannot supply issue state for writes, assignment, labels, closure, or verification. See [Issue operations](docs/agents/issue-tracker.md#issue-operations).
 
 **Handoff approval record**:
-A record with `approval_id`, `source`, `action`, `target`, `scope`, `lifetime`, and `invalidators`, matched exactly against the proposed action. See [Handoff approval records](AGENTS.md#handoff-approval-records).
+A record with `source`, `action`, `normalized_target`, `lifetime`, and `invalidators`, using `one-time` or `task` and matched exactly against the proposed action. See [Handoff approval records](AGENTS.md#handoff-approval-records).
 
 **Tested tree state**:
 The repository tree state covered by a verification result, recorded with the repository-native full object ID that produced it. See [Closure evidence](docs/agents/issue-tracker.md#closure-evidence).

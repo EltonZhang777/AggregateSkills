@@ -101,11 +101,13 @@ section is deployed.
 
 ## Approval consumption and closure evidence
 
-Exercise a `one-use` approval with a pre-execution sandbox or technical denial
+Exercise a `one-time` approval with a pre-execution sandbox or technical denial
 and confirm the approval is not consumed. Repeat with an uncertain outcome that
 may have reached the external system and confirm it is consumed. Exercise a
-`current-group` approval and confirm it ends at group completion, withdrawal,
-or an invalidator and does not become thread-wide authority. Confirm
+`task` approval and confirm it ends at task completion, withdrawal, or an
+invalidator and does not become thread-wide authority. Confirm a handoff uses
+`source`, `action`, `normalized_target`, `lifetime`, and `invalidators` without
+renamed required fields. Confirm
 consumption state is stored separately and secrets are never recorded.
 
 Record a passing result for an exact repository-native full object ID and tested

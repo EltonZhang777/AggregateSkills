@@ -354,26 +354,31 @@ class ExtraSetupContractTests(unittest.TestCase):
             "working-tree status",
             "before the first local mutation or branch creation",
             "only when a handoff supplies expected values",
-            "Do not invent expected values or require a worktree",
+            "Do not require a worktree unless the target repository or a valid handoff explicitly selects one",
+            "A selected worktree is the authoritative execution location",
+            "When the repository identifies a shared checkout as integration-only",
             "Never stash, clean, reset, checkout over, or otherwise overwrite another session's work",
-            "`approval_id`",
             "`source`",
             "`action`",
-            "`target`",
-            "`scope`",
+            "`normalized_target`",
             "`lifetime`",
             "`invalidators`",
-            "`one-use`",
-            "`current-group`",
-            "pre-execution sandbox or technical denial does not consume it",
-            "may have reached the external system, consumes it",
-            "stable group identifier",
+            "`one-time` or `task`",
+            "A `task` lifetime lasts only while that task is open",
             "Store consumption state separately",
-            "consumption or concurrent ownership cannot be established",
             "Technical failure or denial never becomes consent",
             "Never record secrets",
         ):
             self.assertIn(detail, text)
+        for old_required_field in (
+            "| `approval_id` |",
+            "| `target` |",
+            "| `scope` |",
+            "`one-use`",
+            "`current-group`",
+        ):
+            with self.subTest(old_required_field=old_required_field):
+                self.assertNotIn(old_required_field, text)
 
     def test_optional_cache_is_opt_in_navigation_only_and_not_deployed(self):
         template = read(REFERENCE_DIR / "navigation-only-cache.md")
