@@ -45,13 +45,13 @@ MIGRATED_TRACKER_POINTERS = REVIEWED_TRACKER_REPLACEMENTS[:2]
 TRACKER_SUMMARY_FIELDS = "number,title,state,labels,assignees,updatedAt,url"
 PR_TRIAGE_FIELDS = f"{TRACKER_SUMMARY_FIELDS},authorAssociation"
 FOCUSED_BODY_READ_COMMAND = "gh issue view <number> --json body"
+FOCUSED_BODY_READ_CONTEXT = "When native dependencies are unavailable:"
 SAFE_TRACKER_READ_COMMANDS = (
     f"gh issue view <number> --json {TRACKER_SUMMARY_FIELDS}",
     f"gh issue list --state open --limit <bound> --json {TRACKER_SUMMARY_FIELDS}",
     f"gh pr view <number> --json {TRACKER_SUMMARY_FIELDS}",
     f"gh pr list --state open --limit <bound> --json {PR_TRIAGE_FIELDS}",
     "gh issue view <number> --json number,state,blockedBy",
-    FOCUSED_BODY_READ_COMMAND,
 )
 FIXED_OBJECT_ID_PATTERNS = (
     r"\bfixed-length object ID\b",
@@ -65,8 +65,18 @@ def read(path):
 
 def tracker_contract_errors(text):
     errors = []
+    focused_body_allowed = False
     for line in text.splitlines():
         command = line.strip()
+        if not command:
+            continue
+        if command == FOCUSED_BODY_READ_CONTEXT:
+            focused_body_allowed = True
+            continue
+        if command == FOCUSED_BODY_READ_COMMAND and focused_body_allowed:
+            focused_body_allowed = False
+            continue
+        focused_body_allowed = False
         if command.startswith("gh ") and command not in SAFE_TRACKER_READ_COMMANDS:
             errors.append(f"unsafe tracker read command: {command}")
     for pattern in FIXED_OBJECT_ID_PATTERNS:
@@ -787,6 +797,7 @@ class ExtraSetupContractTests(unittest.TestCase):
             (
                 f"gh issue list --state open --limit <bound> --json {TRACKER_SUMMARY_FIELDS}",
                 "gh issue view <number> --json number,state,blockedBy",
+                FOCUSED_BODY_READ_CONTEXT,
                 FOCUSED_BODY_READ_COMMAND,
             )
         )
@@ -797,6 +808,20 @@ class ExtraSetupContractTests(unittest.TestCase):
         ):
             with self.subTest(invalid=invalid):
                 self.assertTrue(tracker_contract_errors(valid + "\n" + invalid))
+
+        self.assertTrue(tracker_contract_errors(FOCUSED_BODY_READ_COMMAND))
+        self.assertEqual(
+            [],
+            tracker_contract_errors(
+                valid.replace(
+                    f"{FOCUSED_BODY_READ_CONTEXT}\n{FOCUSED_BODY_READ_COMMAND}",
+                    f"{FOCUSED_BODY_READ_CONTEXT}\n\n{FOCUSED_BODY_READ_COMMAND}",
+                )
+            ),
+        )
+        self.assertTrue(
+            tracker_contract_errors(valid + "\n" + FOCUSED_BODY_READ_COMMAND)
+        )
 
     def test_portable_defaults_reject_unsafe_universal_requirements(self):
         text = "\n".join(
