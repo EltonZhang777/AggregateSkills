@@ -24,6 +24,12 @@ An outer independent review path, such as `/code-review` or
 one or more review axes.
 _Avoid_: using "track" for an individual Standards or Spec axis.
 
+**Partial root exception**:
+A separately approved exception that lets a root proceed to status
+synchronization after a one-track partial review, without changing that review
+into a complete review.
+_Avoid_: treating partial-mode approval as root completion.
+
 **Finding**:
 一项有具体证据和实际影响支撑的评审问题，并保留其所属审阅轴。
 _Avoid_: 观点、偏好

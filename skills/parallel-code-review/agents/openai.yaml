@@ -1,0 +1,5 @@
+interface:
+  display_name: "Parallel Code Review"
+  short_description: "Run routed independent review tracks over one frozen scope"
+policy:
+  allow_implicit_invocation: true
