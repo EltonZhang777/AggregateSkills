@@ -101,6 +101,12 @@ Confirm summary reads request `number`, `title`, `state`, `labels`,
 named need. Exercise a write with an ambiguous outcome and confirm the workflow
 re-reads authoritative state before any retry.
 
+Resolve a bare issue-or-PR number once. Confirm the PR summary is tried before
+the issue summary and neither path requests a body or comments. Exercise an
+external-PR list and a Wayfinding frontier query. Confirm each list uses
+`--limit <bound>` (or explicit pagination) and the frontier reads only
+`number,state,blockedBy` for each candidate.
+
 Review the optional navigation-only cache template separately. Opt in once and
 confirm it remains non-authoritative for writes, assignment, labels, closure,
 and verification. In the default run, confirm no navigation-cache managed
@@ -146,4 +152,4 @@ Repeat in repositories with and without Git, with a non-GitHub tracker, with a
 shared checkout and without worktrees. Confirm the deployed rules use only the
 detected surfaces and do not require PowerShell, Git, GitHub, a worktree, or
 runtime smoke. Confirm object identifiers retain the repository-native form and
-length.
+length and that no fixed numeric object-ID length is required.
