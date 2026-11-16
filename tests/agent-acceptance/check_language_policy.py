@@ -19,19 +19,26 @@ CHINESE_MARKERS = (
 JAPANESE_HAN_MARKERS = ("対応", "実施", "確認", "変更", "対象", "現在", "開始", "停止", "仕様", "読込")
 ENGLISH_MARKERS = {
     "an", "and", "after", "ask", "are", "before", "body", "by", "candidate", "complete", "completed",
-    "criteria", "documentation", "draft", "english", "existing", "for", "from", "guide", "guidance", "has",
+    "approval", "closure", "criteria", "documentation", "draft", "english", "evidence", "existing", "for", "from", "guide", "guidance", "handoff", "has",
     "have", "if", "in", "including", "is", "issue", "it", "labels", "language", "map", "new", "not", "of",
     "on", "or", "policy", "preserve", "project", "pull", "ready", "reject", "rejects", "repository", "request",
-    "root", "rule", "saving", "sentences", "service", "shortened", "status", "stores", "summary", "suspended",
+    "records", "root", "rule", "saving", "see", "sentences", "service", "shortened", "status", "stores", "summary", "suspended",
     "target", "text", "the", "this", "ticket", "to", "untouched", "user-visible", "verbatim", "when", "which",
     "with", "work", "write", "written", "while", "therefore", "thus", "consequently", "hence", "so", "were",
     "preserving", "original", "meaning", "files", "changed",
 }
-ENGLISH_FUNCTION_WORDS = {
-    "an", "and", "after", "are", "before", "by", "for", "from", "has", "have", "if", "in", "including", "not",
-    "is", "it", "of", "on", "or", "the", "this", "to", "when", "which", "with", "while", "therefore",
-    "thus", "consequently", "hence", "so", "were",
-}
+ENGLISH_FUNCTION_WORDS = set(
+    """
+    a about above across after again against all almost along already also although always am among an and another
+    any are around as at be because been before being below between both but by can cannot could did do does doing
+    down during each either else even every few first for from further had has have having he her here hers herself
+    him himself his how however i if in including into is it its itself just last later least less many may me might
+    more most much must my myself near neither never no nor not now of off often on once one only or other our ours
+    ourselves out over own same seldom she should since so some such than that the their theirs them themselves then
+    therefore there these they this those though through thus to too under until up very was we were what when where
+    which while who whom why will with without would yet you your yours yourself yourselves
+    """.split()
+)
 FOREIGN_WORDS = {
     "avec", "bonjour", "ce", "ces", "cette", "dans", "de", "des", "du", "et", "est", "français", "la",
     "el", "bien", "funciona", "il", "jouer", "langue", "le", "les", "par", "permis", "pour", "projet",
@@ -83,10 +90,15 @@ def is_english(text):
     words = re.findall(r"[a-z]+(?:-[a-z]+)?", text.lower())
     if not words or any(word in FOREIGN_WORDS for word in words):
         return False
-    return (
+    has_marker_evidence = (
         sum(word in ENGLISH_MARKERS for word in words) / len(words) >= 0.25
         and any(word in ENGLISH_MARKERS - ENGLISH_FUNCTION_WORDS for word in words)
     )
+    has_sentence_evidence = (
+        any(word in ENGLISH_FUNCTION_WORDS for word in words)
+        and any(word not in ENGLISH_FUNCTION_WORDS for word in words)
+    )
+    return has_marker_evidence or has_sentence_evidence
 
 
 def has_english_status_check_before_saving(text):

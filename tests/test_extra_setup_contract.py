@@ -75,13 +75,38 @@ def is_english_prose(text):
     )
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
+    text = re.sub(r"\A---.*?---\s*", "", text, flags=re.DOTALL)
     text = re.sub(r"<!--.*?-->", "", text, flags=re.DOTALL)
     text = re.sub(r"```.*?```", "", text, flags=re.DOTALL)
     text = re.sub(r"`[^`]*`", "", text)
     text = re.sub(r"<[^>]+>", "", text)
     text = re.sub(r"\[([^\]]+)\]\([^)]+\)", r"\1", text)
-    text = re.sub(r"[*_~#]+", "", text)
-    return module.is_english(" ".join(text.split()))
+    text = re.sub(r"[*_~]+", "", text)
+    normalized = " ".join(text.split())
+    paragraphs = []
+    for line in text.splitlines():
+        stripped = line.strip()
+        heading = re.sub(r"^#+\s*(?:\d+[.)]\s*)?", "", stripped)
+        table_row = stripped.replace("|", " ")
+        if (
+            not stripped
+            or stripped == "---"
+            or (stripped.startswith("#") and not re.search(r"[.!?](?:\s|$)", heading))
+            or (stripped.startswith("|") and not re.search(r"[.!?](?:\s|$)", table_row))
+        ):
+            paragraphs.append("")
+            continue
+        line = re.sub(r"^\s*(?:[-*+]|\d+[.)])\s+", "", line)
+        paragraphs.append(line)
+    units = (
+        unit.strip()
+        for paragraph in re.split(r"\n\s*\n", "\n".join(paragraphs))
+        for unit in re.split(r"(?<=[.!?])\s+", " ".join(paragraph.split()))
+        if re.search(r"[A-Za-z\u3400-\u9fff]", unit)
+    )
+    return module.is_english(normalized) and all(
+        module.is_english(unit) for unit in units
+    )
 
 
 def marker_error(text):
@@ -712,6 +737,18 @@ class ExtraSetupContractTests(unittest.TestCase):
         for text in (
             "Le service rejette la demande.",
             "El sistema funciona bien.",
+            "The repository policy is clear. Hoy comemos arroz.",
+            (
+                "# Repository overview\n\n"
+                "The repository policy is clear.\n\n"
+                "Hoy comemos arroz."
+            ),
+            (
+                "| Requirement | State |\n"
+                "| --- | --- |\n"
+                "| The repository policy is clear. | Required |\n"
+                "| Hoy comemos arroz. | Hidden |"
+            ),
         ):
             with self.subTest(text=text):
                 self.assertFalse(is_english_prose(text))
