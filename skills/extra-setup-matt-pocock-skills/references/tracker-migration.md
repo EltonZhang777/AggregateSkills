@@ -10,9 +10,10 @@ Detect the state before asking for summary-first reads:
   one complete marker pair.
 - `ambiguous`: any other missing, duplicated, altered, partial, or mixed state.
 
-Validate managed marker sequence and completeness before state selection. A
-missing, duplicate, reversed, crossed, nested, unclosed, or otherwise invalid
-marker sequence is `ambiguous`.
+Scan complete HTML comments across line breaks before validation and require
+every managed-namespace comment to match the exact one-line marker grammar. A
+wrapped, missing, duplicate, reversed, crossed, nested, unclosed, or otherwise
+invalid marker sequence is `ambiguous`.
 
 Use this GitHub migration only when the state is `unmigrated`.
 

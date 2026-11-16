@@ -87,7 +87,8 @@ each state stops before drafting or writing.
 
 Create a duplicate start marker, remove an end marker, reverse a marker pair,
 corrupt one marker suffix, and introduce one crossed managed range in separate
-clean copies. Confirm each case is classified as `ambiguous` and stops before
+clean copies. Repeat once with a marker's closing delimiter wrapped onto the
+next line. Confirm each case is classified as `ambiguous` and stops before
 drafting or writing. Reject the proposed draft once more and confirm the files
 remain unchanged.
 

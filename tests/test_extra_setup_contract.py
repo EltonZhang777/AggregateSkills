@@ -19,7 +19,10 @@ MARKER = re.compile(
 MARKER_TOKEN = re.compile(
     r"<!-- extra-setup-matt-pocock-skills:(?P<section>[\w-]+):(?P<edge>start|end) -->"
 )
-MARKER_COMMENT = re.compile(r"<!-- extra-setup-matt-pocock-skills:[^\r\n]*? -->")
+MARKER_COMMENT = re.compile(
+    r"<!-- extra-setup-matt-pocock-skills:.*?-->",
+    re.DOTALL,
+)
 LEGACY_TRACKER_DEFAULTS = (
     "- **Read an issue**: `gh issue view <number> --comments`, filtering comments by `jq` and also fetching labels.",
     "- **List issues**: `gh issue list --state open --json number,title,body,labels,comments --jq '[.[] | {number, title, body, labels: [.labels[].name], comments: [.comments[].body]}]'` with appropriate `--label` and `--state` filters.",
@@ -508,6 +511,21 @@ class ExtraSetupWorkflowTests(unittest.TestCase):
         self.assertEqual("unclosed marker", marker_error(partial))
         malformed = "<!-- extra-setup-matt-pocock-skills:same:started -->"
         self.assertEqual("malformed marker", marker_error(malformed))
+
+    def test_wrapped_managed_marker_is_malformed_and_ambiguous(self):
+        wrapped = (
+            "<!-- extra-setup-matt-pocock-skills:issue-operations:start\n"
+            "-->"
+        )
+        self.assertEqual("malformed marker", marker_error(wrapped))
+        tracker = "\n".join((*LEGACY_TRACKER_DEFAULTS, wrapped))
+        self.assertEqual("ambiguous", tracker_migration_state(tracker))
+        for text in (
+            read(SKILL_DIR / "SKILL.md"),
+            read(REFERENCE_DIR / "tracker-migration.md"),
+        ):
+            self.assertIn("complete HTML comments across line breaks", text)
+            self.assertIn("exact one-line marker grammar", text)
 
     def test_summary_disabled_leaves_legacy_reads_and_write_text_absent(self):
         workflow = read(SKILL_DIR / "SKILL.md")
