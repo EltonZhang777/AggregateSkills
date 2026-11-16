@@ -832,12 +832,14 @@ class ExtraSetupContractTests(unittest.TestCase):
             "Me duele mucho.",
             "He visto esto.",
             "No me gusta.",
+            "Review pendiente.",
             "The repository policy is clear. Hoy comemos arroz.",
             "The repository policy is clear. No hay problema.",
             "The repository policy is clear. Vamos a comer.",
             "The repository policy is clear. Me duele mucho.",
             "The repository policy is clear. He visto esto.",
             "The repository policy is clear. No me gusta.",
+            "The repository policy is clear. Review pendiente.",
             (
                 "# Repository overview\n\n"
                 "The repository policy is clear.\n\n"

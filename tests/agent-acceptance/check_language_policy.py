@@ -21,7 +21,7 @@ ENGLISH_MARKERS = {
     "an", "and", "after", "ask", "are", "automatically", "before", "body", "by", "cache", "candidate", "complete", "completed",
     "approval", "closure", "criteria", "documentation", "draft", "english", "evidence", "existing", "for", "from", "guide", "guidance", "handoff", "has",
     "have", "if", "in", "including", "is", "issue", "it", "labels", "language", "map", "new", "not", "number", "of",
-    "on", "or", "policy", "preserve", "project", "pull", "read", "ready", "reject", "rejects", "repository", "request",
+    "on", "or", "policy", "preserve", "project", "pull", "read", "reread", "ready", "reject", "rejects", "repository", "request",
     "records", "required", "resolve", "review", "root", "rule", "saving", "see", "sentences", "service", "shortened",
     "state", "status", "stores", "summary", "suspended", "target", "text", "the", "this", "ticket", "to", "tracker", "triage",
     "untouched", "user-visible", "verbatim", "when", "which", "writing",
@@ -95,9 +95,18 @@ def is_english(text):
     words = re.findall(r"[a-z]+(?:-[a-z]+)?", text.lower())
     if not words or any(word in FOREIGN_WORDS for word in words):
         return False
+    content_markers = {
+        word
+        for word in words
+        if word in ENGLISH_MARKERS - ENGLISH_FUNCTION_WORDS
+    }
     has_marker_evidence = (
         sum(word in ENGLISH_MARKERS for word in words) / len(words) >= 1 / 5
-        and any(word in ENGLISH_MARKERS - ENGLISH_FUNCTION_WORDS for word in words)
+        and content_markers
+        and (
+            len(content_markers) >= 2
+            or any(word in ENGLISH_FUNCTION_EVIDENCE_WORDS for word in words)
+        )
     )
     has_sentence_evidence = (
         len({word for word in words if word in ENGLISH_FUNCTION_EVIDENCE_WORDS}) >= 2
