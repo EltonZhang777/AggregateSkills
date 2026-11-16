@@ -24,15 +24,49 @@ LEGACY_TRACKER_DEFAULTS = (
     "- **Read an issue**: `gh issue view <number> --comments`, filtering comments by `jq` and also fetching labels.",
     "- **List issues**: `gh issue list --state open --json number,title,body,labels,comments --jq '[.[] | {number, title, body, labels: [.labels[].name], comments: [.comments[].body]}]'` with appropriate `--label` and `--state` filters.",
     "Run `gh issue view <number> --comments`.",
+    "- **Read a PR**: `gh pr view <number> --comments` and `gh pr diff <number>` for the diff.",
+    "- **List external PRs for triage**: `gh pr list --state open --json number,title,body,labels,author,authorAssociation,comments` then keep only `authorAssociation` of `CONTRIBUTOR`, `FIRST_TIME_CONTRIBUTOR`, or `NONE` (drop `OWNER`/`MEMBER`/`COLLABORATOR`).",
+    "GitHub shares one number space across issues and PRs, so a bare `#42` may be either: resolve with `gh pr view 42` and fall back to `gh issue view 42`.",
+    "- **Frontier query**: list the map's open children (`gh issue list --state open`, scoped to the map's sub-issues / task list), drop any with an open blocker (`issue_dependencies_summary.blocked_by > 0`, or an open issue in the `Blocked by` line) or an assignee; first in map order wins.",
 )
-MIGRATED_TRACKER_POINTERS = (
+REVIEWED_TRACKER_REPLACEMENTS = (
     "- **Read or list issues**: follow [Issue operations](#issue-operations) for summary fields, body and comment escalation, and pagination.",
     "Follow [Issue operations](#issue-operations) before reading a ticket.",
+    "- **Read a PR**: use summary-only `gh pr view <number>` from [Issue operations](#issue-operations); request a full body, comments, or `gh pr diff <number>` only for a named triage need.",
+    "- **List external PRs for triage**: use `gh pr list --state open --limit <bound> --json number,title,state,labels,assignees,updatedAt,url,authorAssociation`, keep only `authorAssociation` values `CONTRIBUTOR`, `FIRST_TIME_CONTRIBUTOR`, or `NONE`, and paginate or narrow the query when the bound is reached.",
+    "GitHub shares one number space across issues and PRs, so a bare `#42` may be either: resolve it with summary-only `gh pr view <number>` and fall back to summary-only `gh issue view <number>` from [Issue operations](#issue-operations). Request the full body or comments only after this summary identifies the routing need.",
+    "- **Frontier query**: use `gh issue list --state open --limit <bound> --json number,title,state,labels,assignees,updatedAt,url`, scoped to the map's sub-issues or task list. Drop any child with an assignee. For each remaining child, read only `gh issue view <number> --json number,state,blockedBy`; drop any open `blockedBy` entry or open issue in a `Blocked by` fallback line. First in map order wins.",
+)
+MIGRATED_TRACKER_POINTERS = REVIEWED_TRACKER_REPLACEMENTS[:2]
+TRACKER_SUMMARY_FIELDS = "number,title,state,labels,assignees,updatedAt,url"
+PR_TRIAGE_FIELDS = f"{TRACKER_SUMMARY_FIELDS},authorAssociation"
+SAFE_TRACKER_READ_COMMANDS = (
+    f"gh issue view <number> --json {TRACKER_SUMMARY_FIELDS}",
+    f"gh issue list --state open --limit <bound> --json {TRACKER_SUMMARY_FIELDS}",
+    f"gh pr view <number> --json {TRACKER_SUMMARY_FIELDS}",
+    f"gh pr list --state open --limit <bound> --json {PR_TRIAGE_FIELDS}",
+    "gh issue view <number> --json number,state,blockedBy",
+)
+FIXED_OBJECT_ID_PATTERNS = (
+    r"\bfixed-length object ID\b",
+    r"\b\d+[- ]character (?:commit |tree )?object ID\b",
 )
 
 
 def read(path):
     return path.read_text(encoding="utf-8")
+
+
+def tracker_contract_errors(text):
+    errors = []
+    for line in text.splitlines():
+        command = line.strip()
+        if command.startswith("gh ") and command not in SAFE_TRACKER_READ_COMMANDS:
+            errors.append(f"unsafe tracker read command: {command}")
+    for pattern in FIXED_OBJECT_ID_PATTERNS:
+        if re.search(pattern, text, re.IGNORECASE):
+            errors.append(f"fixed object-ID requirement matched: {pattern}")
+    return errors
 
 
 def is_english_prose(text):
@@ -91,16 +125,22 @@ def tracker_migration_state(text):
     if marker_error(text):
         return "ambiguous"
     legacy = tuple(text.count(item) for item in LEGACY_TRACKER_DEFAULTS)
-    pointers = tuple(text.count(item) for item in MIGRATED_TRACKER_POINTERS)
+    replacements = tuple(
+        text.count(item) for item in REVIEWED_TRACKER_REPLACEMENTS
+    )
     start = "<!-- extra-setup-matt-pocock-skills:issue-operations:start -->"
     end = "<!-- extra-setup-matt-pocock-skills:issue-operations:end -->"
     section_markers = (text.count(start), text.count(end))
     if section_markers not in ((0, 0), (1, 1)):
         return "ambiguous"
     has_section = section_markers == (1, 1)
-    if legacy == (1, 1, 1) and pointers == (0, 0):
+    if legacy == (1,) * len(LEGACY_TRACKER_DEFAULTS) and replacements == (0,) * len(
+        REVIEWED_TRACKER_REPLACEMENTS
+    ):
         return "unmigrated"
-    if legacy == (0, 0, 0) and pointers == (1, 1) and has_section:
+    if legacy == (0,) * len(LEGACY_TRACKER_DEFAULTS) and replacements == (1,) * len(
+        REVIEWED_TRACKER_REPLACEMENTS
+    ) and has_section:
         return "fully migrated"
     return "ambiguous"
 
@@ -181,15 +221,12 @@ class ExtraSetupDeploymentTests(unittest.TestCase):
 
     def test_tracker_migration_removes_all_legacy_full_reads(self):
         tracker = read(ROOT / "docs" / "agents" / "issue-tracker.md")
-        for legacy in (
-            "gh issue view <number> --comments",
-            "gh issue list --state open --json number,title,body,labels,comments",
-            '## When a skill says "fetch the relevant ticket"\n\nRun `gh issue view',
-        ):
-            self.assertNotIn(legacy, tracker)
-        for pointer in MIGRATED_TRACKER_POINTERS:
-            with self.subTest(pointer=pointer):
-                self.assertEqual(1, tracker.count(pointer))
+        for legacy in LEGACY_TRACKER_DEFAULTS:
+            with self.subTest(legacy=legacy):
+                self.assertNotIn(legacy, tracker)
+        for replacement in REVIEWED_TRACKER_REPLACEMENTS:
+            with self.subTest(replacement=replacement):
+                self.assertEqual(1, tracker.count(replacement))
         self.assertIn(
             "for summary fields, body and comment escalation, and pagination",
             tracker,
@@ -212,7 +249,7 @@ class ExtraSetupDeploymentTests(unittest.TestCase):
             outside_managed_digest(ROOT / "GLOSSARY.md", "glossary"),
         )
         self.assertEqual(
-            "5814316ad4274902ef18b645d59b9364888008fc29d027d21b49ced37d5627b3",
+            "276c9c96283381316494a0650b8626a35659f39a87ed610f89b4c245943797eb",
             outside_managed_digest(
                 ROOT / "docs" / "agents" / "issue-tracker.md",
                 "issue-operations",
@@ -258,16 +295,12 @@ class ExtraSetupWorkflowTests(unittest.TestCase):
         self.assertIn("Unmigrated tracker with summary-first reads disabled", text)
         self.assertIn("For another tracker, skip the GitHub migration", text)
         self.assertIn("Fully migrated tracker with summary-first reads enabled", text)
-        for legacy in (
-            "- **Read an issue**: `gh issue view <number> --comments`",
-            "- **List issues**: `gh issue list --state open --json number,title,body,labels,comments",
-            "Run `gh issue view <number> --comments`.",
+        for known_default in (
+            *LEGACY_TRACKER_DEFAULTS,
+            *REVIEWED_TRACKER_REPLACEMENTS,
         ):
-            self.assertEqual(1, migration.count(legacy))
-        self.assertEqual(
-            2,
-            migration.count("[Issue operations](#issue-operations)"),
-        )
+            with self.subTest(known_default=known_default):
+                self.assertEqual(1, migration.count(known_default))
         self.assertNotIn("write rereads", migration)
         self.assertIn("before reading a ticket", migration)
 
@@ -290,21 +323,21 @@ class ExtraSetupWorkflowTests(unittest.TestCase):
         self.assertEqual(
             "fully migrated",
             tracker_migration_state(
-                "\n".join((*MIGRATED_TRACKER_POINTERS, start, end))
+                "\n".join((*REVIEWED_TRACKER_REPLACEMENTS, start, end))
             ),
         )
         for ambiguous, expected in (
             (LEGACY_TRACKER_DEFAULTS[:2], "ambiguous"),
             ((*LEGACY_TRACKER_DEFAULTS, LEGACY_TRACKER_DEFAULTS[0]), "ambiguous"),
-            (MIGRATED_TRACKER_POINTERS, "ambiguous"),
-            ((*MIGRATED_TRACKER_POINTERS, end, start), "ambiguous"),
-            ((*MIGRATED_TRACKER_POINTERS, start), "ambiguous"),
-            ((*MIGRATED_TRACKER_POINTERS, end), "ambiguous"),
-            ((*MIGRATED_TRACKER_POINTERS, start, end, end), "ambiguous"),
-            ((*MIGRATED_TRACKER_POINTERS, start, end, start), "ambiguous"),
+            (REVIEWED_TRACKER_REPLACEMENTS, "ambiguous"),
+            ((*REVIEWED_TRACKER_REPLACEMENTS, end, start), "ambiguous"),
+            ((*REVIEWED_TRACKER_REPLACEMENTS, start), "ambiguous"),
+            ((*REVIEWED_TRACKER_REPLACEMENTS, end), "ambiguous"),
+            ((*REVIEWED_TRACKER_REPLACEMENTS, start, end, end), "ambiguous"),
+            ((*REVIEWED_TRACKER_REPLACEMENTS, start, end, start), "ambiguous"),
             (
                 (
-                    *MIGRATED_TRACKER_POINTERS,
+                    *REVIEWED_TRACKER_REPLACEMENTS,
                     "<!-- extra-setup-matt-pocock-skills:root-operations:start -->",
                     "<!-- extra-setup-matt-pocock-skills:issue-operations:start -->",
                     "<!-- extra-setup-matt-pocock-skills:root-operations:end -->",
@@ -354,19 +387,54 @@ class ExtraSetupWorkflowTests(unittest.TestCase):
         for legacy in LEGACY_TRACKER_DEFAULTS[:2]:
             self.assertEqual(1, opted_in.count(legacy))
             opted_in = opted_in.replace(legacy, "", 1)
-        self.assertEqual(1, opted_in.count(LEGACY_TRACKER_DEFAULTS[2]))
-        opted_in = opted_in.replace(
-            LEGACY_TRACKER_DEFAULTS[2], MIGRATED_TRACKER_POINTERS[1], 1
-        ).rstrip() + "\n" + MIGRATED_TRACKER_POINTERS[0]
-        self.assertEqual(1, opted_in.count(MIGRATED_TRACKER_POINTERS[0]))
+        for legacy, replacement in zip(
+            LEGACY_TRACKER_DEFAULTS[2:], REVIEWED_TRACKER_REPLACEMENTS[1:]
+        ):
+            self.assertEqual(1, opted_in.count(legacy))
+            opted_in = opted_in.replace(legacy, replacement, 1)
+        opted_in = opted_in.rstrip() + "\n" + REVIEWED_TRACKER_REPLACEMENTS[0]
+        for replacement in REVIEWED_TRACKER_REPLACEMENTS:
+            self.assertEqual(1, opted_in.count(replacement))
         self.assertEqual("fully migrated", tracker_migration_state(opted_in))
         for detail in (
-            "all three legacy defaults occur exactly once, both replacement pointers are absent",
+            "all recognized legacy defaults occur exactly once, every reviewed replacement is absent",
             "either absent or has one complete marker pair",
             "later summary-first opt-in",
             "unchanged legacy reads with one complete managed issue-operations section",
         ):
             self.assertIn(detail, workflow + migration)
+
+    def test_migration_state_requires_every_extended_tracker_default(self):
+        start = "<!-- extra-setup-matt-pocock-skills:issue-operations:start -->"
+        end = "<!-- extra-setup-matt-pocock-skills:issue-operations:end -->"
+        legacy_tail = LEGACY_TRACKER_DEFAULTS[3:]
+        reviewed_tail = REVIEWED_TRACKER_REPLACEMENTS[2:]
+
+        self.assertEqual(
+            "unmigrated",
+            tracker_migration_state("\n".join(LEGACY_TRACKER_DEFAULTS)),
+        )
+        self.assertEqual(
+            "fully migrated",
+            tracker_migration_state(
+                "\n".join((*REVIEWED_TRACKER_REPLACEMENTS, start, end))
+            ),
+        )
+        for partial in (
+            (*MIGRATED_TRACKER_POINTERS, *reviewed_tail[1:], legacy_tail[0]),
+            (*MIGRATED_TRACKER_POINTERS, *reviewed_tail[:3], legacy_tail[3]),
+            (*REVIEWED_TRACKER_REPLACEMENTS[:2], *reviewed_tail[:-1]),
+            (*REVIEWED_TRACKER_REPLACEMENTS, legacy_tail[0]),
+            (
+                *REVIEWED_TRACKER_REPLACEMENTS[:2],
+                "changed PR read",
+                *reviewed_tail[1:],
+            ),
+        ):
+            with self.subTest(partial=partial):
+                self.assertEqual(
+                    "ambiguous", tracker_migration_state("\n".join((*partial, start, end)))
+                )
 
     def test_themes_remain_individually_selectable_in_shared_blocks(self):
         text = read(SKILL_DIR / "SKILL.md")
@@ -573,7 +641,7 @@ class ExtraSetupContractTests(unittest.TestCase):
             "[Issue operations](#issue-operations)",
             "summary-only `gh pr view <number>`",
             "summary-only `gh issue view <number>`",
-            "`--limit <bound>`",
+            "--limit <bound>",
             "`blockedBy`",
         ):
             with self.subTest(detail=detail):
@@ -584,9 +652,36 @@ class ExtraSetupContractTests(unittest.TestCase):
             f"gh issue view <number> --json {fields}",
             f"gh issue list --state open --limit <bound> --json {fields}",
             f"gh pr view <number> --json {fields}",
+            f"gh pr list --state open --limit <bound> --json {fields},authorAssociation",
         ):
             with self.subTest(command=command):
                 self.assertIn(command, issue_template)
+        self.assertIn(
+            f"gh pr list --state open --limit <bound> --json {fields},authorAssociation",
+            outside,
+        )
+
+    def test_command_validation_rejects_unsafe_fixtures_through_one_seam(self):
+        fields = "number,title,state,labels,assignees,updatedAt,url"
+        valid = "\n".join(
+            (
+                f"gh issue view <number> --json {fields}",
+                f"gh issue list --state open --limit <bound> --json {fields}",
+                f"gh pr view <number> --json {fields}",
+                f"gh pr list --state open --limit <bound> --json {fields},authorAssociation",
+                "gh issue view <number> --json number,state,blockedBy",
+            )
+        )
+        self.assertEqual([], tracker_contract_errors(valid))
+
+        for invalid in (
+            "gh pr view <number> --comments",
+            f"gh pr list --state open --json {fields},authorAssociation",
+            f"gh issue list --state open --json {fields}",
+            "Require a 40-character commit object ID for closure evidence.",
+        ):
+            with self.subTest(invalid=invalid):
+                self.assertTrue(tracker_contract_errors(valid + "\n" + invalid))
 
     def test_portable_defaults_reject_unsafe_universal_requirements(self):
         text = "\n".join(
@@ -676,7 +771,7 @@ class ExtraSetupManualAcceptanceTests(unittest.TestCase):
             "docs/agents/issue-tracker.md",
             "GLOSSARY.md",
             "`docs/agents/domain.md` remains untouched",
-            "three legacy full-read defaults",
+            "every recognized legacy tracker default",
             "only as the read-only review target",
             "Do not run the setup skill in this checkout",
             "Run any write-capable deployment scenario in a disposable copy first",
@@ -685,6 +780,10 @@ class ExtraSetupManualAcceptanceTests(unittest.TestCase):
             "ambiguous",
             "bare issue-or-PR number",
             "Wayfinding frontier query",
+            "PR detail and triage commands",
+            "authorAssociation",
+            "through the contract validator",
+            "fixed-length negative fixture",
             "no fixed numeric object-ID length is required",
         ):
             self.assertIn(detail, text)

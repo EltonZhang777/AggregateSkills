@@ -20,10 +20,11 @@ write-capable deployment scenario in a disposable copy first. Confirm
 managed sections equal their reviewed templates after replacing the
 instruction-file placeholder.
 
-Confirm the tracker migration removes the three legacy full-read defaults and
-leaves links to the one issue-operations section. Confirm the glossary retains
-its existing mixed-language entries unchanged, `docs/agents/domain.md` remains
-untouched, and a rerun changes bytes only inside the three managed ranges.
+Confirm the tracker migration replaces every recognized legacy tracker default
+with its reviewed replacement and leaves one issue-operations section. Confirm
+the glossary retains its existing mixed-language entries unchanged,
+`docs/agents/domain.md` remains untouched, and a rerun changes bytes only inside
+the three managed ranges.
 
 ## Discovery and section confirmation
 
@@ -46,17 +47,19 @@ appear inside each shared managed block.
 Accept the recommendations and confirm the skill presents a complete draft
 before any write. Confirm exploration labels the tracker `unmigrated`. Verify
 the draft uses `references/tracker-migration.md` and shows the exact first-run
-migration diff for the issue-read bullet, issue-list command, and repeated
-fetch-ticket command. Confirm all three legacy read defaults are redirected to
-one unique managed issue-operations section, the session/checkout/handoff and
-glossary sections are shown as insertions, and no write occurs before approval.
+migration diff for the issue read/list commands, repeated fetch-ticket command,
+PR detail and triage commands, bare issue-or-PR fallback, and Wayfinding
+frontier. Confirm every reviewed replacement occurs once, the issue-family
+defaults delegate to one managed issue-operations section, the
+session/checkout/handoff and glossary sections are shown as insertions, and no
+write occurs before approval.
 
 Repeat the first run with summary-first issue reads rejected and issue-write
 rereads accepted. Confirm the legacy read commands remain unchanged and the
 issue block does not claim to own them, while the shared issue-content trust
 boundary remains present. Rerun with the same decision and confirm the workflow
 classifies the result as `unmigrated`, updates only the managed issue section,
-and leaves all three legacy commands unchanged. Then opt into summary-first
+and leaves every recognized legacy command unchanged. Then opt into summary-first
 reads and confirm the exact migration occurs once before later reruns use the
 `fully migrated` path.
 
@@ -73,7 +76,7 @@ marker pair each.
 Add sentinel text immediately before and after each managed section, then rerun
 the workflow with summary-first reads enabled. Confirm the rerun detects
 `fully migrated`, reads the existing markers, shows only the managed
-replacements, preserves both pointers and both sentinels byte-for-byte, and
+replacements, preserves every reviewed replacement and both sentinels byte-for-byte, and
 leaves the legacy commands absent.
 
 Repeat that rerun with summary-first reads disabled. Confirm the workflow
@@ -109,8 +112,12 @@ re-reads authoritative state before any retry.
 Resolve a bare issue-or-PR number once. Confirm the PR summary is tried before
 the issue summary and neither path requests a body or comments. Exercise an
 external-PR list and a Wayfinding frontier query. Confirm each list uses
-`--limit <bound>` (or explicit pagination) and the frontier reads only
-`number,state,blockedBy` for each candidate.
+`--limit <bound>` (or explicit pagination), the external-PR list requests the
+shared summary fields plus `authorAssociation` without bodies or comments, and
+the frontier reads only `number,state,blockedBy` for each candidate. Pass the
+valid commands and each unsafe full-body, unbounded-list, and fixed-length
+negative fixture through the contract validator; confirm every unsafe fixture
+fails even when valid commands are present.
 
 Review the optional navigation-only cache template separately. Opt in once and
 confirm it remains non-authoritative for writes, assignment, labels, closure,
