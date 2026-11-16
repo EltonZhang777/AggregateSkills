@@ -1,6 +1,7 @@
 """Behavioral contracts for the portable agent operating-contract setup."""
 
 import hashlib
+import importlib.util
 import re
 import unittest
 from pathlib import Path
@@ -9,6 +10,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 SKILL_DIR = ROOT / "skills" / "extra-setup-matt-pocock-skills"
 REFERENCE_DIR = SKILL_DIR / "references"
+LANGUAGE_POLICY = (
+    ROOT / "tests" / "agent-acceptance" / "check_language_policy.py"
+)
 MARKER = re.compile(
     r"<!-- extra-setup-matt-pocock-skills:(?P<section>[\w-]+):(?:start|end) -->"
 )
@@ -29,6 +33,21 @@ MIGRATED_TRACKER_POINTERS = (
 
 def read(path):
     return path.read_text(encoding="utf-8")
+
+
+def is_english_prose(text):
+    spec = importlib.util.spec_from_file_location(
+        "extra_setup_language_policy", LANGUAGE_POLICY
+    )
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    text = re.sub(r"<!--.*?-->", "", text, flags=re.DOTALL)
+    text = re.sub(r"```.*?```", "", text, flags=re.DOTALL)
+    text = re.sub(r"`[^`]*`", "", text)
+    text = re.sub(r"<[^>]+>", "", text)
+    text = re.sub(r"\[([^\]]+)\]\([^)]+\)", r"\1", text)
+    text = re.sub(r"[*_~#]+", "", text)
+    return module.is_english(" ".join(text.split()))
 
 
 def marker_error(text):
@@ -594,7 +613,15 @@ class ExtraSetupContractTests(unittest.TestCase):
                 self.assertIsNone(re.search(pattern, text, re.IGNORECASE))
         self.assertIn("Use the full object ID in the repository's native form and length", text)
 
-    def test_new_project_text_is_english(self):
+    def test_english_contract_rejects_non_english_latin_prose(self):
+        for text in (
+            "Le service rejette la demande.",
+            "El sistema funciona bien.",
+        ):
+            with self.subTest(text=text):
+                self.assertFalse(is_english_prose(text))
+
+    def test_portable_and_manual_project_text_is_english(self):
         paths = [
             SKILL_DIR / "SKILL.md",
             *REFERENCE_DIR.glob("*.md"),
@@ -602,7 +629,19 @@ class ExtraSetupContractTests(unittest.TestCase):
         ]
         for path in paths:
             with self.subTest(path=str(path)):
-                self.assertIsNone(re.search(r"[\u4e00-\u9fff]", read(path)))
+                self.assertTrue(is_english_prose(read(path)))
+
+    def test_deployed_managed_sections_are_english(self):
+        deployments = (
+            (ROOT / "AGENTS.md", "root-operations"),
+            (ROOT / "docs" / "agents" / "issue-tracker.md", "issue-operations"),
+            (ROOT / "GLOSSARY.md", "glossary"),
+        )
+        for path, section_id in deployments:
+            with self.subTest(path=str(path), section=section_id):
+                self.assertTrue(
+                    is_english_prose(managed(path, section_id))
+                )
 
 
 class ExtraSetupManualAcceptanceTests(unittest.TestCase):
