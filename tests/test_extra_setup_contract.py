@@ -1,5 +1,6 @@
 """Behavioral contracts for the portable agent operating-contract setup."""
 
+import hashlib
 import re
 import unittest
 from pathlib import Path
@@ -37,6 +38,21 @@ def marker_error(text):
         elif stack.pop() != section:
             return "crossed markers"
     return "unclosed marker" if stack else ""
+
+
+def managed(path, section_id):
+    text = read(path)
+    start = f"<!-- extra-setup-matt-pocock-skills:{section_id}:start -->"
+    end = f"<!-- extra-setup-matt-pocock-skills:{section_id}:end -->"
+    if text.count(start) != 1 or text.count(end) != 1:
+        raise AssertionError(f"{path}: expected one complete {section_id} marker pair")
+    return text[text.index(start):text.index(end) + len(end)]
+
+
+def outside_managed_digest(path, section_id):
+    text = read(path).replace("\r\n", "\n")
+    text = text.replace(managed(path, section_id), "", 1).rstrip()
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
 
 class ExtraSetupMetadataTests(unittest.TestCase):
@@ -86,6 +102,83 @@ class ExtraSetupMetadataTests(unittest.TestCase):
         notices = read(ROOT / "THIRD_PARTY_NOTICES.md")
         self.assertIn("`skills/extra-setup-matt-pocock-skills/`", notices)
         self.assertIn("`setup-matt-pocock-skills`", notices)
+
+
+class ExtraSetupDeploymentTests(unittest.TestCase):
+    def test_target_sections_equal_the_reviewed_templates(self):
+        deployments = (
+            (
+                "root-operations",
+                ROOT / "AGENTS.md",
+                REFERENCE_DIR / "root-session-checkout-handoff.md",
+            ),
+            (
+                "issue-operations",
+                ROOT / "docs" / "agents" / "issue-tracker.md",
+                REFERENCE_DIR / "issue-operations.md",
+            ),
+            (
+                "glossary",
+                ROOT / "GLOSSARY.md",
+                REFERENCE_DIR / "glossary.md",
+            ),
+        )
+        for section_id, target, template in deployments:
+            with self.subTest(section=section_id):
+                expected = read(template).replace("<instruction-file>", "AGENTS.md")
+                self.assertEqual(expected.strip(), managed(target, section_id).strip())
+                self.assertEqual("", marker_error(read(target)))
+
+    def test_tracker_migration_removes_all_legacy_full_reads(self):
+        tracker = read(ROOT / "docs" / "agents" / "issue-tracker.md")
+        for legacy in (
+            "gh issue view <number> --comments",
+            "gh issue list --state open --json number,title,body,labels,comments",
+            '## When a skill says "fetch the relevant ticket"\n\nRun `gh issue view',
+        ):
+            self.assertNotIn(legacy, tracker)
+        self.assertEqual(2, tracker.count("[Issue operations](#issue-operations)"))
+        self.assertIn(
+            "for summary fields, body and comment escalation, and pagination",
+            tracker,
+        )
+        self.assertIn(
+            "Follow [Issue operations](#issue-operations) before reading a ticket.",
+            tracker,
+        )
+
+    def test_deployment_preserves_all_text_outside_managed_sections(self):
+        domain = read(ROOT / "docs" / "agents" / "domain.md")
+        tracker = read(ROOT / "docs" / "agents" / "issue-tracker.md")
+
+        self.assertEqual(
+            "b77b621e546ffb2c0385690e1b22ffdc56f10f83f87ce3ff24e801aff4cd4bcf",
+            outside_managed_digest(ROOT / "AGENTS.md", "root-operations"),
+        )
+        self.assertEqual(
+            "c5539d02c54be7122d97893350096cf1f33ec73e1f1214422b7adb9ccab8f3f0",
+            outside_managed_digest(ROOT / "GLOSSARY.md", "glossary"),
+        )
+        self.assertEqual(
+            "af5f54807f21e69400dcc6a464792da4d3edd2e481f093ef21bcccc9f2b8bfe0",
+            outside_managed_digest(
+                ROOT / "docs" / "agents" / "issue-tracker.md",
+                "issue-operations",
+            ),
+        )
+        self.assertEqual(
+            "593a7042218689f1d24df89df14eaf0a20e19e0d0a7d479a01947ac78f0784b9",
+            hashlib.sha256(domain.replace("\r\n", "\n").encode("utf-8")).hexdigest(),
+        )
+        self.assertIn("## Wayfinding operations", tracker)
+
+    def test_target_cache_posture_is_disabled(self):
+        issue = managed(ROOT / "docs" / "agents" / "issue-tracker.md", "issue-operations")
+        self.assertIn("Persistent issue cache: disabled.", issue)
+        self.assertNotIn(
+            "This repository explicitly opts into a navigation-only issue cache.",
+            issue,
+        )
 
 
 class ExtraSetupWorkflowTests(unittest.TestCase):
@@ -349,6 +442,15 @@ class ExtraSetupManualAcceptanceTests(unittest.TestCase):
             "GitHub migration is skipped",
             "Glossary composition",
             "language-independent anchors",
+            "Repository deployment",
+            "AGENTS.md",
+            "docs/agents/issue-tracker.md",
+            "GLOSSARY.md",
+            "`docs/agents/domain.md` remains untouched",
+            "three legacy full-read defaults",
+            "only as the read-only review target",
+            "Do not run the setup skill in this checkout",
+            "Run any write-capable deployment scenario in a disposable copy first",
         ):
             self.assertIn(detail, text)
 

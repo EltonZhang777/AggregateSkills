@@ -9,6 +9,22 @@ migration diff, managed-section preservation, rerun behavior, missing setup,
 rejected themes, missing markers, changed legacy text, approval consumption,
 no-cache behavior, and PARTIAL/runtime evidence cases.
 
+## Repository deployment
+
+Use `EltonZhang777/AggregateSkills` only as the read-only review target for
+the recorded deployment. Do not run the setup skill in this checkout. Run any
+write-capable deployment scenario in a disposable copy first. Confirm
+`AGENTS.md` has one managed session/checkout/handoff section,
+`docs/agents/issue-tracker.md` has one managed issue-operations section, and
+`GLOSSARY.md` has one managed English terminology section. Confirm all three
+managed sections equal their reviewed templates after replacing the
+instruction-file placeholder.
+
+Confirm the tracker migration removes the three legacy full-read defaults and
+leaves links to the one issue-operations section. Confirm the glossary retains
+its existing mixed-language entries unchanged, `docs/agents/domain.md` remains
+untouched, and a rerun changes bytes only inside the three managed ranges.
+
 ## Discovery and section confirmation
 
 Start once with the existing `/setup-matt-pocock-skills` output and once with
