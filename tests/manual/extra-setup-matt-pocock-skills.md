@@ -54,7 +54,11 @@ glossary sections are shown as insertions, and no write occurs before approval.
 Repeat the first run with summary-first issue reads rejected and issue-write
 rereads accepted. Confirm the legacy read commands remain unchanged and the
 issue block does not claim to own them, while the shared issue-content trust
-boundary remains present.
+boundary remains present. Rerun with the same decision and confirm the workflow
+classifies the result as `unmigrated`, updates only the managed issue section,
+and leaves all three legacy commands unchanged. Then opt into summary-first
+reads and confirm the exact migration occurs once before later reruns use the
+`fully migrated` path.
 
 Use a non-GitHub tracker guide. Enable summary-first issue reads and confirm the
 GitHub migration is skipped while the tracker-neutral summary rules are still
@@ -79,9 +83,10 @@ pointer, and a partial managed marker set in distinct clean copies. Confirm
 each state stops before drafting or writing.
 
 Create a duplicate start marker, remove an end marker, reverse a marker pair,
-and introduce one ambiguous managed range in separate clean copies. Confirm
-each case stops before writing. Reject the proposed draft once more and confirm
-the files remain unchanged.
+corrupt one marker suffix, and introduce one crossed managed range in separate
+clean copies. Confirm each case is classified as `ambiguous` and stops before
+drafting or writing. Reject the proposed draft once more and confirm the files
+remain unchanged.
 
 ## Changed legacy text
 

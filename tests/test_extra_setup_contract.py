@@ -15,6 +15,7 @@ MARKER = re.compile(
 MARKER_TOKEN = re.compile(
     r"<!-- extra-setup-matt-pocock-skills:(?P<section>[\w-]+):(?P<edge>start|end) -->"
 )
+MARKER_COMMENT = re.compile(r"<!-- extra-setup-matt-pocock-skills:[^\r\n]*? -->")
 LEGACY_TRACKER_DEFAULTS = (
     "- **Read an issue**: `gh issue view <number> --comments`, filtering comments by `jq` and also fetching labels.",
     "- **List issues**: `gh issue list --state open --json number,title,body,labels,comments --jq '[.[] | {number, title, body, labels: [.labels[].name], comments: [.comments[].body]}]'` with appropriate `--label` and `--state` filters.",
@@ -33,7 +34,10 @@ def read(path):
 def marker_error(text):
     stack = []
     seen = set()
-    for match in MARKER_TOKEN.finditer(text):
+    for comment in MARKER_COMMENT.finditer(text):
+        match = MARKER_TOKEN.fullmatch(comment.group())
+        if match is None:
+            return "malformed marker"
         section = match.group("section")
         if match.group("edge") == "start":
             if stack:
@@ -65,14 +69,17 @@ def outside_managed_digest(path, section_id):
 
 
 def tracker_migration_state(text):
+    if marker_error(text):
+        return "ambiguous"
     legacy = tuple(text.count(item) for item in LEGACY_TRACKER_DEFAULTS)
     pointers = tuple(text.count(item) for item in MIGRATED_TRACKER_POINTERS)
-    has_section = (
-        text.count("<!-- extra-setup-matt-pocock-skills:issue-operations:start -->")
-        == text.count("<!-- extra-setup-matt-pocock-skills:issue-operations:end -->")
-        == 1
-    )
-    if legacy == (1, 1, 1) and pointers == (0, 0) and not has_section:
+    start = "<!-- extra-setup-matt-pocock-skills:issue-operations:start -->"
+    end = "<!-- extra-setup-matt-pocock-skills:issue-operations:end -->"
+    section_markers = (text.count(start), text.count(end))
+    if section_markers not in ((0, 0), (1, 1)):
+        return "ambiguous"
+    has_section = section_markers == (1, 1)
+    if legacy == (1, 1, 1) and pointers == (0, 0):
         return "unmigrated"
     if legacy == (0, 0, 0) and pointers == (1, 1) and has_section:
         return "fully migrated"
@@ -250,9 +257,16 @@ class ExtraSetupWorkflowTests(unittest.TestCase):
         migration = read(REFERENCE_DIR / "tracker-migration.md")
         start = "<!-- extra-setup-matt-pocock-skills:issue-operations:start -->"
         end = "<!-- extra-setup-matt-pocock-skills:issue-operations:end -->"
+        write_only_section = "\n".join((start, "## Issue operations", end))
 
         self.assertEqual(
             "unmigrated", tracker_migration_state("\n".join(LEGACY_TRACKER_DEFAULTS))
+        )
+        self.assertEqual(
+            "unmigrated",
+            tracker_migration_state(
+                "\n".join((*LEGACY_TRACKER_DEFAULTS, write_only_section))
+            ),
         )
         self.assertEqual(
             "fully migrated",
@@ -264,7 +278,21 @@ class ExtraSetupWorkflowTests(unittest.TestCase):
             (LEGACY_TRACKER_DEFAULTS[:2], "ambiguous"),
             ((*LEGACY_TRACKER_DEFAULTS, LEGACY_TRACKER_DEFAULTS[0]), "ambiguous"),
             (MIGRATED_TRACKER_POINTERS, "ambiguous"),
+            ((*MIGRATED_TRACKER_POINTERS, end, start), "ambiguous"),
+            ((*MIGRATED_TRACKER_POINTERS, start), "ambiguous"),
+            ((*MIGRATED_TRACKER_POINTERS, end), "ambiguous"),
+            ((*MIGRATED_TRACKER_POINTERS, start, end, end), "ambiguous"),
             ((*MIGRATED_TRACKER_POINTERS, start, end, start), "ambiguous"),
+            (
+                (
+                    *MIGRATED_TRACKER_POINTERS,
+                    "<!-- extra-setup-matt-pocock-skills:root-operations:start -->",
+                    "<!-- extra-setup-matt-pocock-skills:issue-operations:start -->",
+                    "<!-- extra-setup-matt-pocock-skills:root-operations:end -->",
+                    "<!-- extra-setup-matt-pocock-skills:issue-operations:end -->",
+                ),
+                "ambiguous",
+            ),
         ):
             with self.subTest(expected=expected, fixture=ambiguous):
                 self.assertEqual(expected, tracker_migration_state("\n".join(ambiguous)))
@@ -282,8 +310,42 @@ class ExtraSetupWorkflowTests(unittest.TestCase):
             "`ambiguous`",
             "Fully migrated tracker with summary-first reads disabled: stop before drafting or writing",
             "Ambiguous tracker state: stop before drafting or writing",
-            "the exact reviewed first-run migration outside managed ranges",
-            "Reruns must not edit outside managed ranges",
+            "before state selection or drafting",
+            "permit the exact reviewed migration outside managed ranges",
+            "Apply it only once, on the initial enabled run or a later opt-in",
+            "After that migration, reruns must not edit outside managed ranges",
+        ):
+            self.assertIn(detail, workflow + migration)
+
+    def test_summary_disabled_first_run_remains_rerunnable_and_can_opt_in(self):
+        workflow = read(SKILL_DIR / "SKILL.md")
+        migration = read(REFERENCE_DIR / "tracker-migration.md")
+        start = "<!-- extra-setup-matt-pocock-skills:issue-operations:start -->"
+        end = "<!-- extra-setup-matt-pocock-skills:issue-operations:end -->"
+        section = "\n".join((start, "## Issue operations", "### Issue writes", end))
+        disabled_first_run = "\n".join((*LEGACY_TRACKER_DEFAULTS, section))
+
+        self.assertEqual("unmigrated", tracker_migration_state(disabled_first_run))
+        consistent_rerun = disabled_first_run.replace(
+            "### Issue writes", "### Issue writes\n\nUpdated managed guidance."
+        )
+        self.assertEqual("unmigrated", tracker_migration_state(consistent_rerun))
+
+        opted_in = consistent_rerun
+        for legacy in LEGACY_TRACKER_DEFAULTS[:2]:
+            self.assertEqual(1, opted_in.count(legacy))
+            opted_in = opted_in.replace(legacy, "", 1)
+        self.assertEqual(1, opted_in.count(LEGACY_TRACKER_DEFAULTS[2]))
+        opted_in = opted_in.replace(
+            LEGACY_TRACKER_DEFAULTS[2], MIGRATED_TRACKER_POINTERS[1], 1
+        ).rstrip() + "\n" + MIGRATED_TRACKER_POINTERS[0]
+        self.assertEqual(1, opted_in.count(MIGRATED_TRACKER_POINTERS[0]))
+        self.assertEqual("fully migrated", tracker_migration_state(opted_in))
+        for detail in (
+            "all three legacy defaults occur exactly once, both replacement pointers are absent",
+            "either absent or has one complete marker pair",
+            "later summary-first opt-in",
+            "unchanged legacy reads with one complete managed issue-operations section",
         ):
             self.assertIn(detail, workflow + migration)
 
@@ -325,6 +387,15 @@ class ExtraSetupWorkflowTests(unittest.TestCase):
             "<!-- extra-setup-matt-pocock-skills:same:end -->"
         )
         self.assertEqual("duplicate marker", marker_error(duplicate))
+        reversed_pair = (
+            "<!-- extra-setup-matt-pocock-skills:same:end -->\n"
+            "<!-- extra-setup-matt-pocock-skills:same:start -->"
+        )
+        self.assertEqual("end without start", marker_error(reversed_pair))
+        partial = "<!-- extra-setup-matt-pocock-skills:same:start -->"
+        self.assertEqual("unclosed marker", marker_error(partial))
+        malformed = "<!-- extra-setup-matt-pocock-skills:same:started -->"
+        self.assertEqual("malformed marker", marker_error(malformed))
 
     def test_summary_disabled_leaves_legacy_reads_and_write_text_absent(self):
         workflow = read(SKILL_DIR / "SKILL.md")

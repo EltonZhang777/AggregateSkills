@@ -50,11 +50,11 @@ Collect repository facts without writing:
 
 Inspect the content that each proposed managed section would replace. Detect the tracker migration state before presenting or writing a draft. For GitHub, compare the tracker guide with `references/tracker-migration.md` by their content, not line numbers:
 
-- `unmigrated`: all three legacy defaults occur exactly once, both replacement pointers are absent, and the managed issue-operations section is absent;
+- `unmigrated`: all three legacy defaults occur exactly once, both replacement pointers are absent, and the managed issue-operations section is either absent or has one complete marker pair;
 - `fully migrated`: all three legacy defaults are absent, both replacement pointers occur exactly once, and the managed issue-operations section has one complete marker pair;
 - `ambiguous`: any state where a fact is missing or altered, any legacy default appears more than once, or the pointer or marker set is partial or mixed.
 
-Record the detected state and its file evidence. Do not guess or repair an ambiguous state. For another tracker, skip the GitHub migration and preserve its native read commands.
+Classify a missing, duplicate, reversed, crossed, nested, unclosed, or otherwise invalid managed marker sequence as `ambiguous` before state selection or drafting. In particular, unchanged legacy reads with one complete managed issue-operations section are the supported summary-disabled first-run state and remain `unmigrated`. Record the detected state and its file evidence. Do not guess or repair an ambiguous state. For another tracker, skip the GitHub migration and preserve its native read commands.
 
 Exploration is complete when every fact shown in the next step has a file, command result, or explicit user answer as evidence.
 
@@ -96,7 +96,7 @@ For every target file, show:
 Use the tracker-migration decision matrix before drafting:
 
 - Unmigrated tracker with summary-first reads enabled: include the exact migration from `references/tracker-migration.md` in the same complete draft.
-- Unmigrated tracker with summary-first reads disabled: preserve the legacy read conventions even when another issue theme is enabled.
+- Unmigrated tracker with summary-first reads disabled: preserve the legacy read conventions even when another issue theme is enabled. If a managed issue-operations section exists, update only that section.
 - Fully migrated tracker with summary-first reads enabled: replace only the managed issue-operations section and do not edit the migration pointers.
 - Fully migrated tracker with summary-first reads disabled: stop before drafting or writing because the existing pointers require the managed summary rules.
 - Ambiguous tracker state: stop before drafting or writing and identify the conflicting evidence.
@@ -107,12 +107,13 @@ The draft gate passes only after the user reviews the complete set of file chang
 
 ## 5. Write and verify
 
-Write the approved managed ranges. On an unmigrated tracker, permit the exact reviewed first-run migration outside managed ranges and nothing else. Reruns must not edit outside managed ranges. Do not create an ADR or application runtime, and do not modify `/setup-matt-pocock-skills` or any other dependency.
+Write the approved managed ranges. When summary-first reads are enabled and the detected state is unmigrated, permit the exact reviewed migration outside managed ranges in addition to those ranges. Apply it only once, on the initial enabled run or a later opt-in from the supported summary-disabled state. Reruns with summary-first reads disabled update only an existing managed range and leave the legacy reads unchanged. After that migration, reruns must not edit outside managed ranges. Do not create an ADR or application runtime, and do not modify `/setup-matt-pocock-skills` or any other dependency.
 
 After writing, verify:
 
 - each expected managed section has exactly one complete marker pair;
 - an enabled first-run migration leaves no legacy issue-read or issue-list default and exactly the two reviewed pointers;
+- a summary-disabled first run leaves all three legacy reads unchanged and at most one complete managed issue-operations section;
 - a consistent rerun leaves both migration pointers and both surrounding sentinels byte-for-byte unchanged;
 - the deployed section matches the reviewed draft;
 - after accounting for the exact reviewed first-run migration, all other content outside the managed ranges is byte-for-byte unchanged.
