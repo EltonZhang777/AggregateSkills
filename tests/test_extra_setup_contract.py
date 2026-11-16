@@ -827,7 +827,17 @@ class ExtraSetupContractTests(unittest.TestCase):
         for text in (
             "Le service rejette la demande.",
             "El sistema funciona bien.",
+            "No hay problema.",
+            "Vamos a comer.",
+            "Me duele mucho.",
+            "He visto esto.",
+            "No me gusta.",
             "The repository policy is clear. Hoy comemos arroz.",
+            "The repository policy is clear. No hay problema.",
+            "The repository policy is clear. Vamos a comer.",
+            "The repository policy is clear. Me duele mucho.",
+            "The repository policy is clear. He visto esto.",
+            "The repository policy is clear. No me gusta.",
             (
                 "# Repository overview\n\n"
                 "The repository policy is clear.\n\n"
@@ -842,6 +852,14 @@ class ExtraSetupContractTests(unittest.TestCase):
         ):
             with self.subTest(text=text):
                 self.assertFalse(is_english_prose(text))
+
+    def test_english_contract_accepts_explicit_content_evidence(self):
+        for text in (
+            "A post-write read verifies state, not authorship.",
+            "Resolve a bare issue-or-PR number once.",
+        ):
+            with self.subTest(text=text):
+                self.assertTrue(is_english_prose(text))
 
     def test_portable_and_manual_project_text_is_english(self):
         paths = [

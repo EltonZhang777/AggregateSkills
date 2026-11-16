@@ -18,12 +18,13 @@ CHINESE_MARKERS = (
 )
 JAPANESE_HAN_MARKERS = ("対応", "実施", "確認", "変更", "対象", "現在", "開始", "停止", "仕様", "読込")
 ENGLISH_MARKERS = {
-    "an", "and", "after", "ask", "are", "before", "body", "by", "candidate", "complete", "completed",
+    "an", "and", "after", "ask", "are", "automatically", "before", "body", "by", "cache", "candidate", "complete", "completed",
     "approval", "closure", "criteria", "documentation", "draft", "english", "evidence", "existing", "for", "from", "guide", "guidance", "handoff", "has",
-    "have", "if", "in", "including", "is", "issue", "it", "labels", "language", "map", "new", "not", "of",
-    "on", "or", "policy", "preserve", "project", "pull", "ready", "reject", "rejects", "repository", "request",
-    "records", "root", "rule", "saving", "see", "sentences", "service", "shortened", "status", "stores", "summary", "suspended",
-    "target", "text", "the", "this", "ticket", "to", "untouched", "user-visible", "verbatim", "when", "which",
+    "have", "if", "in", "including", "is", "issue", "it", "labels", "language", "map", "new", "not", "number", "of",
+    "on", "or", "policy", "preserve", "project", "pull", "read", "ready", "reject", "rejects", "repository", "request",
+    "records", "required", "resolve", "review", "root", "rule", "saving", "see", "sentences", "service", "shortened",
+    "state", "status", "stores", "summary", "suspended", "target", "text", "the", "this", "ticket", "to", "tracker", "triage",
+    "untouched", "user-visible", "verbatim", "when", "which", "writing",
     "with", "work", "write", "written", "while", "therefore", "thus", "consequently", "hence", "so", "were",
     "preserving", "original", "meaning", "files", "changed",
 }
@@ -38,6 +39,10 @@ ENGLISH_FUNCTION_WORDS = set(
     therefore there these they this those though through thus to too under until up very was we were what when where
     which while who whom why will with without would yet you your yours yourself yourselves
     """.split()
+)
+SHARED_ENGLISH_SPANISH_FUNCTION_WORDS = {"a", "as", "he", "me", "no", "so"}
+ENGLISH_FUNCTION_EVIDENCE_WORDS = (
+    ENGLISH_FUNCTION_WORDS - SHARED_ENGLISH_SPANISH_FUNCTION_WORDS
 )
 FOREIGN_WORDS = {
     "avec", "bonjour", "ce", "ces", "cette", "dans", "de", "des", "du", "et", "est", "français", "la",
@@ -91,11 +96,11 @@ def is_english(text):
     if not words or any(word in FOREIGN_WORDS for word in words):
         return False
     has_marker_evidence = (
-        sum(word in ENGLISH_MARKERS for word in words) / len(words) >= 0.25
+        sum(word in ENGLISH_MARKERS for word in words) / len(words) >= 1 / 5
         and any(word in ENGLISH_MARKERS - ENGLISH_FUNCTION_WORDS for word in words)
     )
     has_sentence_evidence = (
-        any(word in ENGLISH_FUNCTION_WORDS for word in words)
+        len({word for word in words if word in ENGLISH_FUNCTION_EVIDENCE_WORDS}) >= 2
         and any(word not in ENGLISH_FUNCTION_WORDS for word in words)
     )
     return has_marker_evidence or has_sentence_evidence
@@ -365,6 +370,11 @@ def main():
     require(not is_english("Le service rejette la demande."), "English check accepts a French sentence")
     require(not is_english("Il a un role a jouer."), "English check accepts a French sentence with shared short words")
     require(not is_english("Il a un permis."), "English check accepts a French sentence with a shared article")
+    require(not is_english("No hay problema."), "English check accepts a short Spanish sentence with a shared function word")
+    require(not is_english("Vamos a comer."), "English check accepts short Spanish prose with a shared article")
+    require(not is_english("Me duele mucho."), "English check accepts short Spanish prose with a shared pronoun")
+    require(not is_english("He visto esto."), "English check accepts short Spanish prose with a shared auxiliary")
+    require(not is_english("No me gusta."), "English check accepts short Spanish prose with two shared function words")
     require(not is_english("The service rejects it. これはテストです。"), "English check accepts Japanese mixed into an English candidate")
     require(not is_chinese("Le rapport est français, 中文标记已保留。"), "Chinese check accepts a report led by French")
     require(not is_chinese("対応完了"), "Chinese check accepts a Kanji-only Japanese report")
