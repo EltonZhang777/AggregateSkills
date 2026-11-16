@@ -48,7 +48,13 @@ Collect repository facts without writing:
 - whether handoffs, shared sessions, or external actions already carry approval records;
 - the glossary layout and existing language, including mixed-language content.
 
-Inspect the content that each proposed managed section would replace. When summary-first issue reads are enabled for GitHub, compare the tracker guide with the three legacy defaults in `references/tracker-migration.md` by their content, not line numbers. If any listed legacy default exists, all three must exist exactly once and unchanged; if one is missing, appears more than once, or has changed, record the migration as blocked and do not guess. If none exists, preserve the guide and deploy only the confirmed sections. For another tracker, skip the GitHub migration and preserve its native read commands.
+Inspect the content that each proposed managed section would replace. Detect the tracker migration state before presenting or writing a draft. For GitHub, compare the tracker guide with `references/tracker-migration.md` by their content, not line numbers:
+
+- `unmigrated`: all three legacy defaults occur exactly once, both replacement pointers are absent, and the managed issue-operations section is absent;
+- `fully migrated`: all three legacy defaults are absent, both replacement pointers occur exactly once, and the managed issue-operations section has one complete marker pair;
+- `ambiguous`: any state where a fact is missing or altered, any legacy default appears more than once, or the pointer or marker set is partial or mixed.
+
+Record the detected state and its file evidence. Do not guess or repair an ambiguous state. For another tracker, skip the GitHub migration and preserve its native read commands.
 
 Exploration is complete when every fact shown in the next step has a file, command result, or explicit user answer as evidence.
 
@@ -87,7 +93,13 @@ For every target file, show:
 - any first-run removal of the three legacy tracker defaults;
 - the final managed-section boundaries.
 
-When summary-first issue reads are enabled on the first run for a GitHub guide that contains any listed legacy default, show the exact tracker migration from `references/tracker-migration.md` as part of the same complete draft. Replace all three legacy defaults with the listed pointers to the single managed issue-operations section. If summary-first issue reads are disabled, preserve the existing read conventions even when another issue theme is enabled. On reruns, replace only the confirmed managed section and show that exact replacement diff.
+Use the tracker-migration decision matrix before drafting:
+
+- Unmigrated tracker with summary-first reads enabled: include the exact migration from `references/tracker-migration.md` in the same complete draft.
+- Unmigrated tracker with summary-first reads disabled: preserve the legacy read conventions even when another issue theme is enabled.
+- Fully migrated tracker with summary-first reads enabled: replace only the managed issue-operations section and do not edit the migration pointers.
+- Fully migrated tracker with summary-first reads disabled: stop before drafting or writing because the existing pointers require the managed summary rules.
+- Ambiguous tracker state: stop before drafting or writing and identify the conflicting evidence.
 
 Stop before writing when a marker is missing, duplicated, reversed, or ambiguous; when the migration text has drifted; when ownership appears inside a range this skill does not own; or when the draft would alter unrelated text. Do not normalize or opportunistically rewrite existing prose.
 
@@ -95,13 +107,14 @@ The draft gate passes only after the user reviews the complete set of file chang
 
 ## 5. Write and verify
 
-Write only the approved managed ranges. Leave all text outside those ranges unchanged. Do not create an ADR or application runtime, and do not modify `/setup-matt-pocock-skills` or any other dependency.
+Write the approved managed ranges. On an unmigrated tracker, permit the exact reviewed first-run migration outside managed ranges and nothing else. Reruns must not edit outside managed ranges. Do not create an ADR or application runtime, and do not modify `/setup-matt-pocock-skills` or any other dependency.
 
 After writing, verify:
 
 - each expected managed section has exactly one complete marker pair;
-- the migrated tracker has no legacy issue-read or issue-list default remaining;
+- an enabled first-run migration leaves no legacy issue-read or issue-list default and exactly the two reviewed pointers;
+- a consistent rerun leaves both migration pointers and both surrounding sentinels byte-for-byte unchanged;
 - the deployed section matches the reviewed draft;
-- content outside the managed ranges is byte-for-byte unchanged.
+- after accounting for the exact reviewed first-run migration, all other content outside the managed ranges is byte-for-byte unchanged.
 
 If verification fails, preserve the current files, report the exact mismatch, and stop. Do not claim a successful setup when only static inspection ran; manual acceptance remains separate.

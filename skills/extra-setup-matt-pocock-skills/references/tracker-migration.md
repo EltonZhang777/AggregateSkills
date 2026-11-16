@@ -1,9 +1,31 @@
 # First-run tracker migration
 
-Use this GitHub migration only when summary-first issue reads are enabled and
-at least one legacy default is present. If any is present, all three must match
-exactly once by their full content. Stop if any is missing, duplicated, or
-materially changed. If none is present, do not migrate the tracker.
+Detect the state before asking for summary-first reads:
+
+- `unmigrated`: all three legacy defaults occur exactly once, both replacement
+  pointers are absent, and the managed issue-operations section is absent.
+- `fully migrated`: all three legacy defaults are absent, both replacement
+  pointers occur exactly once, and the managed issue-operations section has one
+  complete marker pair.
+- `ambiguous`: any other missing, duplicated, altered, partial, or mixed state.
+
+Use this GitHub migration only when the state is `unmigrated`.
+
+## Rerun decision matrix
+
+| Detected state | Summary-first reads | Action |
+| --- | --- | --- |
+| Unmigrated | Enabled | Include the exact migration in the complete draft |
+| Unmigrated | Disabled | Preserve the legacy read conventions |
+| Fully migrated | Enabled | Replace only the managed issue-operations section |
+| Fully migrated | Disabled | Stop before drafting or writing: the existing pointers require the managed summary rules |
+| Ambiguous | Either | Stop before drafting or writing with the conflicting evidence |
+
+For an unmigrated tracker, all three legacy defaults must match exactly once by
+their full content. Stop if any is missing, duplicated, or materially changed.
+For a fully migrated tracker, both pointers and the managed marker pair must be
+complete. If none of the recognized states applies, report `ambiguous` and do
+not write.
 
 ## Remove these legacy defaults
 

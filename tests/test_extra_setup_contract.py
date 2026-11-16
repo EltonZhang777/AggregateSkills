@@ -15,6 +15,15 @@ MARKER = re.compile(
 MARKER_TOKEN = re.compile(
     r"<!-- extra-setup-matt-pocock-skills:(?P<section>[\w-]+):(?P<edge>start|end) -->"
 )
+LEGACY_TRACKER_DEFAULTS = (
+    "- **Read an issue**: `gh issue view <number> --comments`, filtering comments by `jq` and also fetching labels.",
+    "- **List issues**: `gh issue list --state open --json number,title,body,labels,comments --jq '[.[] | {number, title, body, labels: [.labels[].name], comments: [.comments[].body]}]'` with appropriate `--label` and `--state` filters.",
+    "Run `gh issue view <number> --comments`.",
+)
+MIGRATED_TRACKER_POINTERS = (
+    "- **Read or list issues**: follow [Issue operations](#issue-operations) for summary fields, body and comment escalation, and pagination.",
+    "Follow [Issue operations](#issue-operations) before reading a ticket.",
+)
 
 
 def read(path):
@@ -53,6 +62,21 @@ def outside_managed_digest(path, section_id):
     text = read(path).replace("\r\n", "\n")
     text = text.replace(managed(path, section_id), "", 1).rstrip()
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+
+def tracker_migration_state(text):
+    legacy = tuple(text.count(item) for item in LEGACY_TRACKER_DEFAULTS)
+    pointers = tuple(text.count(item) for item in MIGRATED_TRACKER_POINTERS)
+    has_section = (
+        text.count("<!-- extra-setup-matt-pocock-skills:issue-operations:start -->")
+        == text.count("<!-- extra-setup-matt-pocock-skills:issue-operations:end -->")
+        == 1
+    )
+    if legacy == (1, 1, 1) and pointers == (0, 0) and not has_section:
+        return "unmigrated"
+    if legacy == (0, 0, 0) and pointers == (1, 1) and has_section:
+        return "fully migrated"
+    return "ambiguous"
 
 
 class ExtraSetupMetadataTests(unittest.TestCase):
@@ -203,9 +227,9 @@ class ExtraSetupWorkflowTests(unittest.TestCase):
         self.assertIn("by their content, not line numbers", text)
         self.assertIn("appears more than once", text)
         self.assertIn("references/tracker-migration.md", text)
-        self.assertIn("If summary-first issue reads are disabled", text)
+        self.assertIn("Unmigrated tracker with summary-first reads disabled", text)
         self.assertIn("For another tracker, skip the GitHub migration", text)
-        self.assertIn("If none exists, preserve the guide", text)
+        self.assertIn("Fully migrated tracker with summary-first reads enabled", text)
         for legacy in (
             "- **Read an issue**: `gh issue view <number> --comments`",
             "- **List issues**: `gh issue list --state open --json number,title,body,labels,comments",
@@ -218,6 +242,48 @@ class ExtraSetupWorkflowTests(unittest.TestCase):
         )
         self.assertNotIn("write rereads", migration)
         self.assertIn("before reading a ticket", migration)
+
+    def test_tracker_migration_state_matrix_prevents_conflicting_reruns(self):
+        workflow = read(SKILL_DIR / "SKILL.md")
+        migration = read(REFERENCE_DIR / "tracker-migration.md")
+        start = "<!-- extra-setup-matt-pocock-skills:issue-operations:start -->"
+        end = "<!-- extra-setup-matt-pocock-skills:issue-operations:end -->"
+
+        self.assertEqual(
+            "unmigrated", tracker_migration_state("\n".join(LEGACY_TRACKER_DEFAULTS))
+        )
+        self.assertEqual(
+            "fully migrated",
+            tracker_migration_state(
+                "\n".join((*MIGRATED_TRACKER_POINTERS, start, end))
+            ),
+        )
+        for ambiguous, expected in (
+            (LEGACY_TRACKER_DEFAULTS[:2], "ambiguous"),
+            ((*LEGACY_TRACKER_DEFAULTS, LEGACY_TRACKER_DEFAULTS[0]), "ambiguous"),
+            (MIGRATED_TRACKER_POINTERS, "ambiguous"),
+            ((*MIGRATED_TRACKER_POINTERS, start, end, start), "ambiguous"),
+        ):
+            with self.subTest(expected=expected, fixture=ambiguous):
+                self.assertEqual(expected, tracker_migration_state("\n".join(ambiguous)))
+
+        self.assertEqual(
+            "fully migrated",
+            tracker_migration_state(
+                read(ROOT / "docs" / "agents" / "issue-tracker.md")
+            ),
+        )
+        for detail in (
+            "Detect the tracker migration state before presenting or writing a draft",
+            "`unmigrated`",
+            "`fully migrated`",
+            "`ambiguous`",
+            "Fully migrated tracker with summary-first reads disabled: stop before drafting or writing",
+            "Ambiguous tracker state: stop before drafting or writing",
+            "the exact reviewed first-run migration outside managed ranges",
+            "Reruns must not edit outside managed ranges",
+        ):
+            self.assertIn(detail, workflow + migration)
 
     def test_themes_remain_individually_selectable_in_shared_blocks(self):
         text = read(SKILL_DIR / "SKILL.md")
@@ -263,7 +329,7 @@ class ExtraSetupWorkflowTests(unittest.TestCase):
         migration = read(REFERENCE_DIR / "tracker-migration.md")
         issue_template = read(REFERENCE_DIR / "issue-operations.md")
         self.assertIn(
-            "If summary-first issue reads are disabled, preserve the existing read conventions even when another issue theme is enabled.",
+            "Unmigrated tracker with summary-first reads disabled: preserve the legacy read conventions even when another issue theme is enabled.",
             workflow,
         )
         self.assertIn(
@@ -465,6 +531,9 @@ class ExtraSetupManualAcceptanceTests(unittest.TestCase):
             "only as the read-only review target",
             "Do not run the setup skill in this checkout",
             "Run any write-capable deployment scenario in a disposable copy first",
+            "unmigrated",
+            "fully migrated",
+            "ambiguous",
         ):
             self.assertIn(detail, text)
 

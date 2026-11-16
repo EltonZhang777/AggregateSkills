@@ -44,12 +44,12 @@ appear inside each shared managed block.
 ## Complete draft and first-run migration
 
 Accept the recommendations and confirm the skill presents a complete draft
-before any write. Verify the draft uses `references/tracker-migration.md` and
-shows the exact first-run migration diff for the issue-read bullet, issue-list
-command, and repeated fetch-ticket command. Confirm all three legacy read
-defaults are redirected to one unique managed issue-operations section, the
-session/checkout/handoff and glossary sections are shown as insertions, and no
-write occurs before approval.
+before any write. Confirm exploration labels the tracker `unmigrated`. Verify
+the draft uses `references/tracker-migration.md` and shows the exact first-run
+migration diff for the issue-read bullet, issue-list command, and repeated
+fetch-ticket command. Confirm all three legacy read defaults are redirected to
+one unique managed issue-operations section, the session/checkout/handoff and
+glossary sections are shown as insertions, and no write occurs before approval.
 
 Repeat the first run with summary-first issue reads rejected and issue-write
 rereads accepted. Confirm the legacy read commands remain unchanged and the
@@ -67,9 +67,16 @@ marker pair each.
 ## Managed-section preservation and rerun
 
 Add sentinel text immediately before and after each managed section, then rerun
-the workflow. Confirm the rerun reads the existing markers, shows only the
-managed replacements, preserves both sentinels byte-for-byte, and leaves the
-legacy commands absent.
+the workflow with summary-first reads enabled. Confirm the rerun detects
+`fully migrated`, reads the existing markers, shows only the managed
+replacements, preserves both pointers and both sentinels byte-for-byte, and
+leaves the legacy commands absent.
+
+Repeat that rerun with summary-first reads disabled. Confirm the workflow
+reports the conflicting decision and stops before writing. Separately create an
+`ambiguous` tracker with one legacy command missing, a duplicate replacement
+pointer, and a partial managed marker set in distinct clean copies. Confirm
+each state stops before drafting or writing.
 
 Create a duplicate start marker, remove an end marker, reverse a marker pair,
 and introduce one ambiguous managed range in separate clean copies. Confirm
