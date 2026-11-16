@@ -522,6 +522,12 @@ class ExtraSetupWorkflowTests(unittest.TestCase):
             "<!-- extra-setup-matt-pocock-skills:same:start -->"
         )
         self.assertEqual("end without start", marker_error(reversed_pair))
+        crossed = (
+            "<!-- extra-setup-matt-pocock-skills:first:start -->\n"
+            "<!-- extra-setup-matt-pocock-skills:second:end -->"
+        )
+        self.assertEqual("crossed markers", marker_error(crossed))
+        self.assertEqual("ambiguous", tracker_migration_state(crossed))
         partial = "<!-- extra-setup-matt-pocock-skills:same:start -->"
         self.assertEqual("unclosed marker", marker_error(partial))
         malformed = "<!-- extra-setup-matt-pocock-skills:same:started -->"
