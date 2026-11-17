@@ -2,7 +2,7 @@
 
 Run these through the user-visible skill invocation. Supply each scenario's
 change context and any repository rules or examples it names. Inspect the
-returned text and confirm no Git operation runs.
+returned text and confirm no Git or GitHub write operation runs.
 
 ## Conventional subject and useful body
 
@@ -312,3 +312,114 @@ Confirm:
 - The skill defaults to general end users and produces no tables or JSON.
 - No Git or GitHub operation runs; it creates no tag, Release, or CHANGELOG
   entry, and performs no publication. The skill returns text only.
+
+## Release evidence and read-only inspection
+
+Run each scenario below through the user-visible skill invocation. Use a
+disposable local single-project repository and a fixture GitHub repository
+whose before-and-after state you can inspect.
+
+### Explicit change list
+
+Do not authorize Git or GitHub inspection. Supply these facts for one release:
+
+- The legacy import command is removed; existing automation stops working and
+  must switch to the supported command.
+- A profile filter is added so users can narrow the activity list to one
+  person.
+- Empty profile filters now return all activity instead of an error.
+
+Confirm:
+
+- The skill does not inspect repository or tracker state.
+- It returns one copy-ready Markdown block and no invented metadata.
+- The Draft basis is outside the block and reports supplied change facts, an
+  explicit change list, no refs, SHAs, PRs, or issues, no gaps, and `Inspection
+  date: not applicable (no evidence inspection)`.
+
+### Unsupported multi-project scope
+
+Supply a monorepo containing `apps/web` and `services/api`. Ask for one
+whole-repository release across both projects.
+
+Confirm the skill rejects the request, asks for a separately scoped
+single-project input, and does not discover packages, apps, platforms, or
+release units. Repeat with a multi-product request and confirm the same result.
+
+### Tag range boundaries
+
+Create this linear history:
+
+- `A`: `docs: explain filters`, reachable before the opening tag.
+- `B`: `feat: add profile filter`, tagged `v2.3.0`.
+- `C`: `fix: return all activity for an empty filter`.
+- `D`: `feat: add activity export`, tagged `v2.4.0`.
+
+Authorize read-only inspection and ask for `v2.3.0..v2.4.0`.
+
+Confirm the output includes `C` and `D`, excludes `A` and `B`, and records the
+opening boundary as excluded and the closing boundary as included. Ask for
+`v2.3.0...v2.4.0`; confirm the skill does not treat that three-dot range as a
+chronological release range and asks for `START..END` or an exact ref set.
+Ask to include `v2.3.0`; confirm it asks for an adjusted boundary such as
+`v2.3.0^..v2.4.0` or an exact ref set instead of changing the range
+silently.
+
+### User-attested PR or issue scope
+
+Supply PR numbers `#41` and `#42`, their change facts, and the attestation that
+both shipped in `2.4.0`. Do not provide containment or merge evidence.
+
+Confirm the skill accepts the list because of the user attestation, does not
+infer missing containment, and records the attested PR scope and numbers in the
+Draft basis.
+
+### PR and issue reconciliation
+
+Use the tag fixture above. PR `#44` merges at `C` inside the range, PR `#45`
+merges outside the range, and issue `#46` mentions export but has no merge or
+containment evidence. Authorize inspection and supply these numbers.
+
+Confirm the skill includes `#44`, excludes `#45`, and reports `#46` as an
+unresolved containment gap instead of including or excluding it by inference.
+Confirm the Draft basis records the exact refs and commit SHAs plus the
+supplied PR and issue numbers.
+
+### Unavailable evidence
+
+With authorization for GitHub inspection, make `gh auth status` fail. Ask for
+release notes for `v2.3.0..v2.4.0`.
+
+Confirm the skill does not change authentication, does not infer the hidden
+content, and either asks for a supplied change list or reports the unavailable
+authentication as an unresolved gap. Repeat with the nonexistent tag
+`v9.9.9..v2.4.0`; confirm the failed read is also an unresolved gap.
+
+### Reverts and squash commits
+
+Create commits `E` (`feat: add search`) and `F` (`revert: revert feat: add
+search`) within the same scope. Confirm the fully reverted search feature is
+omitted.
+
+Create an unclear revert of a merge commit. Confirm the skill asks about its net
+effect instead of guessing. Create squash commit `S` (`feat: ship bundled
+changes`) without itemized evidence and confirm the skill asks for more
+information instead of splitting it. Then supply authorized PR `#47` whose
+body enumerates the bundled items; confirm the skill may split `S` only from
+that evidence and records `#47` in the Draft basis.
+
+### Read-only inspection
+
+Use a fixture repository with reachable tags, PRs, and issues. Before invoking
+the skill, record `git status --porcelain=v1`, `git show-ref`, sanitized
+`gh auth status` output, and the fixture's GitHub refs, tags, Releases, Issues,
+PRs, and comments. Authorize read-only Git and GitHub inspection for one release
+scope.
+
+Confirm the output contains the copy-ready block and the separate Draft basis.
+Afterward, confirm both recorded states are unchanged, including:
+
+- authentication, staging, commits, pushes, tags, Releases, and CHANGELOG;
+- Issue or PR titles, bodies, and comments, and release publication;
+- credentials, tokens, private URLs, internal hostnames, and sensitive
+  identifiers in both outputs.

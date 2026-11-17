@@ -1901,12 +1901,35 @@ class ConventionalGitMessagesBehaviorTests(unittest.TestCase):
                     self.assertIn(heading, reference_text)
 
     def test_shared_operation_boundary_stays_in_the_entrypoint(self):
-        text = skill("conventional-git-messages").lower().replace(chr(96), "")
+        text = " ".join(
+            skill("conventional-git-messages")
+            .lower()
+            .replace(chr(96), "")
+            .split()
+        )
         activation = section(text, "## activation criteria & objective")
-        self.assertIn("never perform a git operation", activation)
-        self.assertIn("create or modify an issue", activation)
-        self.assertIn("open or edit a pull request", activation)
-        self.assertIn("post a comment", activation)
+        self.assertIn(
+            "only release-notes drafting may inspect git or github, and only when "
+            "the user explicitly authorizes read-only evidence inspection for a "
+            "named repository and release scope. do not inspect repository or "
+            "tracker state otherwise. never stage, commit, or push. do not create "
+            "a tag, github release, or changelog entry; write an issue or pull "
+            "request; change authentication; post a comment; or publish.",
+            activation,
+        )
+        self.assertIn(
+            "when the selected guidance requires supplementary output, return "
+            "that outside the code block as specified",
+            section(text, "## output"),
+        )
+        pr_text = " ".join(
+            skill_reference("conventional-git-messages", "pull-request-text.md")
+            .lower()
+            .replace(chr(96), "")
+            .split()
+        )
+        self.assertIn("use the supplied current diff", pr_text)
+        self.assertIn("supplied recent same-type pr examples", pr_text)
 
     def test_optional_diagrams_use_user_selected_skill_scout_flow(self):
         text = skill_reference("conventional-git-messages", "pull-request-text.md").lower().replace(chr(96), "")
@@ -1950,7 +1973,7 @@ class ReleaseNotesDraftingContractTests(unittest.TestCase):
             "omit",
             "no placeholders",
             "tables or json",
-            "never perform a git or github operation",
+            "read-only git and github evidence inspection",
             "tag",
             "release",
             "changelog",
@@ -1963,7 +1986,9 @@ class ReleaseNotesDraftingContractTests(unittest.TestCase):
             with self.subTest(required=required):
                 self.assertIn(required, reference)
         self.assertIn(
-            "create a tag, release, or changelog entry, or perform release-note publication",
+            "never stage, commit, or push. do not create a tag, release, or "
+            "changelog entry; write an issue or pull request; change "
+            "authentication; post a comment; or perform release-note publication.",
             reference,
         )
         self.assertIn("omit every section without items", reference)
@@ -1981,7 +2006,7 @@ class ReleaseNotesDraftingContractTests(unittest.TestCase):
     def test_manual_release_notes_scenario_covers_supplied_facts_and_no_writes(self):
         manual = (
             ROOT / "tests" / "manual" / "conventional-git-messages.md"
-        ).read_text(encoding="utf-8").lower()
+        ).read_text(encoding="utf-8").lower().replace(chr(96), "")
         scenario = " ".join(
             section(manual, "## release notes from supplied facts").split()
         )
@@ -2012,6 +2037,122 @@ class ReleaseNotesDraftingContractTests(unittest.TestCase):
             "changelog entry, and performs no publication",
             scenario,
         )
+
+    def test_release_evidence_contract_covers_scope_ranges_and_draft_basis(self):
+        reference = " ".join(
+            skill_reference("conventional-git-messages", "release-notes.md")
+            .lower()
+            .replace(chr(96), "")
+            .split()
+        )
+
+        for required in (
+            "one shipped single-project release",
+            "whole-repository release is allowed only for a single-project repository",
+            "monorepo, multi-project, multi-platform, or multi-product",
+            "separately scoped single-project input",
+            "do not discover packages, apps, platforms, or release units",
+            "explicit change list",
+            "exact ref set or tag pair",
+            "containment or merge evidence",
+            "user attestation",
+            "version and release-date metadata are optional",
+            "accept optional product, version, and date metadata when supplied or evidence-backed",
+            "do not invent missing metadata",
+            "if the supplied or inspected facts do not support",
+            "session, meeting, or theme",
+            "labeled highlights",
+            "cannot substitute for a complete release scope",
+            "start..end",
+            "reachable from end but not start",
+            "opening boundary is excluded and the closing boundary is included",
+            "asks to include the opening commit or supplies a three-dot range",
+            "request start..end or an exact ref set instead of silently changing the range",
+            "three-dot",
+            "read failure",
+            "unavailable authentication",
+            "unresolved gap",
+            "fully reverted within scope",
+            "squash commit",
+            "authorized pr or issue evidence",
+            "include a level-one title only when the supplied or evidence-backed facts support it",
+            "use only supplied or evidence-backed product, version, and date fields",
+            "draft basis",
+            "in addition to the copy-ready block",
+            "outside the fenced copy-ready block",
+            "authorized source types",
+            "exact available refs",
+            "commit shas",
+            "pr or issue numbers",
+            "inspection date",
+            "inspection date, or not applicable when only supplied facts were used",
+            "inspection date: not applicable (no evidence inspection)",
+            "unresolved gaps",
+            "citations or links",
+            "credentials, tokens, private urls, internal hostnames, and sensitive identifiers",
+            "verification and drafting perform no release or github write",
+        ):
+            with self.subTest(required=required):
+                self.assertIn(required, reference)
+
+    def test_manual_release_evidence_scenarios_cover_read_only_and_scope_edges(self):
+        manual = (
+            ROOT / "tests" / "manual" / "conventional-git-messages.md"
+        ).read_text(encoding="utf-8").lower().replace(chr(96), "")
+        scenario = " ".join(
+            section(manual, "## release evidence and read-only inspection").split()
+        )
+
+        for required in (
+            "### explicit change list",
+            "do not authorize git or github inspection",
+            "inspection date: not applicable (no evidence inspection)",
+            "### unsupported multi-project scope",
+            "apps/web",
+            "services/api",
+            "separately scoped single-project input",
+            "### tag range boundaries",
+            "v2.3.0..v2.4.0",
+            "includes c and d",
+            "excludes a and b",
+            "opening boundary as excluded",
+            "closing boundary as included",
+            "v2.3.0...v2.4.0",
+            "three-dot",
+            "v2.3.0^..v2.4.0",
+            "### user-attested pr or issue scope",
+            "#41",
+            "#42",
+            "shipped in 2.4.0",
+            "user attestation",
+            "### pr and issue reconciliation",
+            "#44",
+            "#45",
+            "#46",
+            "unresolved containment gap",
+            "### unavailable evidence",
+            "gh auth status",
+            "unresolved gap",
+            "does not infer",
+            "v9.9.9..v2.4.0",
+            "### reverts and squash commits",
+            "fully reverted",
+            "unclear revert",
+            "squash commit s",
+            "#47",
+            "body enumerates the bundled items",
+            "only from that evidence",
+            "### read-only inspection",
+            "git status --porcelain=v1",
+            "git show-ref",
+            "sanitized gh auth status",
+            "recorded states are unchanged",
+            "authentication, staging, commits, pushes, tags, releases, and changelog",
+            "issue or pr titles, bodies, and comments, and release publication",
+            "credentials, tokens, private urls, internal hostnames, and sensitive identifiers",
+        ):
+            with self.subTest(required=required):
+                self.assertIn(required, scenario)
 
 
 class ReadmeBehaviorTests(unittest.TestCase):

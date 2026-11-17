@@ -2,7 +2,7 @@
 
 ## Pull request drafting
 
-- Use the current diff, target repository's PR title and description guidance, supplied change facts, and recent same-type PR examples when drafting or revising PR titles and bodies. Ask when required facts or prefix conventions are unclear.
+- Use the supplied current diff, target repository's PR title and description guidance, supplied change facts, and supplied recent same-type PR examples when drafting or revising PR titles and bodies. Ask when required facts or prefix conventions are unclear.
 - Update existing PR text only when it is inaccurate, materially incomplete, or clearly inconsistent with current repository guidance.
 
 ## Pull request titles
