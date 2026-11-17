@@ -1938,6 +1938,29 @@ class ConventionalGitMessagesBehaviorTests(unittest.TestCase):
         self.assertIn("use its skillroute local-catalog mode only when the user selects it", diagrams)
         self.assertIn("do not install, index, copy, or silently substitute a skill", diagrams)
 
+    def test_prerequisite_gates_are_scoped_to_routes_that_use_them(self):
+        entrypoint = skill("conventional-git-messages").lower().replace(chr(96), "")
+        dependencies = section(entrypoint, "## dependencies")
+        self.assertIn("only the dependencies required by the selected guidance route", dependencies)
+        self.assertIn("stop only the affected route", dependencies)
+
+        routes = section(entrypoint, "## guidance routes")
+        self.assertIn("release notes", routes)
+        self.assertIn("(references/release-notes.md)", routes)
+
+        pull_request = skill_reference(
+            "conventional-git-messages", "pull-request-text.md"
+        ).lower().replace(chr(96), "")
+        descriptions = section(pull_request, "## pull request descriptions")
+        self.assertIn("before drafting a pr body, check that /pr is available", descriptions)
+        self.assertIn("stop pr-body drafting", descriptions)
+        self.assertIn("does not apply to pr titles, pr comments, or other output routes", descriptions)
+
+        diagrams = section(pull_request, "## optional diagrams")
+        self.assertIn("confirm /skill-scout is available before invoking it", diagrams)
+        self.assertIn("use its skillroute local-catalog mode only when the user selects it", diagrams)
+        self.assertIn("confirm the cli is available before running it", diagrams)
+
 
 class ReleaseNotesDraftingContractTests(unittest.TestCase):
     def test_release_notes_route_defines_the_copy_ready_contract(self):

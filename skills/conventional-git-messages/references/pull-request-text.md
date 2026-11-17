@@ -16,7 +16,7 @@
 
 ## Pull request descriptions
 
-- Invoke `/pr` before drafting any PR body and follow its Summary, Evidence, and Merge Danger template.
+- Before drafting a PR body, check that `/pr` is available; if not, report the missing prerequisite and stop PR-body drafting. When available, invoke it and follow its Summary, Evidence, and Merge Danger template. This gate does not apply to PR titles, PR comments, or other output routes.
 - Begin the PR body with all supplied related issue references, before the
   existing `/pr` Summary, Evidence, and Merge Danger template. Use `closes #N`
   only when the change resolves that issue and it should close on merge; use
@@ -36,5 +36,5 @@
 ## Optional diagrams
 
 - Consider a diagram only when it materially improves clarity. Use an accessible `/show-me` or `/archify` skill; if no suitable skill is accessible, follow the shared Optional diagrams guidance to discover one when its gates permit, and omit the diagram if none is accessible.
-- When discovery is needed, follow `/skill-scout`'s general-host flow with host/caller inventory. Use its SkillRoute local-catalog mode only when the user selects it. Preserve its user-only invocation, confirmation, clarification, and missing-prerequisite gates. Do not install, index, copy, or silently substitute a skill.
+- When discovery is needed, confirm `/skill-scout` is available before invoking it, then follow `/skill-scout`'s general-host flow with host/caller inventory. Use its SkillRoute local-catalog mode only when the user selects it, and confirm the CLI is available before running it. Follow its missing-prerequisite gates and omit the optional diagram when discovery cannot proceed. Preserve its user-only invocation and confirmation and clarification gates. Do not install, index, copy, or silently substitute a skill.
 - Include only artifacts readers can access directly from the PR description; omit inaccessible artifacts and never upload or publish them.
