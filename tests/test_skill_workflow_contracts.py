@@ -1882,6 +1882,11 @@ class ConventionalGitMessagesBehaviorTests(unittest.TestCase):
                 "issue-text.md",
                 ("## issue titles", "## issue descriptions", "## issue comments"),
             ),
+            (
+                "release notes",
+                "release-notes.md",
+                ("# release notes", "## classification and copy-ready output", "## example"),
+            ),
         )
         for trigger, filename, headings in references:
             with self.subTest(trigger=trigger):
@@ -1909,6 +1914,104 @@ class ConventionalGitMessagesBehaviorTests(unittest.TestCase):
         self.assertIn("follow /skill-scout's general-host flow", diagrams)
         self.assertIn("use its skillroute local-catalog mode only when the user selects it", diagrams)
         self.assertIn("do not install, index, copy, or silently substitute a skill", diagrams)
+
+
+class ReleaseNotesDraftingContractTests(unittest.TestCase):
+    def test_release_notes_route_defines_the_copy_ready_contract(self):
+        text = skill("conventional-git-messages").lower().replace(chr(96), "")
+        activation = section(text, "## activation criteria & objective")
+        self.assertIn("release-note text", activation)
+        self.assertIn("release-note text", text.split("---", 2)[1])
+        self.assertIn(
+            "release-note text",
+            (ROOT / "README.md").read_text(encoding="utf-8").lower(),
+        )
+
+        reference = " ".join(
+            skill_reference("conventional-git-messages", "release-notes.md")
+            .lower()
+            .replace(chr(96), "")
+            .split()
+        )
+
+        self.assertIn(
+            "section order and precedence: breaking changes, deprecations, "
+            "features, fixes, maintenance",
+            reference,
+        )
+
+        for required in (
+            "general end users",
+            "target repository root agents.md language rule",
+            "precedence",
+            "problem",
+            "change",
+            "impact",
+            "omit",
+            "no placeholders",
+            "tables or json",
+            "never perform a git or github operation",
+            "tag",
+            "release",
+            "changelog",
+            "publication",
+            "**legacy import command removed**",
+            "problem:",
+            "change:",
+            "impact:",
+        ):
+            with self.subTest(required=required):
+                self.assertIn(required, reference)
+        self.assertIn(
+            "create a tag, release, or changelog entry, or perform release-note publication",
+            reference,
+        )
+        self.assertIn("omit every section without items", reference)
+        self.assertIn("if no title is present, begin with the overview", reference)
+        self.assertIn("# workbench 2.4 - 2026-12-01", reference)
+        self.assertIn("workbench 2.4 changes how imports are invoked.", reference)
+        self.assertIn(
+            "supplied facts: the legacy import command is removed; existing "
+            "automation that calls it stops working; users must switch to the "
+            "supported import command. the user also supplies product workbench, "
+            "version 2.4, and date 2026-12-01.",
+            reference,
+        )
+
+    def test_manual_release_notes_scenario_covers_supplied_facts_and_no_writes(self):
+        manual = (
+            ROOT / "tests" / "manual" / "conventional-git-messages.md"
+        ).read_text(encoding="utf-8").lower()
+        scenario = " ".join(
+            section(manual, "## release notes from supplied facts").split()
+        )
+
+        for required in (
+            "general end users",
+            "breaking changes",
+            "features",
+            "problem",
+            "change",
+            "impact",
+            "defaults to",
+            "without selecting an audience",
+            "do not supply product, version, or date metadata",
+            "omits the title",
+            "invents no metadata",
+            "tag",
+            "release",
+            "changelog",
+            "publication",
+            "no placeholders",
+            "no git or github operation",
+        ):
+            with self.subTest(required=required):
+                self.assertIn(required, scenario)
+        self.assertIn(
+            "no git or github operation runs; it creates no tag, release, or "
+            "changelog entry, and performs no publication",
+            scenario,
+        )
 
 
 class ReadmeBehaviorTests(unittest.TestCase):

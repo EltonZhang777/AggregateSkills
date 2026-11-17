@@ -289,3 +289,26 @@ a comment.
 
 Confirm it drafts requested text only and does not create or modify issues,
 post comments, or perform Git operations.
+
+## Release notes from supplied facts
+
+Ask for release notes without selecting an audience. Do not supply product,
+version, or date metadata. Supply these facts:
+
+- The legacy import command is removed. Existing automation that calls it
+  stops working, and users must switch to the supported import command before
+  upgrading.
+- A profile filter is added. Users can narrow the activity list to one person.
+- Empty profile filters now return all activity instead of an error.
+
+Confirm:
+
+- The response contains one copy-ready Markdown block.
+- The response omits the title and invents no metadata.
+- Breaking Changes appears before Features and Fixes, and empty sections are
+  omitted.
+- Each item uses the supplied Problem, Change, and Impact information without
+  inventing missing details, with no placeholders.
+- The skill defaults to general end users and produces no tables or JSON.
+- No Git or GitHub operation runs; it creates no tag, Release, or CHANGELOG
+  entry, and performs no publication. The skill returns text only.
