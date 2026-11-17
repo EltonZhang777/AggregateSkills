@@ -15,8 +15,7 @@ publication.
   when available.
 - Accept optional product, version, and date metadata when supplied or
   evidence-backed. Do not invent missing metadata.
-- Default to general end users. Repository-owned text follows the target
-  repository root `AGENTS.md` language rule.
+- The audience defaults to general end users without a follow-up.
 - If the supplied or inspected facts do not support a requested statement, ask
   for the missing fact instead of guessing.
 
@@ -60,8 +59,74 @@ not infer the missing release content.
 - Ask when a revert or squash commit has an unclear net effect.
 - Split a squash commit only with authorized PR or issue evidence.
 
-Minimize credentials, tokens, private URLs, internal hostnames, and sensitive
-identifiers in both the release notes and Draft basis.
+## Audience and language
+
+Use general end users only when the user does not select an audience. Otherwise
+accept exactly one explicitly selected external or customer-facing audience,
+such as administrators, operators, or developers/integrators. Do not infer any
+other audience. Reject or clarify an internal PM/QA audience or multiple
+audience variants in one response.
+
+Repository-owned text follows the target repository root `AGENTS.md` language
+rule. When the external publication surface or its language cannot be
+determined, ask instead of guessing. Preserve non-sensitive quotations and
+names.
+
+## Content gates
+
+Every breaking change must state evidence-backed affected users or systems,
+compatibility impact, and an audience-appropriate migration, verification, or
+mitigation action. An evidence-backed `no action required` may serve as the
+action. A missing or unsupported breaking impact or action blocks the final
+copy-ready block.
+
+A `!` marker or breaking-change phrase is only a signal; it does not replace
+impact or action evidence.
+
+Every deprecation must state evidence-backed affected behavior. Any asserted
+removal timing or migration work also requires evidence.
+
+Internal QA-only checklists never appear in external release notes. Include a
+QA step only when it can be rewritten as an external user action without
+exposing internal systems, credentials, or sensitive process information.
+
+Collect missing mandatory facts, material evidence conflicts, and unresolved
+language or security authorization into one batch of blocking questions. Do not
+return a final copy-ready block while any mandatory gap remains.
+
+After explicit user acceptance, a clearly labeled `Non-copy-ready preview` may
+be returned without placeholders. Do not label or format a preview as
+copy-ready. A preview does not satisfy these content gates: omit a fact that
+fails its gate, identify it as unresolved in the blocking questions, and never
+present it as verified release content.
+
+## Disclosure and redaction
+
+Omit or redact credentials, tokens, customer PII, private URLs, internal
+hostnames, and sensitive internal identifiers from both the release notes and
+`Draft basis`. Use a redacted category label instead of the sensitive value.
+
+Omit an undisclosed or embargoed security item entirely until the user
+authorizes the exact disclosure scope or the specific fields are already
+public. Omit its existence from the `Draft basis` too.
+
+Public disclosure permits only repetition of already-public fields. Do not
+expand to other affected systems, exploitation details, or fix details. The
+`Security` marker and `Draft basis` follow the same disclosure authorization
+rule as the security item.
+
+## Version safety
+
+Never calculate or assert a major, minor, or patch bump, and never recommend or
+create a tag. Repeat only supplied or evidence-backed SemVer implications where
+relevant.
+
+Check a version label against change types only when the user explicitly states
+that the project uses SemVer and supplies its release policy. Otherwise no
+versioning scheme is inferred. If that check finds a version label
+inconsistent with the supplied policy or change types, treat it as a material
+evidence conflict and include it in the blocking questions; do not return the
+final copy-ready block.
 
 ## Classification and copy-ready output
 
@@ -69,6 +134,9 @@ Classify each item into exactly one section. Use this section order and
 precedence: Breaking Changes, Deprecations, Features, Fixes, Maintenance.
 Omit every section without items. Place a performance change under Feature or
 Fix according to the supplied or inspected effect.
+
+When disclosure is authorized, place a security fix under Fixes with a visible
+`Security` marker; do not create a separate security section.
 
 Return the release notes in one fenced `markdown` block.
 
@@ -87,8 +155,8 @@ Return the release notes in one fenced `markdown` block.
 
 ## Draft basis
 
-In addition to the copy-ready block, return a compact `Draft basis` outside the
-fenced copy-ready block immediately after it. Report:
+In addition to the copy-ready block or accepted preview, return a compact
+`Draft basis` outside the fenced copy-ready block immediately after it. Report:
 
 - Authorized source types.
 - Exact available refs and commit SHAs.
@@ -96,9 +164,16 @@ fenced copy-ready block immediately after it. Report:
 - Inspection date, or `not applicable` when only supplied facts were used.
 - Unresolved gaps, or `None`.
 
+When neither a final block nor an accepted preview is returned, include the
+`Draft basis` with the blocking questions.
+
 Do not put evidence metadata or a raw appendix in the copy-ready text. Include
 item-level citations or links only when requested, required to resolve
 conflicting evidence, or needed to verify a specific claim.
+
+Use redacted locators rather than private links or tokens. For a final draft,
+keep release notes inside the copy-ready block and the evidence summary outside
+it. Keep an accepted preview outside the copy-ready block.
 
 ## Example
 

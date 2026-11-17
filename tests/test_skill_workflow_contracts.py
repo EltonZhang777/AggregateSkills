@@ -2088,9 +2088,89 @@ class ReleaseNotesDraftingContractTests(unittest.TestCase):
             "inspection date, or not applicable when only supplied facts were used",
             "inspection date: not applicable (no evidence inspection)",
             "unresolved gaps",
+            "when neither a final block nor an accepted preview is returned",
+            "include the draft basis with the blocking questions",
             "citations or links",
-            "credentials, tokens, private urls, internal hostnames, and sensitive identifiers",
+            "credentials, tokens, customer pii, private urls, internal hostnames, and sensitive internal identifiers",
             "verification and drafting perform no release or github write",
+        ):
+            with self.subTest(required=required):
+                self.assertIn(required, reference)
+
+    def test_release_notes_contract_enforces_audience_language_and_content_gates(self):
+        reference = " ".join(
+            skill_reference("conventional-git-messages", "release-notes.md")
+            .lower()
+            .replace(chr(96), "")
+            .split()
+        )
+
+        for required in (
+            "audience defaults to general end users without a follow-up",
+            "use general end users only when the user does not select an audience",
+            "exactly one explicitly selected external or customer-facing audience",
+            "administrators, operators, or developers/integrators",
+            "do not infer any other audience",
+            "reject or clarify an internal pm/qa audience or multiple audience variants in one response",
+            "target repository root agents.md language rule",
+            "external publication surface or its language cannot be determined",
+            "ask instead of guessing",
+            "preserve non-sensitive quotations and names",
+            "every breaking change must state evidence-backed affected users or systems",
+            "compatibility impact",
+            "audience-appropriate migration, verification, or mitigation action",
+            "evidence-backed no action required may serve as the action",
+            "missing or unsupported breaking impact or action blocks the final copy-ready block",
+            "a ! marker or breaking-change phrase is only a signal",
+            "does not replace impact or action evidence",
+            "every deprecation must state evidence-backed affected behavior",
+            "removal timing or migration work also requires evidence",
+            "internal qa-only checklists never appear in external release notes",
+            "rewritten as an external user action",
+            "without exposing internal systems, credentials, or sensitive process information",
+            "collect missing mandatory facts, material evidence conflicts, and unresolved language or security authorization into one batch of blocking questions",
+            "do not return a final copy-ready block while any mandatory gap remains",
+            "after explicit user acceptance",
+            "clearly labeled non-copy-ready preview",
+            "without placeholders",
+            "do not label or format a preview as copy-ready",
+            "a preview does not satisfy these content gates",
+            "identify it as unresolved in the blocking questions",
+            "never present it as verified release content",
+        ):
+            with self.subTest(required=required):
+                self.assertIn(required, reference)
+
+    def test_release_notes_contract_enforces_disclosure_and_version_safety(self):
+        reference = " ".join(
+            skill_reference("conventional-git-messages", "release-notes.md")
+            .lower()
+            .replace(chr(96), "")
+            .split()
+        )
+
+        for required in (
+            "omit or redact credentials, tokens, customer pii, private urls, internal hostnames, and sensitive internal identifiers",
+            "from both the release notes and draft basis",
+            "use a redacted category label instead of the sensitive value",
+            "omit an undisclosed or embargoed security item entirely",
+            "authorizes the exact disclosure scope or the specific fields are already public",
+            "omit its existence from the draft basis too",
+            "public disclosure permits only repetition of already-public fields",
+            "do not expand to other affected systems, exploitation details, or fix details",
+            "security marker and draft basis follow the same disclosure authorization rule as the security item",
+            "when disclosure is authorized, place a security fix under fixes with a visible security marker",
+            "never calculate or assert a major, minor, or patch bump",
+            "never recommend or create a tag",
+            "repeat only supplied or evidence-backed semver implications",
+            "explicitly states that the project uses semver and supplies its release policy",
+            "otherwise no versioning scheme is inferred",
+            "inconsistent with the supplied policy or change types",
+            "treat it as a material evidence conflict",
+            "include it in the blocking questions; do not return the final copy-ready block",
+            "use redacted locators rather than private links or tokens",
+            "keep release notes inside the copy-ready block and the evidence summary outside it",
+            "keep an accepted preview outside the copy-ready block",
         ):
             with self.subTest(required=required):
                 self.assertIn(required, reference)
@@ -2149,7 +2229,78 @@ class ReleaseNotesDraftingContractTests(unittest.TestCase):
             "recorded states are unchanged",
             "authentication, staging, commits, pushes, tags, releases, and changelog",
             "issue or pr titles, bodies, and comments, and release publication",
-            "credentials, tokens, private urls, internal hostnames, and sensitive identifiers",
+            "credentials, tokens, customer pii, private urls, internal hostnames, and sensitive internal identifiers",
+        ):
+            with self.subTest(required=required):
+                self.assertIn(required, scenario)
+
+    def test_manual_release_safety_scenarios_cover_audience_blockers_and_disclosure(self):
+        manual = (
+            ROOT / "tests" / "manual" / "conventional-git-messages.md"
+        ).read_text(encoding="utf-8").lower().replace(chr(96), "")
+        scenario = " ".join(
+            section(manual, "## release note safety gates").split()
+        )
+        default_scenario = " ".join(
+            section(manual, "## release notes from supplied facts").split()
+        )
+        self.assertIn("without selecting an audience", default_scenario)
+        self.assertIn("defaults to general end users", default_scenario)
+
+        for required in (
+            "### explicit external audience",
+            "ask for release notes for administrators",
+            "administrator-specific migration or verification action",
+            "no internal pm/qa checklist",
+            "### audience and blocking questions",
+            "feat(import)!: remove legacy import",
+            "pm and qa",
+            "administrators and developers",
+            "one batch of blocking questions",
+            "supported single external audience",
+            "affected users or systems",
+            "compatibility impact",
+            "migration, verification, or mitigation action",
+            "treated only as a signal",
+            "### breaking and deprecation evidence",
+            "new invocation without an audience selection",
+            "uses the default general end-user audience",
+            "evidence-backed no action required",
+            "legacy export format will be removed next quarter",
+            "affected behavior and evidence for the removal timing",
+            "### non-copy-ready preview",
+            "explicitly accept a non-copy-ready preview",
+            "outside the copy-ready contract",
+            "contains no placeholders",
+            "not present the unresolved change as ready to publish",
+            "accompanying blocking questions identify the omitted impact and action as unresolved",
+            "### language and protected names",
+            "no discernible dominant language",
+            "asks for the language instead of guessing",
+            "row 142 failed",
+            "zoë's export",
+            "preserves the quotation and name",
+            "### redaction and unavailable evidence",
+            "credential, token, customer email address, private url, internal hostname, and sensitive internal identifier",
+            "both the release notes and draft basis",
+            "reports an unresolved gap",
+            "no private link or token appears as a locator",
+            "### embargoed security disclosure",
+            "undisclosed security fix",
+            "existence in the draft basis are all omitted",
+            "affected sso users and the fixed behavior",
+            "visible security marker",
+            "does not add other systems, exploitation details, fix details",
+            "### version safety",
+            "recommend a tag",
+            "does neither and creates no tag",
+            "project uses semver",
+            "release policy plus version 2.4.0",
+            "conflict blocks the final copy-ready block",
+            "policy-consistent version 3.0.0",
+            "without calculating a bump or recommending a tag",
+            "### no-write boundary",
+            "authentication, staging, commit, push, tag, release, changelog, issue, pr, comment, or publication write",
         ):
             with self.subTest(required=required):
                 self.assertIn(required, scenario)
