@@ -30,11 +30,11 @@ Confirm that `/setup-matt-pocock-skills` is available and has produced:
 - `docs/agents/issue-tracker.md`;
 - `docs/agents/domain.md`.
 
-Read `AGENTS.md`, those guides, and the live `/setup-matt-pocock-skills` guide. If the setup output is absent or ambiguous, tell the user to run `/setup-matt-pocock-skills` and stop. Do not create that setup, invoke the dependency automatically, or modify the dependency skill.
+Read `AGENTS.md`, those guides, and the live `/setup-matt-pocock-skills` guide. If either required guide is absent or ambiguous, tell the user to run `/setup-matt-pocock-skills` and stop. Do not create that setup, invoke the dependency automatically, or modify the dependency skill.
 
 Only the target repository's existing root `AGENTS.md` is accepted as the language policy and agent configuration source. Nested `AGENTS.md` files or other agent instructions do not override the root `AGENTS.md` language rule.
 
-If the root `AGENTS.md` is missing, its `## Agent skills` configuration is missing, or its normative prose has no discernible dominant language, stop before composing the draft or writing project text and ask the user.
+If the root `AGENTS.md`, its `## Agent skills` configuration, or a discernible dominant language is missing, stop before composing the draft or writing project text and ask the user to restore the setup output or choose the language policy.
 
 Preflight is complete only when the root `AGENTS.md` exists with its `## Agent skills` configuration, its language policy is unambiguous, and both required guides are readable.
 
@@ -52,9 +52,9 @@ Collect repository facts without writing:
 - whether handoffs, shared sessions, or external actions already carry approval records;
 - the glossary layout and existing language, including mixed-language content.
 
-Inspect the content that each proposed managed section would replace. Read [the tracker migration reference](references/tracker-migration.md) before state selection or drafting. It is the sole normative source for the tracker state definitions and rerun decision matrix. For GitHub, compare the tracker guide with that reference by their content, not line numbers, and classify the state using its definitions. For another tracker, skip the GitHub migration and preserve its native read commands.
+Inspect the content that each proposed managed section would replace. Read [the tracker migration reference](references/tracker-migration.md) before state selection or drafting. It is the sole normative source for marker discovery, state definitions, and the rerun decision matrix. For a GitHub tracker, compare the tracker guide with that reference by their content, not line numbers, and classify the state using its definitions. For another tracker, skip both GitHub state detection and that matrix; preserve its native read commands.
 
-Scan complete and unterminated HTML comments from each opening delimiter to its closing delimiter or end of file. During discovery, allow whitespace after the opening delimiter and before the namespace; then require every managed-namespace comment to match the exact one-line marker grammar. Classify any wrapped, missing, duplicate, reversed, crossed, nested, unclosed, or otherwise invalid managed marker sequence as `ambiguous` before state selection or drafting. Record the detected state and its file evidence. Do not guess or repair an ambiguous state.
+Record the detected state and its file evidence. Do not guess or repair an ambiguous state.
 
 Exploration is complete when every fact shown in the next step has a file, command result, or explicit user answer as evidence.
 
@@ -82,7 +82,7 @@ The glossary is one managed block whose individual terms follow the confirmed th
 
 ## 4. Build and review the complete draft
 
-Read the templates under `references/` and compose the draft from only the confirmed themes. All deployable document text belongs in those templates, not in this entrypoint. The glossary links already target the root `AGENTS.md`; do not apply a file-name placeholder. When the optional cache is declined, keep the disabled cache-posture sentence from `issue-operations.md`. When it is confirmed, replace that sentence with the navigation-only cache template instead of deploying both cache postures.
+Read the templates under `references/` and compose the draft from only the confirmed themes. All deployable document text belongs in those templates, not in this entrypoint. The glossary links already target the root `AGENTS.md`. When the optional cache is declined, keep the disabled cache-posture sentence from `issue-operations.md`. When it is confirmed, replace that sentence with the navigation-only cache template instead of deploying both cache postures.
 
 Use stable HTML-comment managed sections identified by the `extra-setup-matt-pocock-skills` namespace, a section-specific ID, and `start`/`end` suffixes. Each managed section must have exactly one start marker and one matching end marker.
 
@@ -93,7 +93,7 @@ For every target file, show:
 - any first-run replacement of the recognized legacy tracker defaults;
 - the final managed-section boundaries.
 
-Apply the rerun decision matrix in [the tracker migration reference](references/tracker-migration.md) before drafting, using the detected state and summary-first decision. Treat that matrix as the only authority for the action; this entrypoint delegates to it rather than maintaining a second copy.
+For a GitHub tracker, apply the rerun decision matrix in [the tracker migration reference](references/tracker-migration.md) before drafting, using the detected state and summary-first decision. For another tracker, skip that matrix and preserve its native read commands.
 
 Stop before writing when a marker is missing, duplicated, reversed, or ambiguous; when the migration text has drifted; when ownership appears inside a range this skill does not own; or when the draft would alter unrelated text. Do not normalize or opportunistically rewrite existing prose.
 
@@ -101,7 +101,7 @@ The draft gate passes only after the user reviews the complete set of file chang
 
 ## 5. Write and verify
 
-Write the approved managed ranges. When summary-first reads are enabled and the detected state is unmigrated, permit the exact reviewed migration outside managed ranges in addition to those ranges. Apply it only once, on the initial enabled run or a later opt-in from the supported summary-disabled state. Reruns with summary-first reads disabled update only an existing managed range and leave the legacy reads unchanged. After that migration, reruns must not edit outside managed ranges. Do not create an ADR or application runtime, and do not modify `/setup-matt-pocock-skills` or any other dependency.
+Write the approved managed ranges. When summary-first reads are enabled and the detected state is unmigrated, permit the exact reviewed migration outside managed ranges in addition to those ranges. Apply it only once, on the initial enabled run or a later opt-in from the supported summary-disabled state. With summary-first reads disabled, write only the managed issue-operations range, inserting it on a first run, and leave the legacy reads unchanged. After that migration, reruns must not edit outside managed ranges. Do not create an ADR or application runtime, and do not modify `/setup-matt-pocock-skills` or any other dependency.
 
 After writing, verify:
 

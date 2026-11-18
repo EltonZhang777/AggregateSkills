@@ -15,7 +15,7 @@ Use this GitHub migration only when the state is `unmigrated`.
 | Detected state | Summary-first reads | Action |
 | --- | --- | --- |
 | Unmigrated | Enabled | Include the exact migration in the complete draft |
-| Unmigrated | Disabled | Preserve the legacy read conventions; update only an existing managed issue-operations section |
+| Unmigrated | Disabled | Preserve the legacy read conventions; insert or update only the managed issue-operations section |
 | Fully migrated | Enabled | Replace only the managed issue-operations section |
 | Fully migrated | Disabled | Stop before drafting or writing: the existing pointers require the managed summary rules |
 | Ambiguous | Either | Stop before drafting or writing with the conflicting evidence |

@@ -57,19 +57,11 @@ FIXED_OBJECT_ID_PATTERNS = (
     r"\bfixed-length object ID\b",
     r"\b\d+[- ]character (?:commit |tree )?object ID\b",
 )
-TRACKER_MIGRATION_STATE_DEFINITIONS = (
-    "- `unmigrated`: all recognized legacy defaults occur exactly once, every reviewed replacement is absent, and the managed issue-operations section is either absent or has one complete marker pair.",
-    "- `fully migrated`: all recognized legacy defaults are absent, every reviewed replacement occurs exactly once, and the managed issue-operations section has one complete marker pair.",
-    "- `ambiguous`: any other missing, duplicated, altered, partial, or mixed state.",
+TRACKER_STATE_DEFINITION = re.compile(
+    r"^- `(?:unmigrated|fully migrated|ambiguous)`:",
+    re.MULTILINE,
 )
-TRACKER_MIGRATION_MATRIX = (
-    "| Detected state | Summary-first reads | Action |",
-    "| Unmigrated | Enabled | Include the exact migration in the complete draft |",
-    "| Unmigrated | Disabled | Preserve the legacy read conventions; update only an existing managed issue-operations section |",
-    "| Fully migrated | Enabled | Replace only the managed issue-operations section |",
-    "| Fully migrated | Disabled | Stop before drafting or writing: the existing pointers require the managed summary rules |",
-    "| Ambiguous | Either | Stop before drafting or writing with the conflicting evidence |",
-)
+TRACKER_MATRIX_HEADER = "| Detected state | Summary-first reads | Action |"
 
 
 def read(path):
@@ -222,7 +214,8 @@ class ExtraSetupMetadataTests(unittest.TestCase):
         for detail in (
             "Only the target repository's existing root `AGENTS.md` is accepted as the language policy and agent configuration source.",
             "Nested `AGENTS.md` files or other agent instructions do not override the root `AGENTS.md` language rule.",
-            "If the root `AGENTS.md` is missing, its `## Agent skills` configuration is missing, or its normative prose has no discernible dominant language, stop before composing the draft or writing project text and ask the user.",
+            "If the root `AGENTS.md`, its `## Agent skills` configuration, or a discernible dominant language is missing",
+            "ask the user to restore the setup output or choose the language policy",
             "Preserve untouched text and report any resulting language mixture.",
             "The templates are English source text: translate a confirmed section into the target language during draft composition, then include the complete translated draft in the review.",
         ):
@@ -358,7 +351,7 @@ class ExtraSetupWorkflowTests(unittest.TestCase):
         self.assertIn("by their content, not line numbers", text)
         self.assertIn("duplicated", migration)
         self.assertIn("references/tracker-migration.md", text)
-        self.assertIn("For another tracker, skip the GitHub migration", text)
+        self.assertIn("For another tracker, skip both GitHub state detection and that matrix", text)
         for known_default in (
             *LEGACY_TRACKER_DEFAULTS,
             *REVIEWED_TRACKER_REPLACEMENTS,
@@ -439,17 +432,21 @@ class ExtraSetupWorkflowTests(unittest.TestCase):
             workflow,
         )
         self.assertIn(
-            "It is the sole normative source for the tracker state definitions and rerun decision matrix.",
+            "It is the sole normative source for marker discovery, state definitions, and the rerun decision matrix.",
             workflow,
         )
+        self.assertIn("For another tracker, skip both GitHub state detection and that matrix", workflow)
+        self.assertIn("For another tracker, skip that matrix", workflow)
+        self.assertEqual(3, len(TRACKER_STATE_DEFINITION.findall(migration)))
+        self.assertIn(TRACKER_MATRIX_HEADER, migration)
 
-        for rule in (*TRACKER_MIGRATION_STATE_DEFINITIONS, *TRACKER_MIGRATION_MATRIX):
-            with self.subTest(rule=rule):
-                self.assertEqual(1, migration.count(rule))
-                for path in SKILL_DIR.rglob("*.md"):
-                    if path == REFERENCE_DIR / "tracker-migration.md":
-                        continue
-                    self.assertNotIn(rule, read(path), str(path))
+        for path in SKILL_DIR.rglob("*.md"):
+            if path == REFERENCE_DIR / "tracker-migration.md":
+                continue
+            with self.subTest(path=str(path)):
+                text = read(path)
+                self.assertIsNone(TRACKER_STATE_DEFINITION.search(text))
+                self.assertNotIn(TRACKER_MATRIX_HEADER, text)
 
     def test_summary_disabled_first_run_remains_rerunnable_and_can_opt_in(self):
         workflow = read(SKILL_DIR / "SKILL.md")
@@ -459,6 +456,10 @@ class ExtraSetupWorkflowTests(unittest.TestCase):
         section = "\n".join((start, "## Issue operations", "### Issue writes", end))
         disabled_first_run = "\n".join((*LEGACY_TRACKER_DEFAULTS, section))
 
+        fresh_disabled = "\n".join(LEGACY_TRACKER_DEFAULTS)
+        self.assertEqual("unmigrated", tracker_migration_state(fresh_disabled))
+        self.assertNotIn(start, fresh_disabled)
+        self.assertIn("insert or update only the managed issue-operations section", migration)
         self.assertEqual("unmigrated", tracker_migration_state(disabled_first_run))
         consistent_rerun = disabled_first_run.replace(
             "### Issue writes", "### Issue writes\n\nUpdated managed guidance."
@@ -580,13 +581,9 @@ class ExtraSetupWorkflowTests(unittest.TestCase):
         self.assertEqual("malformed marker", marker_error(wrapped))
         tracker = "\n".join((*LEGACY_TRACKER_DEFAULTS, wrapped))
         self.assertEqual("ambiguous", tracker_migration_state(tracker))
-        for text in (
-            read(SKILL_DIR / "SKILL.md"),
-            read(REFERENCE_DIR / "tracker-migration.md"),
-        ):
-            text = " ".join(text.split())
-            self.assertIn("complete and unterminated HTML comments", text)
-            self.assertIn("exact one-line marker grammar", text)
+        migration = " ".join(read(REFERENCE_DIR / "tracker-migration.md").split())
+        self.assertIn("complete and unterminated HTML comments", migration)
+        self.assertIn("exact one-line marker grammar", migration)
 
     def test_managed_comment_discovery_rejects_hidden_malformed_markers(self):
         malformed_comments = (
@@ -605,15 +602,11 @@ class ExtraSetupWorkflowTests(unittest.TestCase):
                     ),
                 )
 
-        for text in (
-            read(SKILL_DIR / "SKILL.md"),
-            read(REFERENCE_DIR / "tracker-migration.md"),
-        ):
-            text = " ".join(text.split())
-            self.assertIn("complete and unterminated HTML comments", text)
-            self.assertIn(
-                "after the opening delimiter and before the namespace", text
-            )
+        migration = " ".join(read(REFERENCE_DIR / "tracker-migration.md").split())
+        self.assertIn("complete and unterminated HTML comments", migration)
+        self.assertIn(
+            "after the opening delimiter and before the namespace", migration
+        )
         self.assertIn(
             "newline after the opening delimiter, extra whitespace before the namespace, and a missing closing delimiter",
             " ".join(
@@ -631,10 +624,10 @@ class ExtraSetupWorkflowTests(unittest.TestCase):
         migration = read(REFERENCE_DIR / "tracker-migration.md")
         issue_template = read(REFERENCE_DIR / "issue-operations.md")
         self.assertIn(
-            "| Unmigrated | Disabled | Preserve the legacy read conventions; update only an existing managed issue-operations section |",
+            "| Unmigrated | Disabled | Preserve the legacy read conventions; insert or update only the managed issue-operations section |",
             migration,
         )
-        self.assertIn("Apply the rerun decision matrix", workflow)
+        self.assertIn("apply the rerun decision matrix", workflow)
         self.assertIn(
             "Whenever any issue theme is selected, include the shared issue-content trust boundary from `issue-operations.md`.",
             workflow,
