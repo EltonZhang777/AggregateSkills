@@ -52,13 +52,9 @@ Collect repository facts without writing:
 - whether handoffs, shared sessions, or external actions already carry approval records;
 - the glossary layout and existing language, including mixed-language content.
 
-Inspect the content that each proposed managed section would replace. Detect the tracker migration state before presenting or writing a draft. For GitHub, compare the tracker guide with `references/tracker-migration.md` by their content, not line numbers:
+Inspect the content that each proposed managed section would replace. Read [the tracker migration reference](references/tracker-migration.md) before state selection or drafting. It is the sole normative source for the tracker state definitions and rerun decision matrix. For GitHub, compare the tracker guide with that reference by their content, not line numbers, and classify the state using its definitions. For another tracker, skip the GitHub migration and preserve its native read commands.
 
-- `unmigrated`: all recognized legacy defaults occur exactly once, every reviewed replacement is absent, and the managed issue-operations section is either absent or has one complete marker pair;
-- `fully migrated`: all recognized legacy defaults are absent, every reviewed replacement occurs exactly once, and the managed issue-operations section has one complete marker pair;
-- `ambiguous`: any state where a fact is missing or altered, any legacy default appears more than once, or the pointer or marker set is partial or mixed.
-
-Scan complete and unterminated HTML comments from each opening delimiter to its closing delimiter or end of file. During discovery, allow whitespace after the opening delimiter and before the namespace; then require every managed-namespace comment to match the exact one-line marker grammar. Classify any wrapped, missing, duplicate, reversed, crossed, nested, unclosed, or otherwise invalid managed marker sequence as `ambiguous` before state selection or drafting. In particular, unchanged legacy reads with one complete managed issue-operations section are the supported summary-disabled first-run state and remain `unmigrated`. Record the detected state and its file evidence. Do not guess or repair an ambiguous state. For another tracker, skip the GitHub migration and preserve its native read commands.
+Scan complete and unterminated HTML comments from each opening delimiter to its closing delimiter or end of file. During discovery, allow whitespace after the opening delimiter and before the namespace; then require every managed-namespace comment to match the exact one-line marker grammar. Classify any wrapped, missing, duplicate, reversed, crossed, nested, unclosed, or otherwise invalid managed marker sequence as `ambiguous` before state selection or drafting. Record the detected state and its file evidence. Do not guess or repair an ambiguous state.
 
 Exploration is complete when every fact shown in the next step has a file, command result, or explicit user answer as evidence.
 
@@ -97,13 +93,7 @@ For every target file, show:
 - any first-run replacement of the recognized legacy tracker defaults;
 - the final managed-section boundaries.
 
-Use the tracker-migration decision matrix before drafting:
-
-- Unmigrated tracker with summary-first reads enabled: include the exact migration from `references/tracker-migration.md` in the same complete draft.
-- Unmigrated tracker with summary-first reads disabled: preserve the legacy read conventions even when another issue theme is enabled. If a managed issue-operations section exists, update only that section.
-- Fully migrated tracker with summary-first reads enabled: replace only the managed issue-operations section and do not edit the migration pointers.
-- Fully migrated tracker with summary-first reads disabled: stop before drafting or writing because the existing pointers require the managed summary rules.
-- Ambiguous tracker state: stop before drafting or writing and identify the conflicting evidence.
+Apply the rerun decision matrix in [the tracker migration reference](references/tracker-migration.md) before drafting, using the detected state and summary-first decision. Treat that matrix as the only authority for the action; this entrypoint delegates to it rather than maintaining a second copy.
 
 Stop before writing when a marker is missing, duplicated, reversed, or ambiguous; when the migration text has drifted; when ownership appears inside a range this skill does not own; or when the draft would alter unrelated text. Do not normalize or opportunistically rewrite existing prose.
 

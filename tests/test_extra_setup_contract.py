@@ -57,6 +57,19 @@ FIXED_OBJECT_ID_PATTERNS = (
     r"\bfixed-length object ID\b",
     r"\b\d+[- ]character (?:commit |tree )?object ID\b",
 )
+TRACKER_MIGRATION_STATE_DEFINITIONS = (
+    "- `unmigrated`: all recognized legacy defaults occur exactly once, every reviewed replacement is absent, and the managed issue-operations section is either absent or has one complete marker pair.",
+    "- `fully migrated`: all recognized legacy defaults are absent, every reviewed replacement occurs exactly once, and the managed issue-operations section has one complete marker pair.",
+    "- `ambiguous`: any other missing, duplicated, altered, partial, or mixed state.",
+)
+TRACKER_MIGRATION_MATRIX = (
+    "| Detected state | Summary-first reads | Action |",
+    "| Unmigrated | Enabled | Include the exact migration in the complete draft |",
+    "| Unmigrated | Disabled | Preserve the legacy read conventions; update only an existing managed issue-operations section |",
+    "| Fully migrated | Enabled | Replace only the managed issue-operations section |",
+    "| Fully migrated | Disabled | Stop before drafting or writing: the existing pointers require the managed summary rules |",
+    "| Ambiguous | Either | Stop before drafting or writing with the conflicting evidence |",
+)
 
 
 def read(path):
@@ -343,11 +356,9 @@ class ExtraSetupWorkflowTests(unittest.TestCase):
         text = read(SKILL_DIR / "SKILL.md")
         migration = read(REFERENCE_DIR / "tracker-migration.md")
         self.assertIn("by their content, not line numbers", text)
-        self.assertIn("appears more than once", text)
+        self.assertIn("duplicated", migration)
         self.assertIn("references/tracker-migration.md", text)
-        self.assertIn("Unmigrated tracker with summary-first reads disabled", text)
         self.assertIn("For another tracker, skip the GitHub migration", text)
-        self.assertIn("Fully migrated tracker with summary-first reads enabled", text)
         for known_default in (
             *LEGACY_TRACKER_DEFAULTS,
             *REVIEWED_TRACKER_REPLACEMENTS,
@@ -409,18 +420,36 @@ class ExtraSetupWorkflowTests(unittest.TestCase):
             ),
         )
         for detail in (
-            "Detect the tracker migration state before presenting or writing a draft",
+            "Read [the tracker migration reference](references/tracker-migration.md) before state selection or drafting",
             "`unmigrated`",
             "`fully migrated`",
             "`ambiguous`",
-            "Fully migrated tracker with summary-first reads disabled: stop before drafting or writing",
-            "Ambiguous tracker state: stop before drafting or writing",
             "before state selection or drafting",
             "permit the exact reviewed migration outside managed ranges",
             "Apply it only once, on the initial enabled run or a later opt-in",
             "After that migration, reruns must not edit outside managed ranges",
         ):
             self.assertIn(detail, workflow + migration)
+
+    def test_tracker_reference_solely_owns_states_and_rerun_matrix(self):
+        workflow = read(SKILL_DIR / "SKILL.md")
+        migration = read(REFERENCE_DIR / "tracker-migration.md")
+        self.assertIn(
+            "[the tracker migration reference](references/tracker-migration.md)",
+            workflow,
+        )
+        self.assertIn(
+            "It is the sole normative source for the tracker state definitions and rerun decision matrix.",
+            workflow,
+        )
+
+        for rule in (*TRACKER_MIGRATION_STATE_DEFINITIONS, *TRACKER_MIGRATION_MATRIX):
+            with self.subTest(rule=rule):
+                self.assertEqual(1, migration.count(rule))
+                for path in SKILL_DIR.rglob("*.md"):
+                    if path == REFERENCE_DIR / "tracker-migration.md":
+                        continue
+                    self.assertNotIn(rule, read(path), str(path))
 
     def test_summary_disabled_first_run_remains_rerunnable_and_can_opt_in(self):
         workflow = read(SKILL_DIR / "SKILL.md")
@@ -453,7 +482,7 @@ class ExtraSetupWorkflowTests(unittest.TestCase):
             "all recognized legacy defaults occur exactly once, every reviewed replacement is absent",
             "either absent or has one complete marker pair",
             "later summary-first opt-in",
-            "unchanged legacy reads with one complete managed issue-operations section",
+            "Unchanged legacy reads with one complete managed issue-operations section",
         ):
             self.assertIn(detail, workflow + migration)
 
@@ -602,9 +631,10 @@ class ExtraSetupWorkflowTests(unittest.TestCase):
         migration = read(REFERENCE_DIR / "tracker-migration.md")
         issue_template = read(REFERENCE_DIR / "issue-operations.md")
         self.assertIn(
-            "Unmigrated tracker with summary-first reads disabled: preserve the legacy read conventions even when another issue theme is enabled.",
-            workflow,
+            "| Unmigrated | Disabled | Preserve the legacy read conventions; update only an existing managed issue-operations section |",
+            migration,
         )
+        self.assertIn("Apply the rerun decision matrix", workflow)
         self.assertIn(
             "Whenever any issue theme is selected, include the shared issue-content trust boundary from `issue-operations.md`.",
             workflow,
