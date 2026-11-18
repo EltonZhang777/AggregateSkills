@@ -52,9 +52,11 @@ Collect repository facts without writing:
 - whether handoffs, shared sessions, or external actions already carry approval records;
 - the glossary layout and existing language, including mixed-language content.
 
-Inspect the content that each proposed managed section would replace. Read [the tracker migration reference](references/tracker-migration.md) before state selection or drafting. It is the sole normative source for marker discovery, state definitions, and the rerun decision matrix. For a GitHub tracker, compare the tracker guide with that reference by their content, not line numbers, and classify the state using its definitions. For another tracker, skip both GitHub state detection and that matrix; preserve its native read commands.
+Inspect the content that each proposed managed section would replace. Read [the tracker migration reference](references/tracker-migration.md) before state selection or drafting. It is the sole normative source for tracker state definitions and the rerun decision matrix. For a GitHub tracker, compare the tracker guide with that reference by their content, not line numbers, and classify the state using its definitions. For another tracker, skip both GitHub state detection and that matrix; preserve its native read commands.
 
-Record the detected state and its file evidence. Do not guess or repair an ambiguous state.
+Scan complete and unterminated HTML comments from each opening delimiter to its closing delimiter or end of file. During discovery, allow whitespace after the opening delimiter and before the namespace; then require every managed-namespace comment to match the exact one-line marker grammar. Classify any wrapped, missing, duplicate, reversed, crossed, nested, unclosed, or otherwise invalid managed marker sequence as `ambiguous` before state selection or drafting.
+
+For a GitHub tracker, record the detected state and its file evidence. Do not guess or repair an ambiguous state.
 
 Exploration is complete when every fact shown in the next step has a file, command result, or explicit user answer as evidence.
 
@@ -101,7 +103,7 @@ The draft gate passes only after the user reviews the complete set of file chang
 
 ## 5. Write and verify
 
-Write the approved managed ranges. When summary-first reads are enabled and the detected state is unmigrated, permit the exact reviewed migration outside managed ranges in addition to those ranges. Apply it only once, on the initial enabled run or a later opt-in from the supported summary-disabled state. With summary-first reads disabled, write only the managed issue-operations range, inserting it on a first run, and leave the legacy reads unchanged. After that migration, reruns must not edit outside managed ranges. Do not create an ADR or application runtime, and do not modify `/setup-matt-pocock-skills` or any other dependency.
+Write the approved managed ranges. When summary-first reads are enabled and the detected state is unmigrated, permit the exact reviewed migration outside managed ranges in addition to those ranges. Apply it only once, on the initial enabled run or a later opt-in from the supported summary-disabled state. When summary-first reads are disabled, follow the selected matrix row for a GitHub tracker, or write only the approved managed issue-operations range for another tracker; leave the legacy reads unchanged. After that migration, reruns must not edit outside managed ranges. Do not create an ADR or application runtime, and do not modify `/setup-matt-pocock-skills` or any other dependency.
 
 After writing, verify:
 

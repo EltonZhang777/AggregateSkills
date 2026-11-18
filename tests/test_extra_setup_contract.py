@@ -432,13 +432,37 @@ class ExtraSetupWorkflowTests(unittest.TestCase):
             workflow,
         )
         self.assertIn(
-            "It is the sole normative source for marker discovery, state definitions, and the rerun decision matrix.",
+            "It is the sole normative source for tracker state definitions and the rerun decision matrix.",
             workflow,
         )
         self.assertIn("For another tracker, skip both GitHub state detection and that matrix", workflow)
         self.assertIn("For another tracker, skip that matrix", workflow)
         self.assertEqual(3, len(TRACKER_STATE_DEFINITION.findall(migration)))
         self.assertIn(TRACKER_MATRIX_HEADER, migration)
+        matrix = {}
+        for line in migration.splitlines():
+            cells = [cell.strip() for cell in line.strip("|").split("|")]
+            if len(cells) == 3 and cells[1] in ("Enabled", "Disabled", "Either"):
+                matrix[(cells[0], cells[1])] = cells[2].lower()
+        self.assertEqual(
+            {
+                ("Unmigrated", "Enabled"),
+                ("Unmigrated", "Disabled"),
+                ("Fully migrated", "Enabled"),
+                ("Fully migrated", "Disabled"),
+                ("Ambiguous", "Either"),
+            },
+            set(matrix),
+        )
+        for key, action in (
+            (("Unmigrated", "Enabled"), "exact migration"),
+            (("Unmigrated", "Disabled"), "update only an existing"),
+            (("Fully migrated", "Enabled"), "replace only"),
+            (("Fully migrated", "Disabled"), "stop before drafting"),
+            (("Ambiguous", "Either"), "stop before drafting"),
+        ):
+            with self.subTest(key=key):
+                self.assertIn(action, matrix[key])
 
         for path in SKILL_DIR.rglob("*.md"):
             if path == REFERENCE_DIR / "tracker-migration.md":
@@ -456,10 +480,6 @@ class ExtraSetupWorkflowTests(unittest.TestCase):
         section = "\n".join((start, "## Issue operations", "### Issue writes", end))
         disabled_first_run = "\n".join((*LEGACY_TRACKER_DEFAULTS, section))
 
-        fresh_disabled = "\n".join(LEGACY_TRACKER_DEFAULTS)
-        self.assertEqual("unmigrated", tracker_migration_state(fresh_disabled))
-        self.assertNotIn(start, fresh_disabled)
-        self.assertIn("insert or update only the managed issue-operations section", migration)
         self.assertEqual("unmigrated", tracker_migration_state(disabled_first_run))
         consistent_rerun = disabled_first_run.replace(
             "### Issue writes", "### Issue writes\n\nUpdated managed guidance."
@@ -581,9 +601,11 @@ class ExtraSetupWorkflowTests(unittest.TestCase):
         self.assertEqual("malformed marker", marker_error(wrapped))
         tracker = "\n".join((*LEGACY_TRACKER_DEFAULTS, wrapped))
         self.assertEqual("ambiguous", tracker_migration_state(tracker))
+        workflow = " ".join(read(SKILL_DIR / "SKILL.md").split())
         migration = " ".join(read(REFERENCE_DIR / "tracker-migration.md").split())
-        self.assertIn("complete and unterminated HTML comments", migration)
-        self.assertIn("exact one-line marker grammar", migration)
+        self.assertIn("complete and unterminated HTML comments", workflow)
+        self.assertIn("exact one-line marker grammar", workflow)
+        self.assertIn("managed-marker discovery and classification rule", migration)
 
     def test_managed_comment_discovery_rejects_hidden_malformed_markers(self):
         malformed_comments = (
@@ -602,10 +624,10 @@ class ExtraSetupWorkflowTests(unittest.TestCase):
                     ),
                 )
 
-        migration = " ".join(read(REFERENCE_DIR / "tracker-migration.md").split())
-        self.assertIn("complete and unterminated HTML comments", migration)
+        workflow = " ".join(read(SKILL_DIR / "SKILL.md").split())
+        self.assertIn("complete and unterminated HTML comments", workflow)
         self.assertIn(
-            "after the opening delimiter and before the namespace", migration
+            "after the opening delimiter and before the namespace", workflow
         )
         self.assertIn(
             "newline after the opening delimiter, extra whitespace before the namespace, and a missing closing delimiter",
@@ -624,7 +646,7 @@ class ExtraSetupWorkflowTests(unittest.TestCase):
         migration = read(REFERENCE_DIR / "tracker-migration.md")
         issue_template = read(REFERENCE_DIR / "issue-operations.md")
         self.assertIn(
-            "| Unmigrated | Disabled | Preserve the legacy read conventions; insert or update only the managed issue-operations section |",
+            "| Unmigrated | Disabled | Preserve the legacy read conventions; update only an existing managed issue-operations section |",
             migration,
         )
         self.assertIn("apply the rerun decision matrix", workflow)
