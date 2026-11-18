@@ -7,12 +7,12 @@
 
 ## Pull request titles
 
-- Use `<type>(<scope>): <imperative summary>` with a supported type listed in [Commit subject](commit-messages.md#commit-subject); add `!` before the colon for a breaking change, such as `feat(api)!:`. Omit a scope that adds no useful context.
-- Put an evidenced repository prefix before the subject as `<prefix>: <type>(<scope>): <imperative summary>`, for example `Release: feat(mail): add retry header`.
-- Use an imperative summary and no trailing period. Follow explicit repository capitalization guidance; if none exists, follow consistent same-type PR titles supplied in context. Ask if capitalization is unclear or the examples conflict.
-- Add a repository-specific prefix only when repository guidance or same-type pull request titles in the supplied context support it. Clear repository guidance takes precedence over examples. Do not infer a pull request prefix from commit subjects.
+- Delegate only type, scope, breaking `!`, imperative summary, and no trailing period to the canonical [Commit subject](commit-messages.md#commit-subject) rules.
+- Put an evidenced repository prefix before the subject, for example `Release: feat(mail): add retry header`.
+- Follow explicit repository capitalization guidance; if none exists, follow consistent same-type PR titles supplied in context. Do not infer PR-title capitalization from commit subjects. Ask if capitalization is unclear or the examples conflict.
+- Add a repository-specific prefix only when explicit PR-title guidance or consistent same-type PR titles supplied in context support it. Clear explicit PR-title guidance takes precedence over examples. Never infer a PR-title prefix from commit subjects.
 - If available prefix evidence conflicts, is stale, or is too sparse to establish the convention, ask a brief question. If no prefix convention is evident, omit the prefix.
-- Do not apply commit-specific title-length or body-wrapping limits.
+- Do not apply the canonical commit-subject length limits to PR titles.
 
 ## Pull request descriptions
 

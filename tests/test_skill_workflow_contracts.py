@@ -2004,6 +2004,101 @@ class ConventionalGitMessagesBehaviorTests(unittest.TestCase):
                 for heading in headings:
                     self.assertIn(heading, reference_text)
 
+    def test_pr_titles_delegate_commit_subject_syntax_and_keep_pr_specific_rules(self):
+        def normalized(text):
+            return " ".join(text.lower().replace(chr(96), "").split())
+
+        pull_request = skill_reference(
+            "conventional-git-messages", "pull-request-text.md"
+        ).replace(chr(96), "")
+        titles = normalized(section(pull_request, "## Pull request titles"))
+        descriptions = normalized(section(pull_request, "## Pull request descriptions"))
+        issue = skill_reference(
+            "conventional-git-messages", "issue-text.md"
+        ).replace(chr(96), "")
+        issue_titles = normalized(section(issue, "## Issue titles"))
+        manual = (
+            ROOT / "tests" / "manual" / "conventional-git-messages.md"
+        ).read_text(encoding="utf-8").replace(chr(96), "")
+
+        self.assertIn(
+            "delegate only type, scope, breaking !, imperative summary, and no "
+            "trailing period to the canonical "
+            "[commit subject](commit-messages.md#commit-subject) rules",
+            titles,
+        )
+        self.assertNotIn("delegate all conventional commit subject syntax", titles)
+        self.assertNotIn("<type>(<scope>): <imperative summary>", titles)
+        self.assertIn(
+            "add a repository-specific prefix only when explicit pr-title guidance "
+            "or consistent same-type pr titles supplied in context support it",
+            titles,
+        )
+        self.assertIn("never infer a pr-title prefix from commit subjects", titles)
+        self.assertIn(
+            "follow explicit repository capitalization guidance; if none exists, "
+            "follow consistent same-type pr titles supplied in context",
+            titles,
+        )
+        self.assertIn("do not infer pr-title capitalization from commit subjects", titles)
+        self.assertIn(
+            "do not apply the canonical commit-subject length limits to pr titles",
+            titles,
+        )
+        self.assertIn(
+            "do not apply commit-specific title-length or body-wrapping limits",
+            descriptions,
+        )
+
+        self.assertIn(
+            "reuse the [pull request title rules](pull-request-text.md#pull-request-titles)",
+            issue_titles,
+        )
+        self.assertNotIn("<type>(<scope>)", issue_titles)
+        self.assertIn(
+            "do not apply commit-specific title-length or body-wrapping limits",
+            issue_titles,
+        )
+
+        manual_titles = normalized(
+            section(manual, "## Pull request title conventions")
+        )
+        self.assertIn(
+            "delegates type, scope, breaking !, imperative summary, and no trailing "
+            "period to the canonical commit-subject rules",
+            manual_titles,
+        )
+        self.assertIn("same-type pr titles", manual_titles)
+        self.assertIn("never infers a pr-title prefix from commit subjects", manual_titles)
+        self.assertIn(
+            "in a fresh invocation, ask for a pr title with no applicable prefix "
+            "guidance or examples, but supply the commit subject release: "
+            "feat(mail): add retry header. confirm the title omits the prefix",
+            manual_titles,
+        )
+        self.assertIn(
+            "does not apply commit-subject length limits to pr titles",
+            manual_titles,
+        )
+
+        manual_issue_titles = normalized(
+            section(manual, "## Issue title conventions")
+        )
+        self.assertIn("reuses the pr-title rules", manual_issue_titles)
+        self.assertIn(
+            "which delegate only type, scope, breaking !, imperative summary, and "
+            "no trailing period to the canonical commit-subject rules",
+            manual_issue_titles,
+        )
+        self.assertIn(
+            "does not create a separate conventional syntax contract",
+            manual_issue_titles,
+        )
+        self.assertIn(
+            "does not apply commit-subject length limits to issue titles",
+            manual_issue_titles,
+        )
+
     def test_issue_reference_semantics_are_centralized_and_reused(self):
         def normalized(filename):
             return " ".join(
