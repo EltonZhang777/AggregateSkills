@@ -2,6 +2,10 @@
 
 Run these through the user-visible skill invocation in a disposable repository with test issues and branches. Do not use a production repository. In scenarios checking non-status write gates, withhold approval for issue creation, comments, labels, pull requests, and merges. The graph comment may proceed only under the approved root-spec scenario.
 
+## Canonical final-review navigation
+
+Open the [root-run lifecycle](../../skills/spec-implement-loop/SKILL.md#root-run-lifecycle) and confirm its final-review states link to the canonical [complete-report handoff](../../skills/spec-implement-loop/references/final-review-remediation.md#complete-report-handoff), [partial results and per-root exceptions](../../skills/spec-implement-loop/references/final-review-remediation.md#partial-results-and-per-root-exceptions), [permanent append-only records](../../skills/spec-implement-loop/references/final-review-remediation.md#permanent-append-only-records), [retry and reconciliation](../../skills/spec-implement-loop/references/final-review-remediation.md#retry-and-reconciliation), and [completion gate](../../skills/spec-implement-loop/references/final-review-remediation.md#completion-gate). Confirm the lifecycle map names states and artifacts without restating exception conditions, thresholds, or approval ordering.
+
 ## Graph planning and reusable worktree pool
 
 Create a root with three implementation tickets: #101 and #102 are independent; #103 is blocked by #101. Have #101 add a new file and modify an existing one. Start the skill and confirm it reads all explicit child links, issue comments, labels, and native blocker edges before scheduling. Confirm it publishes the complete blocker-to-blocked Mermaid graph on the root before assigning work, with the parent link shown as non-blocking and without a separate comment-approval pause.

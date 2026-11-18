@@ -6110,6 +6110,9 @@ class ParallelCodeReviewPackageTests(unittest.TestCase):
         spec = (
             ROOT / "skills" / "spec-implement-loop" / "SKILL.md"
         ).read_text(encoding="utf-8").lower()
+        remediation = (
+            ROOT / "skills" / "spec-implement-loop" / "references" / "final-review-remediation.md"
+        ).read_text(encoding="utf-8").lower()
         self.assertIn(
             "ticket review remains on this `/code-review` path",
             spec,
@@ -6119,12 +6122,20 @@ class ParallelCodeReviewPackageTests(unittest.TestCase):
             spec,
         )
         self.assertIn(
-            "hand every current complete track report unchanged",
+            "references/final-review-remediation.md#complete-report-handoff",
             spec,
         )
-        self.assertIn("separate per-root user exception", spec)
-        self.assertIn("complete append-only record", spec)
-        self.assertIn("root completion checkpoint remains mandatory", spec)
+        self.assertIn(
+            "references/final-review-remediation.md#completion-gate",
+            spec,
+        )
+        self.assertIn(
+            "hand every current complete track report unchanged",
+            remediation,
+        )
+        self.assertIn("separate per-root user exception", remediation)
+        self.assertIn("complete append-only record", remediation)
+        self.assertIn("root completion checkpoint remains mandatory", remediation)
 
     def test_readme_lists_the_new_skill(self):
         readme = (ROOT / "README.md").read_text(encoding="utf-8")

@@ -1654,21 +1654,27 @@ class SpecImplementLoopBehaviorTests(unittest.TestCase):
         ticket_checkpoint_rule = next(
             line for line in lifecycle.splitlines() if "| ticket_checkpoint |" in line
         )
-        self.assertTrue(mentions_concepts(
-            ticket_checkpoint_rule, ("review",), ("internally",), ("does not wait for human approval",), ("status_sync",),
-        ))
+        self.assertTrue(mentions_concepts(ticket_checkpoint_rule, ("review",), ("evidence",), ("issue loop",)))
         root_status_rule = next(line for line in lifecycle.splitlines() if "| root_status_sync |" in line)
         self.assertTrue(mentions_concepts(
-            root_status_rule, ("final verification",), ("review",), ("completed",),
-            ("without a separate approval", "approval pause"),
+            root_status_rule, ("synced root status",), ("retry and reconciliation",), ("completion gate",),
         ))
         root_checkpoint_rule = next(line for line in lifecycle.splitlines() if "| root_checkpoint |" in line)
         self.assertTrue(mentions_concepts(
-            root_checkpoint_rule, ("explicit approval", "approval"), ("complete",),
+            root_checkpoint_rule, ("explicit approval", "approval"), ("complete", "completion"),
+        ))
+        remediation = skill_reference(
+            "spec-implement-loop",
+            "final-review-remediation.md",
+        ).lower().replace(chr(96), "")
+        completion = section(remediation, "## completion gate")
+        self.assertTrue(sentence_with_concepts(
+            completion, ("status synchronization", "status_sync"), ("never", "does not"),
+            ("approval",), ("root",), ("complete",),
         ))
         self.assertTrue(sentence_with_concepts(
-            lifecycle, ("status synchronization", "status_sync"), ("never", "does not"),
-            ("approval",), ("root",), ("complete",),
+            completion, ("root status synchronization",), ("task-start grant",),
+            ("without a separate approval pause",), ("same retry and reconciliation rules",),
         ))
 
         ticket_sync_rule = next(line for line in issue_loop.splitlines() if line.lstrip().startswith("6."))
@@ -1680,18 +1686,16 @@ class SpecImplementLoopBehaviorTests(unittest.TestCase):
         self.assertIn("apply the shared bounded retry rules to status sync", ticket_sync_rule)
         root_sync_rule = next(line for line in issue_loop.splitlines() if line.lstrip().startswith("7."))
         self.assertTrue(mentions_concepts(
-            root_sync_rule, ("current complete root review",), ("sync the root status", "root status synchronization"),
-            ("after either path",), ("root completion checkpoint", "completion checkpoint"),
+            root_sync_rule, ("final-review remediation reference",), ("handoff",), ("partial results",),
+            ("permanent records",), ("retry and reconciliation",), ("completion gate",),
         ))
-        partial_branch = root_sync_rule.index("a current one-track partial review")
-        exception_gate = root_sync_rule.index("root_exception", partial_branch)
-        partial_sync = root_sync_rule.index("permit root status synchronization only after", exception_gate)
-        approval_gate = root_sync_rule.index("separate per-root exception is approved", partial_sync)
-        record_gate = root_sync_rule.index("every append-only record part is confirmed", approval_gate)
-        self.assertLess(partial_branch, exception_gate)
-        self.assertLess(exception_gate, partial_sync)
-        self.assertLess(partial_sync, approval_gate)
+        approval_gate = completion.index("separate per-root exception is approved")
+        record_gate = completion.index("complete append-only record is confirmed", approval_gate)
+        part_gate = completion.index("every record part must be confirmed", record_gate)
+        sync_gate = completion.index("before root status synchronization", part_gate)
         self.assertLess(approval_gate, record_gate)
+        self.assertLess(record_gate, part_gate)
+        self.assertLess(part_gate, sync_gate)
 
         interruption = sentence_with_concepts(
             lifecycle, ("restart", "interruption", "resume"), ("reconcile", "re-read"),
@@ -1702,33 +1706,37 @@ class SpecImplementLoopBehaviorTests(unittest.TestCase):
     def test_partial_root_exception_requires_current_review_and_separate_approval(self):
         text = skill("spec-implement-loop").lower().replace(chr(96), "")
         lifecycle = section(text, "## root-run lifecycle")
-        final_review = section(text, "## final review")
-        exception = section(final_review, "### partial root exception")
+        remediation = skill_reference(
+            "spec-implement-loop",
+            "final-review-remediation.md",
+        ).lower().replace(chr(96), "")
+        partial = section(remediation, "## partial results and per-root exceptions")
+        records = section(remediation, "## permanent append-only records")
         lifecycle_rule = next(
             line for line in lifecycle.splitlines() if "| root_exception |" in line
         )
 
         self.assertTrue(mentions_concepts(
-            lifecycle_rule, ("one-track partial",), ("remains incomplete",),
-            ("separate",), ("root",), ("exception",), ("root_status_sync",),
+            lifecycle_rule, ("one-track partial result",), ("per-root exception",), ("append-only record",),
+            ("partial results and per-root exceptions",), ("permanent append-only records",),
         ))
         self.assertLess(lifecycle.index("| review"), lifecycle.index("| root_exception"))
         self.assertLess(lifecycle.index("| root_exception"), lifecycle.index("| root_status_sync"))
         self.assertLess(lifecycle.index("| root_status_sync"), lifecycle.index("| root_checkpoint"))
 
-        self.assertIn("partial-mode approval is not a root exception", exception)
+        self.assertIn("partial-mode approval is not a root exception", partial)
         self.assertIn(
             "does not authorize issue comments, status synchronization, or completion",
-            exception,
+            partial,
         )
-        self.assertIn("after every remediation code change", exception)
-        self.assertIn("re-freeze", exception)
-        self.assertIn("rerun every routed track", exception)
-        self.assertIn("new partial-mode approval", exception)
-        self.assertIn("bound to that run's blocked artifact", exception)
+        self.assertIn("after every remediation code change", partial)
+        self.assertIn("re-freeze", partial)
+        self.assertIn("rerun every routed track", partial)
+        self.assertIn("new partial-mode approval", partial)
+        self.assertIn("bound to its latest blocked artifact", partial)
         self.assertIn(
             "only after the latest review is current and final verification is complete",
-            exception,
+            partial,
         )
         for field in (
             "starting oid",
@@ -1740,59 +1748,138 @@ class SpecImplementLoopBehaviorTests(unittest.TestCase):
             "loss of independence",
             "permanent partial state",
         ):
-            self.assertIn(field, exception)
-        self.assertIn("do not infer approval", exception)
+            self.assertIn(field, records)
+        self.assertIn("do not infer approval", records)
 
     def test_final_review_requires_pinned_requirements(self):
         final_review = section(
             skill("spec-implement-loop").lower().replace(chr(96), ""),
             "## final review",
         )
+        completion = section(
+            skill_reference(
+                "spec-implement-loop",
+                "final-review-remediation.md",
+            ).lower(),
+            "## completion gate",
+        )
 
         self.assertIn("--require-requirements", final_review)
         self.assertIn("manifest.input_status.requirements", final_review)
         self.assertIn("included", final_review)
-        self.assertIn("not_assessed", final_review)
-        self.assertIn("cannot pass", final_review)
+        self.assertIn("missing, empty, whitespace-only, or `not_assessed`", completion)
+        self.assertIn("cannot pass the final-review gate, partial mode, or the per-root exception", completion)
+
+    def test_final_review_has_one_canonical_source_and_navigable_lifecycle_map(self):
+        text = skill("spec-implement-loop").lower().replace(chr(96), "")
+        lifecycle = section(text, "## root-run lifecycle")
+        final_review = section(text, "## final review")
+        reference = skill_reference(
+            "spec-implement-loop",
+            "final-review-remediation.md",
+        ).lower()
+        manual = (
+            ROOT / "tests" / "manual" / "spec-implement-loop.md"
+        ).read_text(encoding="utf-8").lower()
+        manual_navigation = section(manual, "## canonical final-review navigation")
+
+        canonical = {
+            "## complete-report handoff": "complete-report-handoff",
+            "## partial results and per-root exceptions": "partial-results-and-per-root-exceptions",
+            "## permanent append-only records": "permanent-append-only-records",
+            "## retry and reconciliation": "retry-and-reconciliation",
+            "## completion gate": "completion-gate",
+        }
+        for heading in canonical:
+            self.assertIn(heading, reference)
+
+        for state in (
+            "intake",
+            "ready",
+            "implement",
+            "verify",
+            "review",
+            "remediate",
+            "commit",
+            "push",
+            "ticket_checkpoint",
+            "status_sync",
+            "root_exception",
+            "root_status_sync",
+            "root_checkpoint",
+            "blocked",
+            "completed",
+        ):
+            self.assertIn(f"| {state} |", lifecycle)
+
+        for anchor in canonical.values():
+            self.assertIn(
+                f"references/final-review-remediation.md#{anchor}",
+                " ".join(lifecycle.split()),
+            )
+
+        for phrase in (
+            "exactly as received",
+            "three total attempts",
+            "separate issue-comment write approval",
+            "no unhandled p0/p1",
+            "partial-mode approval",
+            "permanent partial state",
+        ):
+            self.assertNotIn(phrase, lifecycle)
+            self.assertNotIn(phrase, final_review)
+
+        self.assertNotIn("### partial root exception", text)
+        for anchor in canonical.values():
+            self.assertIn(
+                f"../../skills/spec-implement-loop/references/final-review-remediation.md#{anchor}",
+                manual_navigation,
+            )
+        self.assertIn(
+            "without restating exception conditions, thresholds, or approval ordering",
+            manual_navigation,
+        )
 
     def test_partial_root_exception_record_is_append_only_and_blocks_status(self):
-        text = skill("spec-implement-loop").lower().replace(chr(96), "")
-        exception = section(section(text, "## final review"), "### partial root exception")
         remediation = skill_reference(
             "spec-implement-loop",
             "final-review-remediation.md",
         ).lower().replace(chr(96), "")
+        partial = section(remediation, "## partial results and per-root exceptions")
+        records = section(remediation, "## permanent append-only records")
+        retry = section(remediation, "## retry and reconciliation")
+        completion = section(remediation, "## completion gate")
 
-        self.assertIn("separate issue-comment write approval", exception)
-        self.assertIn("/conventional-git-messages", exception)
-        self.assertIn("target root repository's root agents.md", exception)
-        self.assertIn("latest partial-mode approval source and evidence", exception)
-        self.assertIn("blocked result path and sha-256", exception)
-        self.assertIn("root-exception approval source and evidence", exception)
-        self.assertIn("append-only", exception)
-        self.assertIn("exactly as received", exception)
-        self.assertIn("normalized findings and native metadata", exception)
-        self.assertIn("exactly one complete report", exception)
-        self.assertIn("each part carries its part label and only its slice", exception)
-        self.assertIn("part n/m", exception)
-        self.assertIn("no duplication, truncation, change, or omission", exception)
-        self.assertIn("every part is confirmed", exception)
-        self.assertIn("before root status synchronization", exception)
-        self.assertIn("reconcile", exception)
-        self.assertIn("three total attempts", exception)
-        self.assertIn("root completion checkpoint remains mandatory", exception)
-        self.assertIn("no other github writes", exception)
+        self.assertIn("separate issue-comment write approval", records)
+        self.assertIn("/conventional-git-messages", records)
+        self.assertIn("target root repository's root agents.md", records)
+        self.assertIn("latest partial-mode approval source and evidence", records)
+        self.assertIn("blocked result path and sha-256", records)
+        self.assertIn("root-exception approval source and evidence", records)
+        self.assertIn("append-only", records)
+        self.assertIn("exactly as received", records)
+        self.assertIn("normalized findings and native metadata", records)
+        self.assertIn("exactly one complete report", records)
+        self.assertIn("each part carries its part label and only its slice", records)
+        self.assertIn("part n/m", records)
+        self.assertIn("no duplication, truncation, change, or omission", records)
+        self.assertIn("every part is confirmed", records)
+        self.assertIn("before root status synchronization", retry)
+        self.assertIn("reconcile", retry)
+        self.assertIn("three total attempts", retry)
+        self.assertIn("root completion checkpoint remains mandatory", completion)
+        self.assertIn("no other github writes", partial)
         self.assertLess(
-            exception.index("invoke /conventional-git-messages"),
-            exception.index("obtain the separate per-root exception approval"),
+            records.index("invoke /conventional-git-messages"),
+            records.index("obtain the separate per-root exception approval"),
         )
         self.assertLess(
-            exception.index("obtain the separate per-root exception approval"),
-            exception.index("freeze the final comment series"),
+            records.index("obtain the separate per-root exception approval"),
+            records.index("freeze the final comment series"),
         )
         self.assertLess(
-            exception.index("freeze the final comment series"),
-            exception.index("separate issue-comment write approval"),
+            records.index("freeze the final comment series"),
+            records.index("separate issue-comment write approval"),
         )
         self.assertIn(
             "partial root exception",
