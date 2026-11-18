@@ -1892,6 +1892,11 @@ class ConventionalGitMessagesBehaviorTests(unittest.TestCase):
                 "issue-text.md",
                 ("## issue titles", "## issue descriptions", "## issue comments"),
             ),
+            (
+                "release notes",
+                "release-notes.md",
+                ("# release notes", "## classification and copy-ready output", "## example"),
+            ),
         )
         for trigger, filename, headings in references:
             with self.subTest(trigger=trigger):
@@ -1906,12 +1911,35 @@ class ConventionalGitMessagesBehaviorTests(unittest.TestCase):
                     self.assertIn(heading, reference_text)
 
     def test_shared_operation_boundary_stays_in_the_entrypoint(self):
-        text = skill("conventional-git-messages").lower().replace(chr(96), "")
+        text = " ".join(
+            skill("conventional-git-messages")
+            .lower()
+            .replace(chr(96), "")
+            .split()
+        )
         activation = section(text, "## activation criteria & objective")
-        self.assertIn("never perform a git operation", activation)
-        self.assertIn("create or modify an issue", activation)
-        self.assertIn("open or edit a pull request", activation)
-        self.assertIn("post a comment", activation)
+        self.assertIn(
+            "only release-notes drafting may inspect git or github, and only when "
+            "the user explicitly authorizes read-only evidence inspection for a "
+            "named repository and release scope. do not inspect repository or "
+            "tracker state otherwise. never stage, commit, or push. do not create "
+            "a tag, github release, or changelog entry; write an issue or pull "
+            "request; change authentication; post a comment; or publish.",
+            activation,
+        )
+        self.assertIn(
+            "when the selected guidance requires supplementary output, return "
+            "that outside the code block as specified",
+            section(text, "## output"),
+        )
+        pr_text = " ".join(
+            skill_reference("conventional-git-messages", "pull-request-text.md")
+            .lower()
+            .replace(chr(96), "")
+            .split()
+        )
+        self.assertIn("use the supplied current diff", pr_text)
+        self.assertIn("supplied recent same-type pr examples", pr_text)
 
     def test_optional_diagrams_use_user_selected_skill_scout_flow(self):
         text = skill_reference("conventional-git-messages", "pull-request-text.md").lower().replace(chr(96), "")
@@ -1919,6 +1947,396 @@ class ConventionalGitMessagesBehaviorTests(unittest.TestCase):
         self.assertIn("follow /skill-scout's general-host flow", diagrams)
         self.assertIn("use its skillroute local-catalog mode only when the user selects it", diagrams)
         self.assertIn("do not install, index, copy, or silently substitute a skill", diagrams)
+
+    def test_prerequisite_gates_are_scoped_to_routes_that_use_them(self):
+        entrypoint = skill("conventional-git-messages").lower().replace(chr(96), "")
+        dependencies = section(entrypoint, "## dependencies")
+        self.assertIn("only the dependencies required by the selected guidance route", dependencies)
+        self.assertIn("stop only the affected route", dependencies)
+
+        routes = section(entrypoint, "## guidance routes")
+        self.assertIn("release notes", routes)
+        self.assertIn("(references/release-notes.md)", routes)
+
+        pull_request = skill_reference(
+            "conventional-git-messages", "pull-request-text.md"
+        ).lower().replace(chr(96), "")
+        descriptions = section(pull_request, "## pull request descriptions")
+        self.assertIn("before drafting a pr body, check that /pr is available", descriptions)
+        self.assertIn("stop pr-body drafting", descriptions)
+        self.assertIn("does not apply to pr titles, pr comments, or other output routes", descriptions)
+
+        diagrams = section(pull_request, "## optional diagrams")
+        self.assertIn("confirm /skill-scout is available before invoking it", diagrams)
+        self.assertIn("use its skillroute local-catalog mode only when the user selects it", diagrams)
+        self.assertIn("confirm the cli is available before running it", diagrams)
+
+
+class ReleaseNotesDraftingContractTests(unittest.TestCase):
+    def test_release_notes_route_defines_the_copy_ready_contract(self):
+        text = skill("conventional-git-messages").lower().replace(chr(96), "")
+        activation = section(text, "## activation criteria & objective")
+        self.assertIn("release-note text", activation)
+        self.assertIn("release-note text", text.split("---", 2)[1])
+        self.assertIn(
+            "release-note text",
+            (ROOT / "README.md").read_text(encoding="utf-8").lower(),
+        )
+
+        reference = " ".join(
+            skill_reference("conventional-git-messages", "release-notes.md")
+            .lower()
+            .replace(chr(96), "")
+            .split()
+        )
+
+        self.assertIn(
+            "section order and precedence: breaking changes, deprecations, "
+            "features, fixes, maintenance",
+            reference,
+        )
+
+        for required in (
+            "general end users",
+            "target repository root agents.md language rule",
+            "precedence",
+            "problem",
+            "change",
+            "impact",
+            "omit",
+            "no placeholders",
+            "tables or json",
+            "read-only git and github evidence inspection",
+            "tag",
+            "release",
+            "changelog",
+            "publication",
+            "**legacy import command removed**",
+            "problem:",
+            "change:",
+            "impact:",
+        ):
+            with self.subTest(required=required):
+                self.assertIn(required, reference)
+        self.assertIn(
+            "never stage, commit, or push. do not create a tag, release, or "
+            "changelog entry; write an issue or pull request; change "
+            "authentication; post a comment; or perform release-note publication.",
+            reference,
+        )
+        self.assertIn("omit every section without items", reference)
+        self.assertIn("if no title is present, begin with the overview", reference)
+        self.assertIn("# workbench 2.4 - 2026-12-01", reference)
+        self.assertIn("workbench 2.4 changes how imports are invoked.", reference)
+        self.assertIn(
+            "supplied facts: the legacy import command is removed; existing "
+            "automation that calls it stops working; users must switch to the "
+            "supported import command. the user also supplies product workbench, "
+            "version 2.4, and date 2026-12-01.",
+            reference,
+        )
+
+    def test_manual_release_notes_scenario_covers_supplied_facts_and_no_writes(self):
+        manual = (
+            ROOT / "tests" / "manual" / "conventional-git-messages.md"
+        ).read_text(encoding="utf-8").lower().replace(chr(96), "")
+        scenario = " ".join(
+            section(manual, "## release notes from supplied facts").split()
+        )
+
+        for required in (
+            "general end users",
+            "breaking changes",
+            "features",
+            "problem",
+            "change",
+            "impact",
+            "defaults to",
+            "without selecting an audience",
+            "do not supply product, version, or date metadata",
+            "omits the title",
+            "invents no metadata",
+            "tag",
+            "release",
+            "changelog",
+            "publication",
+            "no placeholders",
+            "no git or github operation",
+        ):
+            with self.subTest(required=required):
+                self.assertIn(required, scenario)
+        self.assertIn(
+            "no git or github operation runs; it creates no tag, release, or "
+            "changelog entry, and performs no publication",
+            scenario,
+        )
+
+    def test_release_evidence_contract_covers_scope_ranges_and_draft_basis(self):
+        reference = " ".join(
+            skill_reference("conventional-git-messages", "release-notes.md")
+            .lower()
+            .replace(chr(96), "")
+            .split()
+        )
+
+        for required in (
+            "one shipped single-project release",
+            "whole-repository release is allowed only for a single-project repository",
+            "monorepo, multi-project, multi-platform, or multi-product",
+            "separately scoped single-project input",
+            "do not discover packages, apps, platforms, or release units",
+            "explicit change list",
+            "exact ref set or tag pair",
+            "containment or merge evidence",
+            "user attestation",
+            "version and release-date metadata are optional",
+            "accept optional product, version, and date metadata when supplied or evidence-backed",
+            "do not invent missing metadata",
+            "if the supplied or inspected facts do not support",
+            "session, meeting, or theme",
+            "labeled highlights",
+            "cannot substitute for a complete release scope",
+            "start..end",
+            "reachable from end but not start",
+            "opening boundary is excluded and the closing boundary is included",
+            "asks to include the opening commit or supplies a three-dot range",
+            "request start..end or an exact ref set instead of silently changing the range",
+            "three-dot",
+            "read failure",
+            "unavailable authentication",
+            "unresolved gap",
+            "fully reverted within scope",
+            "squash commit",
+            "authorized pr or issue evidence",
+            "include a level-one title only when the supplied or evidence-backed facts support it",
+            "use only supplied or evidence-backed product, version, and date fields",
+            "draft basis",
+            "in addition to the copy-ready block",
+            "outside the fenced copy-ready block",
+            "authorized source types",
+            "exact available refs",
+            "commit shas",
+            "pr or issue numbers",
+            "inspection date",
+            "inspection date, or not applicable when only supplied facts were used",
+            "inspection date: not applicable (no evidence inspection)",
+            "unresolved gaps",
+            "when neither a final block nor an accepted preview is returned",
+            "include the draft basis with the blocking questions",
+            "citations or links",
+            "credentials, tokens, customer pii, private urls, internal hostnames, and sensitive internal identifiers",
+            "verification and drafting perform no release or github write",
+        ):
+            with self.subTest(required=required):
+                self.assertIn(required, reference)
+
+    def test_release_notes_contract_enforces_audience_language_and_content_gates(self):
+        reference = " ".join(
+            skill_reference("conventional-git-messages", "release-notes.md")
+            .lower()
+            .replace(chr(96), "")
+            .split()
+        )
+
+        for required in (
+            "audience defaults to general end users without a follow-up",
+            "use general end users only when the user does not select an audience",
+            "exactly one explicitly selected external or customer-facing audience",
+            "administrators, operators, or developers/integrators",
+            "do not infer any other audience",
+            "reject or clarify an internal pm/qa audience or multiple audience variants in one response",
+            "target repository root agents.md language rule",
+            "external publication surface or its language cannot be determined",
+            "ask instead of guessing",
+            "preserve non-sensitive quotations and names",
+            "every breaking change must state evidence-backed affected users or systems",
+            "compatibility impact",
+            "audience-appropriate migration, verification, or mitigation action",
+            "evidence-backed no action required may serve as the action",
+            "missing or unsupported breaking impact or action blocks the final copy-ready block",
+            "a ! marker or breaking-change phrase is only a signal",
+            "does not replace impact or action evidence",
+            "every deprecation must state evidence-backed affected behavior",
+            "removal timing or migration work also requires evidence",
+            "internal qa-only checklists never appear in external release notes",
+            "rewritten as an external user action",
+            "without exposing internal systems, credentials, or sensitive process information",
+            "collect missing mandatory facts, material evidence conflicts, and unresolved language or security authorization into one batch of blocking questions",
+            "do not return a final copy-ready block while any mandatory gap remains",
+            "after explicit user acceptance",
+            "clearly labeled non-copy-ready preview",
+            "without placeholders",
+            "do not label or format a preview as copy-ready",
+            "a preview does not satisfy these content gates",
+            "identify it as unresolved in the blocking questions",
+            "never present it as verified release content",
+        ):
+            with self.subTest(required=required):
+                self.assertIn(required, reference)
+
+    def test_release_notes_contract_enforces_disclosure_and_version_safety(self):
+        reference = " ".join(
+            skill_reference("conventional-git-messages", "release-notes.md")
+            .lower()
+            .replace(chr(96), "")
+            .split()
+        )
+
+        for required in (
+            "omit or redact credentials, tokens, customer pii, private urls, internal hostnames, and sensitive internal identifiers",
+            "from both the release notes and draft basis",
+            "use a redacted category label instead of the sensitive value",
+            "omit an undisclosed or embargoed security item entirely",
+            "authorizes the exact disclosure scope or the specific fields are already public",
+            "omit its existence from the draft basis too",
+            "public disclosure permits only repetition of already-public fields",
+            "do not expand to other affected systems, exploitation details, or fix details",
+            "security marker and draft basis follow the same disclosure authorization rule as the security item",
+            "when disclosure is authorized, place a security fix under fixes with a visible security marker",
+            "never calculate or assert a major, minor, or patch bump",
+            "never recommend or create a tag",
+            "repeat only supplied or evidence-backed semver implications",
+            "explicitly states that the project uses semver and supplies its release policy",
+            "otherwise no versioning scheme is inferred",
+            "inconsistent with the supplied policy or change types",
+            "treat it as a material evidence conflict",
+            "include it in the blocking questions; do not return the final copy-ready block",
+            "use redacted locators rather than private links or tokens",
+            "keep release notes inside the copy-ready block and the evidence summary outside it",
+            "keep an accepted preview outside the copy-ready block",
+        ):
+            with self.subTest(required=required):
+                self.assertIn(required, reference)
+
+    def test_manual_release_evidence_scenarios_cover_read_only_and_scope_edges(self):
+        manual = (
+            ROOT / "tests" / "manual" / "conventional-git-messages.md"
+        ).read_text(encoding="utf-8").lower().replace(chr(96), "")
+        scenario = " ".join(
+            section(manual, "## release evidence and read-only inspection").split()
+        )
+
+        for required in (
+            "### explicit change list",
+            "do not authorize git or github inspection",
+            "inspection date: not applicable (no evidence inspection)",
+            "### unsupported multi-project scope",
+            "apps/web",
+            "services/api",
+            "separately scoped single-project input",
+            "### tag range boundaries",
+            "v2.3.0..v2.4.0",
+            "includes c and d",
+            "excludes a and b",
+            "opening boundary as excluded",
+            "closing boundary as included",
+            "v2.3.0...v2.4.0",
+            "three-dot",
+            "v2.3.0^..v2.4.0",
+            "### user-attested pr or issue scope",
+            "#41",
+            "#42",
+            "shipped in 2.4.0",
+            "user attestation",
+            "### pr and issue reconciliation",
+            "#44",
+            "#45",
+            "#46",
+            "unresolved containment gap",
+            "### unavailable evidence",
+            "gh auth status",
+            "unresolved gap",
+            "does not infer",
+            "v9.9.9..v2.4.0",
+            "### reverts and squash commits",
+            "fully reverted",
+            "unclear revert",
+            "squash commit s",
+            "#47",
+            "body enumerates the bundled items",
+            "only from that evidence",
+            "### read-only inspection",
+            "git status --porcelain=v1",
+            "git show-ref",
+            "sanitized gh auth status",
+            "recorded states are unchanged",
+            "authentication, staging, commits, pushes, tags, releases, and changelog",
+            "issue or pr titles, bodies, and comments, and release publication",
+            "credentials, tokens, customer pii, private urls, internal hostnames, and sensitive internal identifiers",
+        ):
+            with self.subTest(required=required):
+                self.assertIn(required, scenario)
+
+    def test_manual_release_safety_scenarios_cover_audience_blockers_and_disclosure(self):
+        manual = (
+            ROOT / "tests" / "manual" / "conventional-git-messages.md"
+        ).read_text(encoding="utf-8").lower().replace(chr(96), "")
+        scenario = " ".join(
+            section(manual, "## release note safety gates").split()
+        )
+        default_scenario = " ".join(
+            section(manual, "## release notes from supplied facts").split()
+        )
+        self.assertIn("without selecting an audience", default_scenario)
+        self.assertIn("defaults to general end users", default_scenario)
+
+        for required in (
+            "### explicit external audience",
+            "ask for release notes for administrators",
+            "administrator-specific migration or verification action",
+            "no internal pm/qa checklist",
+            "### audience and blocking questions",
+            "feat(import)!: remove legacy import",
+            "pm and qa",
+            "administrators and developers",
+            "one batch of blocking questions",
+            "supported single external audience",
+            "affected users or systems",
+            "compatibility impact",
+            "migration, verification, or mitigation action",
+            "treated only as a signal",
+            "### breaking and deprecation evidence",
+            "new invocation without an audience selection",
+            "uses the default general end-user audience",
+            "evidence-backed no action required",
+            "legacy export format will be removed next quarter",
+            "affected behavior and evidence for the removal timing",
+            "### non-copy-ready preview",
+            "explicitly accept a non-copy-ready preview",
+            "outside the copy-ready contract",
+            "contains no placeholders",
+            "not present the unresolved change as ready to publish",
+            "accompanying blocking questions identify the omitted impact and action as unresolved",
+            "### language and protected names",
+            "no discernible dominant language",
+            "asks for the language instead of guessing",
+            "row 142 failed",
+            "zoë's export",
+            "preserves the quotation and name",
+            "### redaction and unavailable evidence",
+            "credential, token, customer email address, private url, internal hostname, and sensitive internal identifier",
+            "both the release notes and draft basis",
+            "reports an unresolved gap",
+            "no private link or token appears as a locator",
+            "### embargoed security disclosure",
+            "undisclosed security fix",
+            "existence in the draft basis are all omitted",
+            "affected sso users and the fixed behavior",
+            "visible security marker",
+            "does not add other systems, exploitation details, fix details",
+            "### version safety",
+            "recommend a tag",
+            "does neither and creates no tag",
+            "project uses semver",
+            "release policy plus version 2.4.0",
+            "conflict blocks the final copy-ready block",
+            "policy-consistent version 3.0.0",
+            "without calculating a bump or recommending a tag",
+            "### no-write boundary",
+            "authentication, staging, commit, push, tag, release, changelog, issue, pr, comment, or publication write",
+        ):
+            with self.subTest(required=required):
+                self.assertIn(required, scenario)
 
 
 class ReadmeBehaviorTests(unittest.TestCase):
