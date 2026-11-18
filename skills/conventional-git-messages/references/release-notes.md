@@ -1,6 +1,10 @@
 # Release notes
 
-Draft one copy-ready release-notes block from supplied change facts or, when authorized for read-only Git and GitHub evidence inspection, from evidence inspected only within the named repository and release scope from [Scope](#scope). Use only those facts. Verification and drafting perform no release or GitHub write. Never stage, commit, or push. Do not create a tag, Release, or CHANGELOG entry; write an issue or pull request; change authentication; post a comment; or perform release-note publication.
+Draft one copy-ready release-notes block from supplied change facts or, when authorized for read-only Git and GitHub evidence inspection, from evidence inspected only within the named repository and release scope from [Scope](#scope). Use only those facts.
+
+## No-write boundary
+
+Verification and drafting perform no release or GitHub write. Never stage, commit, or push. Do not create a tag, Release, or CHANGELOG entry; write an issue or pull request; change authentication; post a comment; or perform release-note publication.
 
 ## Inputs
 
@@ -30,7 +34,7 @@ A read failure or unavailable authentication leaves an unresolved gap. Absent co
 - Ask when a revert or squash commit has an unclear net effect.
 - Split a squash commit only with authorized PR or issue evidence.
 
-The introduction's no-write boundary applies to inspection.
+Inspection remains read-only under [No-write boundary](#no-write-boundary).
 
 ## Audience and language
 
@@ -66,7 +70,7 @@ Use redacted locators rather than private links or tokens. Apply these rules to 
 
 ## Version safety
 
-Never calculate or assert a major, minor, or patch bump, and never recommend a tag. Tag creation is covered by the introduction's no-write boundary. Repeat only supplied or evidence-backed SemVer implications where relevant.
+Never calculate or assert a major, minor, or patch bump, and never recommend a tag. Tag creation is covered by [No-write boundary](#no-write-boundary). Repeat only supplied or evidence-backed SemVer implications where relevant.
 
 Check a version label against change types only when the user explicitly states that the project uses SemVer and supplies its release policy. Otherwise no versioning scheme is inferred. If that check finds a version label inconsistent with the supplied policy or change types, treat it as a material evidence conflict and include it in the blocking questions; do not return the final copy-ready block.
 
@@ -84,7 +88,7 @@ Return the release notes in one fenced `markdown` block.
 - Use one canonical section per item. Do not repeat an item across sections.
 - Produce no placeholders or `TBD` markers. Do not use tables or JSON.
 
-The introduction's no-write boundary applies; the requested output remains text only.
+Follow [No-write boundary](#no-write-boundary); the requested output remains text only.
 
 ## Draft basis
 

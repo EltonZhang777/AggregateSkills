@@ -121,7 +121,7 @@ For every denied or inconclusive result, confirm `gh pr merge` is never invoked,
 
 Create a branch that conflicts with its target. Prepare its PR, then approve that exact PR for merging. Run conflict resolution in an explicitly supplied, clean worktree for the exact repository and source branch.
 
-Confirm the skill follows the canonical [conflict-resolution approval](../../skills/pr-and-merge/references/merge-after-approval.md#conflict-resolution-approval): it uses `/resolving-merge-conflicts`, runs the required checks, and presents the complete unstaged diff and results without staging. It must pause for explicit approval of that exact diff and write set before staging. After approval, confirm it stages only the approved files and inspects the staged diff. If that diff changed, it must present the change and obtain renewed approval before commit, push, or merge. After the approved push, confirm it checks the PR's required CI gates again and that the published diff matches the approved resolution before merging. Confirm any later head or base OID change requires renewed approval.
+Confirm the run follows the linked canonical [conflict-resolution approval](../../skills/pr-and-merge/references/merge-after-approval.md#conflict-resolution-approval) and record each boundary outcome: it pauses before staging or any write with the complete unstaged diff and check results; after approval, the staged write set matches the approved diff; a changed staged diff pauses before commit, push, or merge; and a later head or base OID change requires renewed approval before merging.
 
 ## Multi-PR batch: ordering, stacked retarget, and failure isolation
 

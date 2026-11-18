@@ -675,9 +675,9 @@ class PrAndMergeBehaviorTests(unittest.TestCase):
             "before staging or any other write",
             "stage only the approved files",
             "if it differs from the approved diff",
-            "present the changed diff",
+            "stop and get renewed approval",
             "renewed approval",
-            "block that operation until its scope is reviewed",
+            "if any changed path is outside the conflict resolution, stop",
             "after the push, confirm the pr diff still matches the approved resolution",
             "any later oid or diff change requires renewed approval",
         ):
@@ -2054,6 +2054,11 @@ class ConventionalGitMessagesBehaviorTests(unittest.TestCase):
             "reuse the [pull request title rules](pull-request-text.md#pull-request-titles)",
             issue_titles,
         )
+        self.assertIn(
+            "this reuse is the issue-title contract, not a separate "
+            "conventional syntax contract",
+            issue_titles,
+        )
         self.assertNotIn("<type>(<scope>)", issue_titles)
         self.assertIn(
             "do not apply commit-specific title-length or body-wrapping limits",
@@ -2283,7 +2288,8 @@ class ReleaseNotesDraftingContractTests(unittest.TestCase):
             return normalized_text(section(raw, heading))
 
         normalized = normalized_text(raw)
-        introduction = normalized_text(raw.split("\n## Inputs", 1)[0])
+        introduction = normalized_text(raw.split("\n## No-write boundary", 1)[0])
+        no_write = normalized_section("## No-write boundary")
         inputs = normalized_section("## Inputs")
         scope = normalized_section("## Scope")
         content_gates = normalized_section("## Content gates")
@@ -2305,9 +2311,17 @@ class ReleaseNotesDraftingContractTests(unittest.TestCase):
             "those facts.",
             introduction,
         )
+        no_write_rule = (
+            "verification and drafting perform no release or github write. never "
+            "stage, commit, or push. do not create a tag, release, or changelog "
+            "entry; write an issue or pull request; change authentication; post a "
+            "comment; or perform release-note publication."
+        )
+        self.assertEqual(1, normalized.count(no_write_rule))
+        self.assertIn(no_write_rule, no_write)
         self.assertIn("never recommend a tag", version_safety)
         self.assertIn(
-            "tag creation is covered by the introduction's no-write boundary",
+            "tag creation is covered by [no-write boundary](#no-write-boundary)",
             version_safety,
         )
         self.assertNotIn("\n## evidence\n", raw.lower())
@@ -2315,9 +2329,9 @@ class ReleaseNotesDraftingContractTests(unittest.TestCase):
         cross_references = (
             ("Scope -> Inputs", scope, "[inputs](#inputs)"),
             (
-                "Scope -> introduction no-write boundary",
+                "Scope -> No-write boundary",
                 scope,
-                "the introduction's no-write boundary applies",
+                "[no-write boundary](#no-write-boundary)",
             ),
             (
                 "Content gates -> Audience and language",
@@ -2340,9 +2354,9 @@ class ReleaseNotesDraftingContractTests(unittest.TestCase):
                 "[disclosure and redaction](#disclosure-and-redaction)",
             ),
             (
-                "Classification -> introduction no-write boundary",
+                "Classification -> No-write boundary",
                 classification,
-                "the introduction's no-write boundary applies",
+                "[no-write boundary](#no-write-boundary)",
             ),
             (
                 "Draft basis -> Disclosure and redaction",
@@ -2350,9 +2364,9 @@ class ReleaseNotesDraftingContractTests(unittest.TestCase):
                 "[disclosure and redaction](#disclosure-and-redaction)",
             ),
             (
-                "Version safety -> introduction no-write boundary",
+                "Version safety -> No-write boundary",
                 version_safety,
-                "the introduction's no-write boundary",
+                "[no-write boundary](#no-write-boundary)",
             ),
         )
         for name, text, link in cross_references:
