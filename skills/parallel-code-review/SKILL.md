@@ -22,7 +22,7 @@ Before dispatch, confirm that the `skillroute` command and the host's independen
 
 Use this skill for an explicit `/parallel-code-review` request, a request for parallel review, combined review tracks, multiple independent reviewers over one frozen scope, or `/spec-implement-loop` final review. Do not select it for a generic single-path review request; those requests continue to use their named single review path.
 
-The objective is one reproducible orchestration pass over one frozen code scope. The routing table decides which tracks run and in what order. The contract is the sole normative source for [Frozen scope and tree](references/contract.md#frozen-scope-and-tree), [Output boundary](references/contract.md#output-boundary), [Upstream resolution and pins](references/contract.md#upstream-resolution-and-pins), the [Common report envelope](references/contract.md#common-report-envelope), [Coordinator run aggregation](references/contract.md#coordinator-run-aggregation), and [One-track partial results](references/contract.md#one-track-partial-results). This entry point owns activation, preflight order, command forms, dispatch sequence, and links to those sections; it does not own any upstream track's review criteria.
+The objective is one reproducible orchestration pass over one frozen code scope. The routing table decides which tracks run and in what order. The contract is the sole normative source for [Frozen scope and tree](references/contract.md#frozen-scope-and-tree), [Output boundary](references/contract.md#output-boundary), [Upstream resolution and pins](references/contract.md#upstream-resolution-and-pins), the [Common report envelope](references/contract.md#common-report-envelope), [Evidence boundary](references/contract.md#evidence-boundary), [Coordinator run aggregation](references/contract.md#coordinator-run-aggregation), and [One-track partial results](references/contract.md#one-track-partial-results). This entry point owns activation, preflight order, command forms, dispatch sequence, and links to those sections; it does not own any upstream track's review criteria.
 
 ## Preflight the routed contract
 
@@ -102,7 +102,7 @@ python scripts/review_contract.py validate-envelope --bundle <bundle> --envelope
   --upstream /ponytail-review=<resolved source>
 ```
 
-Only validated reports may proceed to presentation. Apply the contract's preservation and blocking rules, and use `Not stated by the source track` when an upstream section did not state a required presentation field. A synthetic envelope used by package tests only validates coordinator behavior; it is not evidence that a live model, model discovery, or an independent reviewer ran.
+Only validated reports may proceed to presentation. Apply the contract's preservation and blocking rules, and use `Not stated by the source track` when an upstream section did not state a required presentation field. Apply the [Evidence boundary](references/contract.md#evidence-boundary) when interpreting static or synthetic test data.
 
 Present native track sections separately, preserve route order and finding order, and render each finding as:
 

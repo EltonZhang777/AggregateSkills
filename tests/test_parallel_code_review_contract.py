@@ -5510,8 +5510,7 @@ class ParallelCodeReviewPackageTests(unittest.TestCase):
             "original order",
             "not run",
             "do not write to the reviewed repository",
-            "synthetic envelope",
-            "not evidence",
+            "evidence boundary",
             "show it before requesting one-track partial approval",
         ):
             self.assertIn(phrase, text)
@@ -5539,6 +5538,19 @@ class ParallelCodeReviewPackageTests(unittest.TestCase):
                 "each track returns one json object with exactly these top-level fields",
                 "`coverage_check_mismatch`",
                 "does not reclassify",
+            ),
+            "## Evidence boundary": (
+                "static and synthetic artifacts establish only",
+                "contract shape",
+                "deterministic validation",
+                "fixture reading",
+                "coordinator behavior",
+                "real reviewer",
+                "model discovery",
+                "live-host behavior",
+                "live caller seam",
+                "upstream resolution",
+                "actual github record",
             ),
             "## Coordinator run aggregation": (
                 "`validate-run` derives the overall `status`",
@@ -5589,6 +5601,23 @@ class ParallelCodeReviewPackageTests(unittest.TestCase):
             scenario,
         )
 
+    def test_evidence_boundary_is_not_nested_inside_report_envelope(self):
+        contract = CONTRACT.read_text(encoding="utf-8")
+        boundary_headings = [
+            line
+            for line in contract.splitlines()
+            if line.startswith("#") and line.lstrip("#").strip() == "Evidence boundary"
+        ]
+        self.assertEqual(["## Evidence boundary"], boundary_headings)
+
+        report_section = markdown_section(contract, "## Common report envelope")
+        nested_headings = [
+            line.lstrip("#").strip()
+            for line in report_section.splitlines()
+            if line.startswith("#")
+        ]
+        self.assertNotIn("Evidence boundary", nested_headings)
+
     def test_known_complete_rule_copies_are_absent_from_noncanonical_documents(self):
         canonical_rule_copies = (
             "The validator pins the route table, every routed adapter, and every resolved upstream by exact-byte SHA-256 and exact byte size.",
@@ -5599,6 +5628,17 @@ class ParallelCodeReviewPackageTests(unittest.TestCase):
             "Run aggregation repeats the complete freshness verification used before each track.",
             "After `validate-run` produces a blocked result, save that JSON result as an external artifact.",
             "A partial result must be labeled `partial` and name the missing track, reduced independence, coverage, and the original completed report; it must never claim a complete parallel review.",
+            "A schema-valid synthetic envelope is contract-test data, not evidence of live model discovery or independent execution.",
+            "A synthetic envelope used by package tests only validates coordinator behavior; it is not evidence that a live model, model discovery, or an independent reviewer ran.",
+            "The static acceptance envelope is only a coordinator contract fixture. It does not demonstrate that the upstream skill was resolved live, that model discovery selected this track, or that an independent sub-agent ran.",
+            "The synthetic static acceptance envelope is only coordinator contract test data; it is not evidence that the upstream skill was resolved, that a model selected this track, or that an independent sub-agent ran.",
+            "These records do not demonstrate live model discovery, independent execution, or recovery capability.",
+            "Static records and subprocess contract tests are not live evidence.",
+            "The disposable adapter and static envelope prove activation and coordinator behavior only.",
+            "The automated test helper's static envelopes are only contract-shape test data.",
+            "They must not be reported as a live track result, a model-discovery pass, or evidence that two independent reviewers ran.",
+            "passing the static contract assertions is not live caller evidence.",
+            "Static package evidence does not turn those live checks into passes.",
         )
 
         for path in sorted(SKILL_ROOT.rglob("*.md")):
@@ -5608,6 +5648,27 @@ class ParallelCodeReviewPackageTests(unittest.TestCase):
             for sentence in canonical_rule_copies:
                 with self.subTest(path=path.relative_to(SKILL_ROOT), sentence=sentence):
                     self.assertNotIn(" ".join(sentence.split()), text)
+
+    def test_evidence_boundary_is_linked_from_entry_point_adapters_and_acceptance(self):
+        documents = (
+            (SKILL_ROOT / "SKILL.md", "references/contract.md#evidence-boundary"),
+            (
+                SKILL_ROOT / "references" / "tracks" / "code-review.md",
+                "../contract.md#evidence-boundary",
+            ),
+            (
+                SKILL_ROOT / "references" / "tracks" / "ponytail-review.md",
+                "../contract.md#evidence-boundary",
+            ),
+            (
+                SKILL_ROOT / "references" / "acceptance-scenario.md",
+                "contract.md#evidence-boundary",
+            ),
+        )
+
+        for path, link in documents:
+            with self.subTest(path=path.relative_to(SKILL_ROOT)):
+                self.assertIn(link, path.read_text(encoding="utf-8"))
 
     def test_acceptance_package_is_review_only_and_renders_both_expected_tracks(self):
         patch = SKILL_ROOT / "references" / "acceptance-fixture.patch"
@@ -5631,7 +5692,7 @@ class ParallelCodeReviewPackageTests(unittest.TestCase):
         self.assertIn("verdict", scenario)
         self.assertIn("no repository writes", scenario)
         self.assertIn("static envelope", scenario)
-        self.assertIn("must not be reported as a live", scenario)
+        self.assertIn("evidence boundary", scenario)
 
         before = snapshot_tree(ROOT)
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -5709,8 +5770,7 @@ class ParallelCodeReviewPackageTests(unittest.TestCase):
             "artifact by relative path and exact sha-256",
             "same-pass record is rejected",
             "not run",
-            "static records",
-            "not live evidence",
+            "evidence boundary",
         ):
             self.assertIn(phrase, scenario)
 

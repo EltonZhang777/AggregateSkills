@@ -1,6 +1,6 @@
 # Parallel Review Contract
 
-The entry point owns activation, preflight order, command forms, dispatch sequence, and links to this contract. The sections below are the sole normative source for frozen scope and tree mechanics, the bundle output boundary, upstream resolution and pins, the common report envelope, coordinator run aggregation, and one-track partial results.
+The entry point owns activation, preflight order, command forms, dispatch sequence, and links to this contract. The sections below are the sole normative source for frozen scope and tree mechanics, the bundle output boundary, upstream resolution and pins, the common report envelope, the evidence boundary, coordinator run aggregation, and one-track partial results.
 
 ## Version
 
@@ -177,7 +177,11 @@ Each finding has:
 
 Optional native fields are `native_axis`, `native_id`, `native_severity`, and `native_group`. They remain visible beside the normalized severity. The coordinator validates and presents findings in their received order; it does not reclassify, merge, remove, or rerank them.
 
-Native semantic ordering belongs to the upstream track and remains opaque to the coordinator. A schema-valid synthetic envelope is contract-test data, not evidence of live model discovery or independent execution.
+Native semantic ordering belongs to the upstream track and remains opaque to the coordinator.
+
+## Evidence boundary
+
+Static and synthetic artifacts establish only contract shape, deterministic validation, fixture reading, and coordinator behavior over recorded inputs. They do not prove that a real reviewer or independent sub-agent ran, that model discovery selected a track, that live-host behavior occurred, that a live caller seam executed, that an upstream resolution occurred, or that an actual GitHub record was created or updated. Only separately observed live evidence can support those claims; without it, record the affected capability as `not_run`.
 
 ## Coordinator run aggregation
 
