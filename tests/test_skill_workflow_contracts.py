@@ -2273,6 +2273,123 @@ class ReleaseNotesDraftingContractTests(unittest.TestCase):
             reference,
         )
 
+    def test_release_note_rules_have_single_canonical_sections_and_backlinks(self):
+        raw = skill_reference("conventional-git-messages", "release-notes.md")
+
+        def normalized_text(text):
+            return " ".join(text.lower().replace(chr(96), "").split())
+
+        def normalized_section(heading):
+            return normalized_text(section(raw, heading))
+
+        normalized = normalized_text(raw)
+        introduction = normalized_text(raw.split("\n## Inputs", 1)[0])
+        inputs = normalized_section("## Inputs")
+        scope = normalized_section("## Scope")
+        content_gates = normalized_section("## Content gates")
+        classification = normalized_section("## Classification and copy-ready output")
+        draft_basis = normalized_section("## Draft basis")
+        version_safety = normalized_section("## Version safety")
+
+        metadata = (
+            "accept optional product, version, and date metadata only when supplied "
+            "or evidence-backed. do not invent missing metadata"
+        )
+        self.assertEqual(1, normalized.count(metadata))
+        self.assertEqual(1, inputs.count(metadata))
+
+        self.assertIn(
+            "from supplied change facts or, when authorized for read-only git and "
+            "github evidence inspection, from evidence inspected only within the "
+            "named repository and release scope from [scope](#scope). use only "
+            "those facts.",
+            introduction,
+        )
+        self.assertIn("never recommend a tag", version_safety)
+        self.assertIn(
+            "tag creation is covered by the introduction's no-write boundary",
+            version_safety,
+        )
+        self.assertNotIn("\n## evidence\n", raw.lower())
+
+        cross_references = (
+            ("Scope -> Inputs", scope, "[inputs](#inputs)"),
+            (
+                "Scope -> introduction no-write boundary",
+                scope,
+                "the introduction's no-write boundary applies",
+            ),
+            (
+                "Content gates -> Audience and language",
+                content_gates,
+                "[audience and language](#audience-and-language)",
+            ),
+            (
+                "Content gates -> Disclosure and redaction",
+                content_gates,
+                "[disclosure and redaction](#disclosure-and-redaction)",
+            ),
+            (
+                "Classification -> Inputs",
+                classification,
+                "[inputs](#inputs)",
+            ),
+            (
+                "Classification -> Disclosure and redaction",
+                classification,
+                "[disclosure and redaction](#disclosure-and-redaction)",
+            ),
+            (
+                "Classification -> introduction no-write boundary",
+                classification,
+                "the introduction's no-write boundary applies",
+            ),
+            (
+                "Draft basis -> Disclosure and redaction",
+                draft_basis,
+                "[disclosure and redaction](#disclosure-and-redaction)",
+            ),
+            (
+                "Version safety -> introduction no-write boundary",
+                version_safety,
+                "the introduction's no-write boundary",
+            ),
+        )
+        for name, text, link in cross_references:
+            with self.subTest(cross_reference=name):
+                self.assertIn(link, text)
+
+        for removed in (
+            "require one explicit release scope as defined under evidence",
+            "version and release-date metadata are optional",
+            "use only supplied or evidence-backed product, version, and date fields",
+            "never recommend or create a tag",
+        ):
+            with self.subTest(removed=removed):
+                self.assertNotIn(removed, normalized)
+
+        removed_duplicates = (
+            (
+                "Content gates no longer repeats the redaction list",
+                content_gates,
+                "credentials, tokens, customer pii, private urls, internal hostnames, "
+                "and sensitive internal identifiers",
+            ),
+            (
+                "Classification no longer repeats metadata field selection",
+                classification,
+                "use only supplied or evidence-backed product, version, and date fields",
+            ),
+            (
+                "Draft basis no longer repeats the redacted-locator rule",
+                draft_basis,
+                "use redacted locators rather than private links or tokens",
+            ),
+        )
+        for name, text, duplicate in removed_duplicates:
+            with self.subTest(removed_duplicate=name):
+                self.assertNotIn(duplicate, text)
+
     def test_manual_release_notes_scenario_covers_supplied_facts_and_no_writes(self):
         manual = (
             ROOT / "tests" / "manual" / "conventional-git-messages.md"
@@ -2326,8 +2443,7 @@ class ReleaseNotesDraftingContractTests(unittest.TestCase):
             "exact ref set or tag pair",
             "containment or merge evidence",
             "user attestation",
-            "version and release-date metadata are optional",
-            "accept optional product, version, and date metadata when supplied or evidence-backed",
+            "accept optional product, version, and date metadata only when supplied or evidence-backed",
             "do not invent missing metadata",
             "if the supplied or inspected facts do not support",
             "session, meeting, or theme",
@@ -2346,7 +2462,6 @@ class ReleaseNotesDraftingContractTests(unittest.TestCase):
             "squash commit",
             "authorized pr or issue evidence",
             "include a level-one title only when the supplied or evidence-backed facts support it",
-            "use only supplied or evidence-backed product, version, and date fields",
             "draft basis",
             "in addition to the copy-ready block",
             "outside the fenced copy-ready block",
@@ -2431,7 +2546,6 @@ class ReleaseNotesDraftingContractTests(unittest.TestCase):
             "security marker and draft basis follow the same disclosure authorization rule as the security item",
             "when disclosure is authorized, place a security fix under fixes with a visible security marker",
             "never calculate or assert a major, minor, or patch bump",
-            "never recommend or create a tag",
             "repeat only supplied or evidence-backed semver implications",
             "explicitly states that the project uses semver and supplies its release policy",
             "otherwise no versioning scheme is inferred",
