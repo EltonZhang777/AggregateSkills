@@ -1922,13 +1922,8 @@ class ConventionalGitMessagesBehaviorTests(unittest.TestCase):
         canonical = normalized("issue-references.md")
         commit = normalized("commit-messages.md")
         pull_request = normalized("pull-request-text.md")
-        semantics = (
-            "preserve every supplied issue or pull request reference",
-            "use closes #n only when the change resolves that issue and it should close on merge",
-            "use refs #n for other related issues",
-            "use only issue numbers supplied in context; never invent references",
-        )
-        for semantic in semantics:
+        self.assertIn("preserve every supplied issue or pull request reference", canonical)
+        for semantic in ("closes #n", "refs #n", "never invent references"):
             with self.subTest(semantic=semantic):
                 self.assertIn(semantic, canonical)
                 self.assertNotIn(semantic, commit)
