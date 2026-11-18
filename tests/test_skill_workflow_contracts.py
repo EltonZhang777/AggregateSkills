@@ -352,7 +352,7 @@ class PrAndMergeBehaviorTests(unittest.TestCase):
         self.assertNotIn("present a separate approval snapshot for each pr", batch)
         self.assertNotIn("finish preparing every eligible pr before merging any", batch)
         self.assertIn("never stash or clean a supplied worktree", batch)
-        self.assertIn("stage its conflict-resolution files only after explicit approval of the exact diff", batch)
+        self.assertIn("references/merge-after-approval.md#conflict-resolution-approval", batch)
 
         source_resolution = section(skill("pr-and-merge").lower(), "## resolve the source and target")
         self.assertIn("already dirty at this initial source-resolution check", source_resolution)
@@ -381,10 +381,8 @@ class PrAndMergeBehaviorTests(unittest.TestCase):
         self.assertIn("git remote -v", conflicts)
         self.assertIn("git status --porcelain=v1 --untracked-files=all", conflicts)
         self.assertIn("never stage, commit, stash, discard, or push automatically", conflicts)
-        self.assertIn("complete unstaged conflict-resolution diff", conflicts)
-        self.assertIn("before staging or any other write", conflicts)
-        self.assertIn("stage only the approved files", conflicts)
-        self.assertIn("staged diff differs from the approved diff", conflicts)
+        self.assertIn("merge-after-approval.md#conflict-resolution-approval", conflicts)
+        self.assertIn("keep the conflict-specific approval separate from the batch authorization", conflicts)
 
         refresh = section(text, "## refresh after source or base changes")
         self.assertIn("head and base oids", refresh)
@@ -402,9 +400,11 @@ class PrAndMergeBehaviorTests(unittest.TestCase):
         self.assertIn("retain the batch-plan order through merging", merge)
         self.assertIn("conflict-free entries before conflict candidates", merge)
         self.assertIn("only to break ties within either group", merge)
-        self.assertIn("before staging or any other write", merge)
-        self.assertIn("stage only the approved files", merge)
-        self.assertIn("if it differs from the approved diff", merge)
+        conflict_approval = section(merge, "## conflict-resolution approval")
+        self.assertIn("complete unstaged conflict-resolution diff", conflict_approval)
+        self.assertIn("before staging or any other write", conflict_approval)
+        self.assertIn("stage only the approved files", conflict_approval)
+        self.assertIn("if it differs from the approved diff", conflict_approval)
 
     def test_multi_pr_post_merge_verification_uses_the_confirmed_single_base_result(self):
         text = skill_reference("pr-and-merge", "multi-pr-batch.md").lower().replace(chr(96), "")
@@ -649,6 +649,100 @@ class PrAndMergeBehaviorTests(unittest.TestCase):
         self.assertIn("merge each pr only after the user explicitly approves that exact pr", merge)
         self.assertIn("immediately before each merge, recheck that pr's head and base", merge)
         self.assertIn("when an approved merge encounters a conflict, use /resolving-merge-conflicts", merge)
+
+    def test_post_approval_reference_owns_shared_permission_and_conflict_rules(self):
+        merge = skill_reference("pr-and-merge", "merge-after-approval.md").lower().replace(chr(96), "")
+        permission_heading = "## merge permission gate"
+        conflict_heading = "## conflict-resolution approval"
+        self.assertIn(permission_heading, merge)
+        self.assertIn(conflict_heading, merge)
+        self.assertLess(merge.index(permission_heading), merge.index(conflict_heading))
+
+        permission = section(merge, permission_heading)
+        for requirement in (
+            "immediately before invoking gh pr merge",
+            "current github cli identity's effective permission",
+            "exact repository that owns the pr's base branch",
+            "read .base.repo.full_name and .login",
+            "known read or triage result is a definite denial",
+            "never invoke gh pr merge for a denied or inconclusive result",
+        ):
+            self.assertIn(requirement, permission)
+
+        conflict = section(merge, conflict_heading)
+        for requirement in (
+            "complete unstaged conflict-resolution diff",
+            "before staging or any other write",
+            "stage only the approved files",
+            "if it differs from the approved diff",
+            "present the changed diff",
+            "renewed approval",
+            "block that operation until its scope is reviewed",
+            "after the push, confirm the pr diff still matches the approved resolution",
+            "any later oid or diff change requires renewed approval",
+        ):
+            self.assertIn(requirement, conflict)
+
+        multi = skill_reference("pr-and-merge", "multi-pr-batch.md").lower().replace(chr(96), "")
+        gate = section(multi, "## gate conflict resolution")
+        normalized_gate = " ".join(gate.split())
+        for requirement in (
+            ".wt",
+            "dirty worktree",
+            "exact repository",
+            "exact source branch",
+            "git rev-parse --show-toplevel",
+            "git remote -v",
+            "git branch --show-current",
+            "git status --porcelain=v1 --untracked-files=all",
+            "never clean a worktree to proceed",
+            "never stage, commit, stash, discard, or push automatically",
+            "keep the conflict-specific approval separate from the batch authorization",
+            "merge-after-approval.md#conflict-resolution-approval",
+        ):
+            self.assertIn(requirement, gate)
+        self.assertNotIn(
+            "inspect the complete unstaged conflict-resolution diff and worktree status, "
+            "run the required checks, then present the diff, check results, and intended "
+            "commit, push, and merge. obtain explicit approval for that exact diff and "
+            "write set before staging or any other write. after approval, stage only the "
+            "approved files and inspect the staged diff. if the staged diff differs from "
+            "the approved diff, stop, present the changed diff, and obtain renewed "
+            "approval before proceeding. a changed path outside the conflict resolution "
+            "blocks that operation until the scope is reviewed.",
+            normalized_gate,
+        )
+        self.assertNotIn("use the main skill's conflict-resolution procedure", normalized_gate)
+        for shared_rule in (
+            "complete unstaged conflict-resolution diff",
+            "stage only the approved files",
+            "if it differs from the approved diff",
+            "after the push, confirm the pr diff still matches",
+            "changed path outside the conflict resolution",
+        ):
+            self.assertNotIn(shared_rule, gate)
+        self.assertNotIn("without defining failure isolation", multi)
+        self.assertIn("define failure isolation", multi)
+
+        skill_text = skill("pr-and-merge").lower().replace(chr(96), "")
+        batch = " ".join(section(skill_text, "## process a batch").split())
+        source = " ".join(section(skill_text, "## resolve the source and target").split())
+        self.assertNotIn(
+            "stage its conflict-resolution files only after explicit approval of the exact "
+            "diff, and only as described in the [conflict-resolution gate]"
+            "(references/multi-pr-batch.md#gate-conflict-resolution).",
+            batch,
+        )
+        self.assertIn("references/merge-after-approval.md#conflict-resolution-approval", batch)
+        self.assertNotIn(
+            "follow the separate approval-before-staging rules in the multi-pr batch reference.",
+            source,
+        )
+        self.assertIn("references/merge-after-approval.md#conflict-resolution-approval", source)
+
+        manual = (ROOT / "tests" / "manual" / "pr-and-merge.md").read_text(encoding="utf-8").lower()
+        scenario = section(manual, "## conflict resolution and second approval")
+        self.assertIn("merge-after-approval.md#conflict-resolution-approval", scenario)
 
 
 class PruneWorktreesBehaviorTests(unittest.TestCase):
