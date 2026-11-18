@@ -16,7 +16,7 @@
 - Add only useful, non-obvious rationale, breaking-change context, migration notes, or issue references.
 - Always include a body for breaking changes, security fixes, data migrations, and reverts. For breaking changes, explain compatibility impact under `BREAKING CHANGE:` and give the supplied migration path. Preserve supplied impact and migration details; do not invent them.
 - Wrap body lines at 72 characters. Use `-` for bullets.
-- Put all supplied issue or pull request references at the end, after the rationale and any other trailers. For issue references, use `closes #N` only when the change resolves that issue and it should close on merge; use `refs #N` for other related issues. Use only issue numbers supplied in context; never invent references.
+- Put all supplied issue or pull request references at the end, after the rationale and any other trailers; see [Issue references](issue-references.md).
 - Do not write filler such as `This commit does`, `I`, `we`, `now`, or `currently`; do not repeat a filename already conveyed by the scope.
 - If the user requests co-author credit, use a `Co-authored-by:` trailer instead of prose such as `As requested by...`. Do not invent author details.
 - Do not add emoji or AI attribution unless the user or repository rules require it; if required, use the specified trailer.

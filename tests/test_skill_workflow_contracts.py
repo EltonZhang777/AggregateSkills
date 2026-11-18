@@ -1910,6 +1910,45 @@ class ConventionalGitMessagesBehaviorTests(unittest.TestCase):
                 for heading in headings:
                     self.assertIn(heading, reference_text)
 
+    def test_issue_reference_semantics_are_centralized_and_reused(self):
+        def normalized(filename):
+            return " ".join(
+                skill_reference("conventional-git-messages", filename)
+                .lower()
+                .replace(chr(96), "")
+                .split()
+            )
+
+        canonical = normalized("issue-references.md")
+        commit = normalized("commit-messages.md")
+        pull_request = normalized("pull-request-text.md")
+        semantics = (
+            "preserve every supplied issue or pull request reference",
+            "use closes #n only when the change resolves that issue and it should close on merge",
+            "use refs #n for other related issues",
+            "use only issue numbers supplied in context; never invent references",
+        )
+        for semantic in semantics:
+            with self.subTest(semantic=semantic):
+                self.assertIn(semantic, canonical)
+                self.assertNotIn(semantic, commit)
+                self.assertNotIn(semantic, pull_request)
+
+        self.assertIn("[issue references](issue-references.md)", commit)
+        self.assertIn(
+            "put all supplied issue or pull request references at the end, "
+            "after the rationale and any other trailers",
+            commit,
+        )
+        self.assertIn("[issue references](issue-references.md)", pull_request)
+        self.assertIn(
+            "begin the pr body with the references described in "
+            "[issue references](issue-references.md), before the existing /pr "
+            "summary, evidence, and merge danger template",
+            pull_request,
+        )
+        self.assertIn("preserve the template after the reference block", pull_request)
+
     def test_shared_operation_boundary_stays_in_the_entrypoint(self):
         text = " ".join(
             skill("conventional-git-messages")
