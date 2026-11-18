@@ -26,21 +26,25 @@ The dependencies listed here are global workflow prerequisites. If any is missin
 
 Confirm that `/setup-matt-pocock-skills` is available and has produced:
 
-- one existing root `AGENTS.md` or `CLAUDE.md` with its `## Agent skills` configuration;
+- one existing root `AGENTS.md` with its `## Agent skills` configuration;
 - `docs/agents/issue-tracker.md`;
 - `docs/agents/domain.md`.
 
-Read those files and the live `/setup-matt-pocock-skills` guide. If the setup output is absent or ambiguous, tell the user to run `/setup-matt-pocock-skills` and stop. Do not create that setup, invoke the dependency automatically, or modify the dependency skill.
+Read `AGENTS.md`, those guides, and the live `/setup-matt-pocock-skills` guide. If the setup output is absent or ambiguous, tell the user to run `/setup-matt-pocock-skills` and stop. Do not create that setup, invoke the dependency automatically, or modify the dependency skill.
 
-Preflight is complete only when exactly one instruction file can be identified as the existing agent configuration target and both required guides are readable.
+Only the target repository's existing root `AGENTS.md` is accepted as the language policy and agent configuration source. Nested `AGENTS.md` files or other agent instructions do not override the root `AGENTS.md` language rule.
 
-Use the target repository's root instruction file as the only language policy for new or materially rewritten project text. If its normative prose has no discernible dominant language, ask the user before writing. Preserve untouched text and report any resulting language mixture. The templates are English source text: translate a confirmed section into the target language during draft composition, then include the complete translated draft in the review.
+If the root `AGENTS.md` is missing, its `## Agent skills` configuration is missing, or its normative prose has no discernible dominant language, stop before composing the draft or writing project text and ask the user.
+
+Preflight is complete only when the root `AGENTS.md` exists with its `## Agent skills` configuration, its language policy is unambiguous, and both required guides are readable.
+
+Preserve untouched text and report any resulting language mixture. The templates are English source text: translate a confirmed section into the target language during draft composition, then include the complete translated draft in the review.
 
 ## 2. Explore before asking
 
 Collect repository facts without writing:
 
-- the instruction file selected by the existing setup, and every managed section already present in it;
+- the root `AGENTS.md` and every managed section already present in it;
 - version control, repository root, remote, forge, issue tracker, and the tracker guide's existing read conventions;
 - checkout mode: shared checkout, dedicated clone, or worktree use when the repository exposes that distinction;
 - host and repository shell conventions, without choosing a shell for the repository;
@@ -82,7 +86,7 @@ The glossary is one managed block whose individual terms follow the confirmed th
 
 ## 4. Build and review the complete draft
 
-Read the templates under `references/` and compose the draft from only the confirmed themes. All deployable document text belongs in those templates, not in this entrypoint. Replace the `<instruction-file>` placeholder with the root instruction file selected in preflight. When the optional cache is declined, keep the disabled cache-posture sentence from `issue-operations.md`. When it is confirmed, replace that sentence with the navigation-only cache template instead of deploying both cache postures.
+Read the templates under `references/` and compose the draft from only the confirmed themes. All deployable document text belongs in those templates, not in this entrypoint. The glossary links already target the root `AGENTS.md`; do not apply a file-name placeholder. When the optional cache is declined, keep the disabled cache-posture sentence from `issue-operations.md`. When it is confirmed, replace that sentence with the navigation-only cache template instead of deploying both cache postures.
 
 Use stable HTML-comment managed sections identified by the `extra-setup-matt-pocock-skills` namespace, a section-specific ID, and `start`/`end` suffixes. Each managed section must have exactly one start marker and one matching end marker.
 

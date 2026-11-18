@@ -200,15 +200,22 @@ class ExtraSetupMetadataTests(unittest.TestCase):
         policy = read(SKILL_DIR / "agents" / "openai.yaml")
         self.assertIn("allow_implicit_invocation: false", policy)
 
-    def test_deployment_follows_target_language_policy(self):
+    def test_deployment_follows_root_agents_language_policy(self):
         text = read(SKILL_DIR / "SKILL.md")
+        preflight = text[
+            text.index("## 1. Preflight") :
+            text.index("## 2. Explore before asking")
+        ]
         for detail in (
-            "Use the target repository's root instruction file as the only language policy for new or materially rewritten project text.",
-            "If its normative prose has no discernible dominant language, ask the user before writing.",
+            "Only the target repository's existing root `AGENTS.md` is accepted as the language policy and agent configuration source.",
+            "Nested `AGENTS.md` files or other agent instructions do not override the root `AGENTS.md` language rule.",
+            "If the root `AGENTS.md` is missing, its `## Agent skills` configuration is missing, or its normative prose has no discernible dominant language, stop before composing the draft or writing project text and ask the user.",
             "Preserve untouched text and report any resulting language mixture.",
             "The templates are English source text: translate a confirmed section into the target language during draft composition, then include the complete translated draft in the review.",
         ):
-            self.assertIn(detail, text)
+            self.assertIn(detail, preflight)
+        self.assertNotIn("CLAUDE.md", text)
+        self.assertIsNone(re.search(r"instruction[ -]file", text, re.IGNORECASE))
 
     def test_all_deployable_templates_are_contained_in_references(self):
         expected = {
@@ -226,6 +233,9 @@ class ExtraSetupMetadataTests(unittest.TestCase):
         for path in SKILL_DIR.rglob("*"):
             if path.is_file() and REFERENCE_DIR not in path.parents:
                 self.assertEqual([], MARKER.findall(read(path)), str(path))
+        for path in (SKILL_DIR / "SKILL.md", *REFERENCE_DIR.glob("*.md")):
+            with self.subTest(path=str(path)):
+                self.assertNotIn("<instruction-file>", read(path))
 
     def test_readme_catalog_lists_the_skill(self):
         self.assertIn(
@@ -258,7 +268,7 @@ class ExtraSetupDeploymentTests(unittest.TestCase):
         )
         for section_id, target, template in deployments:
             with self.subTest(section=section_id):
-                expected = read(template).replace("<instruction-file>", "AGENTS.md")
+                expected = read(template)
                 self.assertEqual(expected.strip(), managed(target, section_id).strip())
                 self.assertEqual("", marker_error(read(target)))
 
@@ -288,7 +298,7 @@ class ExtraSetupDeploymentTests(unittest.TestCase):
             outside_managed_digest(ROOT / "AGENTS.md", "root-operations"),
         )
         self.assertEqual(
-            "c5539d02c54be7122d97893350096cf1f33ec73e1f1214422b7adb9ccab8f3f0",
+            "b8897f2ef431455b3f9689ee20a391fc5dca844a2a807f4097927088c65bea47",
             outside_managed_digest(ROOT / "GLOSSARY.md", "glossary"),
         )
         self.assertEqual(
@@ -605,14 +615,14 @@ class ExtraSetupWorkflowTests(unittest.TestCase):
         self.assertNotIn("Reread after the write", migration)
         self.assertNotIn("write rereads", migration)
 
-    def test_glossary_uses_the_detected_instruction_file(self):
+    def test_glossary_links_to_root_agents(self):
         glossary = read(REFERENCE_DIR / "glossary.md")
         workflow = read(SKILL_DIR / "SKILL.md")
         root = read(REFERENCE_DIR / "root-session-checkout-handoff.md")
         tracker = read(REFERENCE_DIR / "issue-operations.md")
-        self.assertEqual(2, glossary.count("(<instruction-file>#"))
-        self.assertNotIn("(AGENTS.md#", glossary)
-        self.assertNotIn("(CLAUDE.md#", glossary)
+        self.assertEqual(2, glossary.count("(AGENTS.md#"))
+        self.assertNotIn("<instruction-file>", glossary)
+        self.assertNotIn("CLAUDE.md", glossary)
         for mapping in (
             "checkout terms only with checkout",
             "handoff terms only with handoff",
@@ -926,6 +936,10 @@ class ExtraSetupManualAcceptanceTests(unittest.TestCase):
             "Do not use live GitHub writes",
             "Static checks do not prove that the interactive scenario ran",
             "missing setup",
+            "without a root `AGENTS.md`",
+            "without its `## Agent skills` configuration",
+            "no discernible dominant language",
+            "stops before composing the draft or writing and asks the user",
             "one section at a time",
             "complete draft",
             "one-section-at-a-time confirmation",
@@ -946,6 +960,8 @@ class ExtraSetupManualAcceptanceTests(unittest.TestCase):
             "language-independent anchors",
             "Repository deployment",
             "AGENTS.md",
+            "no placeholder substitution",
+            "glossary links target the root `AGENTS.md`",
             "docs/agents/issue-tracker.md",
             "GLOSSARY.md",
             "`docs/agents/domain.md` remains untouched",
@@ -967,6 +983,8 @@ class ExtraSetupManualAcceptanceTests(unittest.TestCase):
             "no fixed numeric object-ID length is required",
         ):
             self.assertIn(detail, text)
+        self.assertNotIn("CLAUDE.md", text)
+        self.assertIsNone(re.search(r"instruction[ -]file", text, re.IGNORECASE))
 
 
 if __name__ == "__main__":
