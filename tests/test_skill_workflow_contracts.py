@@ -1910,6 +1910,54 @@ class ConventionalGitMessagesBehaviorTests(unittest.TestCase):
                 for heading in headings:
                     self.assertIn(heading, reference_text)
 
+    def test_issue_reference_semantics_are_centralized_and_reused(self):
+        def normalized(filename):
+            return " ".join(
+                skill_reference("conventional-git-messages", filename)
+                .lower()
+                .replace(chr(96), "")
+                .split()
+            )
+
+        canonical = normalized("issue-references.md")
+        commit = normalized("commit-messages.md")
+        pull_request = normalized("pull-request-text.md")
+        self.assertIn("preserve every supplied issue or pull request reference", canonical)
+        self.assertIn(
+            "commit messages accept issue and pull request references",
+            canonical,
+        )
+        self.assertIn("pull request descriptions accept issue references", canonical)
+        for semantic in ("closes #n", "refs #n", "never invent references"):
+            with self.subTest(semantic=semantic):
+                self.assertIn(semantic, canonical)
+                self.assertNotIn(semantic, commit)
+                self.assertNotIn(semantic, pull_request)
+
+        self.assertIn("[issue references](issue-references.md)", commit)
+        self.assertIn(
+            "put all supplied issue or pull request references at the end, "
+            "after the rationale and any other trailers",
+            commit,
+        )
+        self.assertIn(
+            "apply the shared issue-reference semantics in "
+            "[issue references](issue-references.md)",
+            commit,
+        )
+        self.assertIn("[issue references](issue-references.md)", pull_request)
+        self.assertIn(
+            "begin the pr body with all supplied related issue references, "
+            "before the existing /pr summary, evidence, and merge danger template",
+            pull_request,
+        )
+        self.assertIn(
+            "apply the shared issue-reference semantics in "
+            "[issue references](issue-references.md) to those issue references",
+            pull_request,
+        )
+        self.assertIn("preserve the template after the reference block", pull_request)
+
     def test_shared_operation_boundary_stays_in_the_entrypoint(self):
         text = " ".join(
             skill("conventional-git-messages")

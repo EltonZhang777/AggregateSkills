@@ -57,6 +57,13 @@ FIXED_OBJECT_ID_PATTERNS = (
     r"\bfixed-length object ID\b",
     r"\b\d+[- ]character (?:commit |tree )?object ID\b",
 )
+TRACKER_STATE_LABELS = ("unmigrated", "fully migrated", "ambiguous")
+TRACKER_STATE_DEFINITIONS = (
+    "- `unmigrated`: all recognized legacy defaults occur exactly once, every reviewed replacement is absent, and the managed issue-operations section is either absent or has one complete marker pair.",
+    "- `fully migrated`: all recognized legacy defaults are absent, every reviewed replacement occurs exactly once, and the managed issue-operations section has one complete marker pair.",
+    "- `ambiguous`: any other missing, duplicated, altered, partial, or mixed state.",
+)
+TRACKER_MATRIX_HEADER = "| Detected state | Summary-first reads | Action |"
 
 
 def read(path):
@@ -200,15 +207,24 @@ class ExtraSetupMetadataTests(unittest.TestCase):
         policy = read(SKILL_DIR / "agents" / "openai.yaml")
         self.assertIn("allow_implicit_invocation: false", policy)
 
-    def test_deployment_follows_target_language_policy(self):
+    def test_deployment_follows_root_agents_language_policy(self):
         text = read(SKILL_DIR / "SKILL.md")
+        preflight = text[
+            text.index("## 1. Preflight") :
+            text.index("## 2. Explore before asking")
+        ]
         for detail in (
-            "Use the target repository's root instruction file as the only language policy for new or materially rewritten project text.",
-            "If its normative prose has no discernible dominant language, ask the user before writing.",
+            "Use only the target repository's existing root `AGENTS.md` normative prose as the language policy for new or materially rewritten project text.",
+            "Nested `AGENTS.md` files or other agent instructions do not override either rule.",
+            "If the root `AGENTS.md`, its `## Agent skills` configuration, or a discernible dominant language in its normative prose is missing or ambiguous",
+            "ask the user to restore the setup output or choose the language policy",
+            "Preflight is complete only when the root `AGENTS.md` exists with an unambiguous `## Agent skills` configuration, its normative prose has a discernible dominant language, and both required guides are readable.",
             "Preserve untouched text and report any resulting language mixture.",
             "The templates are English source text: translate a confirmed section into the target language during draft composition, then include the complete translated draft in the review.",
         ):
-            self.assertIn(detail, text)
+            self.assertIn(detail, preflight)
+        self.assertNotIn("CLAUDE.md", text)
+        self.assertIsNone(re.search(r"instruction[ -]file", text, re.IGNORECASE))
 
     def test_all_deployable_templates_are_contained_in_references(self):
         expected = {
@@ -226,6 +242,9 @@ class ExtraSetupMetadataTests(unittest.TestCase):
         for path in SKILL_DIR.rglob("*"):
             if path.is_file() and REFERENCE_DIR not in path.parents:
                 self.assertEqual([], MARKER.findall(read(path)), str(path))
+        for path in (SKILL_DIR / "SKILL.md", *REFERENCE_DIR.glob("*.md")):
+            with self.subTest(path=str(path)):
+                self.assertNotIn("<instruction-file>", read(path))
 
     def test_readme_catalog_lists_the_skill(self):
         self.assertIn(
@@ -258,7 +277,7 @@ class ExtraSetupDeploymentTests(unittest.TestCase):
         )
         for section_id, target, template in deployments:
             with self.subTest(section=section_id):
-                expected = read(template).replace("<instruction-file>", "AGENTS.md")
+                expected = read(template)
                 self.assertEqual(expected.strip(), managed(target, section_id).strip())
                 self.assertEqual("", marker_error(read(target)))
 
@@ -288,7 +307,7 @@ class ExtraSetupDeploymentTests(unittest.TestCase):
             outside_managed_digest(ROOT / "AGENTS.md", "root-operations"),
         )
         self.assertEqual(
-            "c5539d02c54be7122d97893350096cf1f33ec73e1f1214422b7adb9ccab8f3f0",
+            "b8897f2ef431455b3f9689ee20a391fc5dca844a2a807f4097927088c65bea47",
             outside_managed_digest(ROOT / "GLOSSARY.md", "glossary"),
         )
         self.assertEqual(
@@ -333,11 +352,9 @@ class ExtraSetupWorkflowTests(unittest.TestCase):
         text = read(SKILL_DIR / "SKILL.md")
         migration = read(REFERENCE_DIR / "tracker-migration.md")
         self.assertIn("by their content, not line numbers", text)
-        self.assertIn("appears more than once", text)
+        self.assertIn("duplicated", migration)
         self.assertIn("references/tracker-migration.md", text)
-        self.assertIn("Unmigrated tracker with summary-first reads disabled", text)
-        self.assertIn("For another tracker, skip the GitHub migration", text)
-        self.assertIn("Fully migrated tracker with summary-first reads enabled", text)
+        self.assertIn("For another tracker, skip both GitHub state detection and that matrix", text)
         for known_default in (
             *LEGACY_TRACKER_DEFAULTS,
             *REVIEWED_TRACKER_REPLACEMENTS,
@@ -399,18 +416,67 @@ class ExtraSetupWorkflowTests(unittest.TestCase):
             ),
         )
         for detail in (
-            "Detect the tracker migration state before presenting or writing a draft",
+            "Read [the tracker migration reference](references/tracker-migration.md) before state selection or drafting",
             "`unmigrated`",
             "`fully migrated`",
             "`ambiguous`",
-            "Fully migrated tracker with summary-first reads disabled: stop before drafting or writing",
-            "Ambiguous tracker state: stop before drafting or writing",
             "before state selection or drafting",
             "permit the exact reviewed migration outside managed ranges",
             "Apply it only once, on the initial enabled run or a later opt-in",
             "After that migration, reruns must not edit outside managed ranges",
         ):
             self.assertIn(detail, workflow + migration)
+
+    def test_tracker_reference_solely_owns_states_and_rerun_matrix(self):
+        workflow = read(SKILL_DIR / "SKILL.md")
+        migration = read(REFERENCE_DIR / "tracker-migration.md")
+        self.assertIn(
+            "[the tracker migration reference](references/tracker-migration.md)",
+            workflow,
+        )
+        self.assertIn(
+            "It is the sole normative source for tracker state definitions and the rerun decision matrix.",
+            workflow,
+        )
+        self.assertIn("For another tracker, skip both GitHub state detection and that matrix", workflow)
+        self.assertIn("For another tracker, skip that matrix", workflow)
+        for definition in TRACKER_STATE_DEFINITIONS:
+            with self.subTest(definition=definition):
+                self.assertIn(definition, migration)
+        self.assertIn(TRACKER_MATRIX_HEADER, migration)
+        matrix = {}
+        for line in migration.splitlines():
+            cells = [cell.strip() for cell in line.strip("|").split("|")]
+            if len(cells) == 3 and cells[1] in ("Enabled", "Disabled", "Either"):
+                matrix[(cells[0], cells[1])] = cells[2].lower()
+        self.assertEqual(
+            {
+                ("Unmigrated", "Enabled"),
+                ("Unmigrated", "Disabled"),
+                ("Fully migrated", "Enabled"),
+                ("Fully migrated", "Disabled"),
+                ("Ambiguous", "Either"),
+            },
+            set(matrix),
+        )
+        for key, action in (
+            (("Unmigrated", "Enabled"), "exact migration"),
+            (("Unmigrated", "Disabled"), "update only an existing"),
+            (("Fully migrated", "Enabled"), "replace only"),
+            (("Fully migrated", "Disabled"), "stop before drafting"),
+            (("Ambiguous", "Either"), "stop before drafting"),
+        ):
+            with self.subTest(key=key):
+                self.assertIn(action, matrix[key])
+
+        for path in SKILL_DIR.rglob("*.md"):
+            if path == REFERENCE_DIR / "tracker-migration.md":
+                continue
+            with self.subTest(path=str(path)):
+                text = read(path)
+                for label in TRACKER_STATE_LABELS:
+                    self.assertNotIn(f"- `{label}`:", text)
+                self.assertNotIn(TRACKER_MATRIX_HEADER, text)
 
     def test_summary_disabled_first_run_remains_rerunnable_and_can_opt_in(self):
         workflow = read(SKILL_DIR / "SKILL.md")
@@ -443,7 +509,7 @@ class ExtraSetupWorkflowTests(unittest.TestCase):
             "all recognized legacy defaults occur exactly once, every reviewed replacement is absent",
             "either absent or has one complete marker pair",
             "later summary-first opt-in",
-            "unchanged legacy reads with one complete managed issue-operations section",
+            "Unchanged legacy reads with one complete managed issue-operations section",
         ):
             self.assertIn(detail, workflow + migration)
 
@@ -541,13 +607,11 @@ class ExtraSetupWorkflowTests(unittest.TestCase):
         self.assertEqual("malformed marker", marker_error(wrapped))
         tracker = "\n".join((*LEGACY_TRACKER_DEFAULTS, wrapped))
         self.assertEqual("ambiguous", tracker_migration_state(tracker))
-        for text in (
-            read(SKILL_DIR / "SKILL.md"),
-            read(REFERENCE_DIR / "tracker-migration.md"),
-        ):
-            text = " ".join(text.split())
-            self.assertIn("complete and unterminated HTML comments", text)
-            self.assertIn("exact one-line marker grammar", text)
+        workflow = " ".join(read(SKILL_DIR / "SKILL.md").split())
+        migration = " ".join(read(REFERENCE_DIR / "tracker-migration.md").split())
+        self.assertIn("complete and unterminated HTML comments", workflow)
+        self.assertIn("exact one-line marker grammar", workflow)
+        self.assertIn("managed-marker discovery and classification rule", migration)
 
     def test_managed_comment_discovery_rejects_hidden_malformed_markers(self):
         malformed_comments = (
@@ -566,15 +630,11 @@ class ExtraSetupWorkflowTests(unittest.TestCase):
                     ),
                 )
 
-        for text in (
-            read(SKILL_DIR / "SKILL.md"),
-            read(REFERENCE_DIR / "tracker-migration.md"),
-        ):
-            text = " ".join(text.split())
-            self.assertIn("complete and unterminated HTML comments", text)
-            self.assertIn(
-                "after the opening delimiter and before the namespace", text
-            )
+        workflow = " ".join(read(SKILL_DIR / "SKILL.md").split())
+        self.assertIn("complete and unterminated HTML comments", workflow)
+        self.assertIn(
+            "after the opening delimiter and before the namespace", workflow
+        )
         self.assertIn(
             "newline after the opening delimiter, extra whitespace before the namespace, and a missing closing delimiter",
             " ".join(
@@ -592,9 +652,10 @@ class ExtraSetupWorkflowTests(unittest.TestCase):
         migration = read(REFERENCE_DIR / "tracker-migration.md")
         issue_template = read(REFERENCE_DIR / "issue-operations.md")
         self.assertIn(
-            "Unmigrated tracker with summary-first reads disabled: preserve the legacy read conventions even when another issue theme is enabled.",
-            workflow,
+            "| Unmigrated | Disabled | Preserve the legacy read conventions; update only an existing managed issue-operations section |",
+            migration,
         )
+        self.assertIn("apply the rerun decision matrix", workflow)
         self.assertIn(
             "Whenever any issue theme is selected, include the shared issue-content trust boundary from `issue-operations.md`.",
             workflow,
@@ -605,14 +666,14 @@ class ExtraSetupWorkflowTests(unittest.TestCase):
         self.assertNotIn("Reread after the write", migration)
         self.assertNotIn("write rereads", migration)
 
-    def test_glossary_uses_the_detected_instruction_file(self):
+    def test_glossary_links_to_root_agents(self):
         glossary = read(REFERENCE_DIR / "glossary.md")
         workflow = read(SKILL_DIR / "SKILL.md")
         root = read(REFERENCE_DIR / "root-session-checkout-handoff.md")
         tracker = read(REFERENCE_DIR / "issue-operations.md")
-        self.assertEqual(2, glossary.count("(<instruction-file>#"))
-        self.assertNotIn("(AGENTS.md#", glossary)
-        self.assertNotIn("(CLAUDE.md#", glossary)
+        self.assertEqual(2, glossary.count("(AGENTS.md#"))
+        self.assertNotIn("<instruction-file>", glossary)
+        self.assertNotIn("CLAUDE.md", glossary)
         for mapping in (
             "checkout terms only with checkout",
             "handoff terms only with handoff",
@@ -926,12 +987,18 @@ class ExtraSetupManualAcceptanceTests(unittest.TestCase):
             "Do not use live GitHub writes",
             "Static checks do not prove that the interactive scenario ran",
             "missing setup",
+            "without a root `AGENTS.md`",
+            "without its `## Agent skills` configuration",
+            "conflicting `## Agent skills` configurations",
+            "no discernible dominant language in its normative prose",
+            "stops before composing the draft or writing and asks the user",
             "one section at a time",
             "complete draft",
             "one-section-at-a-time confirmation",
             "first-run migration diff",
             "managed-section preservation",
             "rerun behavior",
+            "already has the managed issue-operations section",
             "rejected theme",
             "missing markers",
             "changed legacy text",
@@ -946,6 +1013,8 @@ class ExtraSetupManualAcceptanceTests(unittest.TestCase):
             "language-independent anchors",
             "Repository deployment",
             "AGENTS.md",
+            "no placeholder substitution",
+            "glossary links target the root `AGENTS.md`",
             "docs/agents/issue-tracker.md",
             "GLOSSARY.md",
             "`docs/agents/domain.md` remains untouched",
@@ -967,6 +1036,8 @@ class ExtraSetupManualAcceptanceTests(unittest.TestCase):
             "no fixed numeric object-ID length is required",
         ):
             self.assertIn(detail, text)
+        self.assertNotIn("CLAUDE.md", text)
+        self.assertIsNone(re.search(r"instruction[ -]file", text, re.IGNORECASE))
 
 
 if __name__ == "__main__":

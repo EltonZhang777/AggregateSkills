@@ -6,7 +6,7 @@ Cover one-section-at-a-time confirmation, the complete draft and first-run migra
 
 ## Repository deployment
 
-Use `EltonZhang777/AggregateSkills` only as the read-only review target for the recorded deployment. Do not run the setup skill in this checkout. Run any write-capable deployment scenario in a disposable copy first. Confirm `AGENTS.md` has one managed session/checkout/handoff section, `docs/agents/issue-tracker.md` has one managed issue-operations section, and `GLOSSARY.md` has one managed English terminology section. Confirm all three managed sections equal their reviewed templates after replacing the instruction-file placeholder.
+Use `EltonZhang777/AggregateSkills` only as the read-only review target for the recorded deployment. Do not run the setup skill in this checkout. Run any write-capable deployment scenario in a disposable copy first. Confirm `AGENTS.md` has one managed session/checkout/handoff section, `docs/agents/issue-tracker.md` has one managed issue-operations section, and `GLOSSARY.md` has one managed English terminology section. Confirm all three managed sections equal their reviewed templates with no placeholder substitution. Confirm the glossary links target the root `AGENTS.md`.
 
 Confirm the tracker migration replaces every recognized legacy tracker default with its reviewed replacement and leaves one issue-operations section. Confirm the glossary retains its existing mixed-language entries unchanged, `docs/agents/domain.md` remains untouched, and a rerun changes bytes only inside the three managed ranges.
 
@@ -14,15 +14,17 @@ Confirm the tracker migration replaces every recognized legacy tracker default w
 
 Start once with the existing `/setup-matt-pocock-skills` output and once with the issue-tracker guide removed. Confirm the first run explores before asking, shows repository, tracker, checkout, shell, verification, handoff, and existing managed-section facts with evidence, and asks one section at a time. Confirm the missing setup reports the missing prerequisite, tells the user to run the setup skill, and stops without installing or modifying it.
 
+Start once without a root `AGENTS.md`, once without its `## Agent skills` configuration, once with conflicting `## Agent skills` configurations, and once with no discernible dominant language in its normative prose. Confirm each run stops before composing the draft or writing and asks the user instead of accepting another agent file.
+
 Reject one theme and confirm the draft omits only that theme and its dependent text. Give an uncertain answer and confirm the section remains disabled or simplified instead of being enabled by default. Accept checkout while rejecting handoff, then reject both. Accept summary reads while rejecting issue-write rereads, then reverse those decisions. Confirm only the confirmed subsections appear inside each shared managed block.
 
 ## Complete draft and first-run migration
 
 Accept the recommendations and confirm the skill presents a complete draft before any write. Confirm exploration labels the tracker `unmigrated`. Verify the draft uses `references/tracker-migration.md` and shows the exact first-run migration diff for the issue read/list commands, repeated fetch-ticket command, PR detail and triage commands, bare issue-or-PR fallback, and Wayfinding frontier. Confirm every reviewed replacement occurs once, the issue-family defaults delegate to one managed issue-operations section, the session/checkout/handoff and glossary sections are shown as insertions, and no write occurs before approval.
 
-Repeat the first run with summary-first issue reads rejected and issue-write rereads accepted. Confirm the legacy read commands remain unchanged and the issue block does not claim to own them, while the shared issue-content trust boundary remains present. Rerun with the same decision and confirm the workflow classifies the result as `unmigrated`, updates only the managed issue section, and leaves every recognized legacy command unchanged. Then opt into summary-first reads and confirm the exact migration occurs once before later reruns use the `fully migrated` path.
+On a tracker that already has the managed issue-operations section, run with summary-first issue reads rejected and issue-write rereads accepted. Confirm the legacy read commands remain unchanged and the issue block does not claim to own them, while the shared issue-content trust boundary remains present. Rerun with the same decision and confirm the workflow classifies the result as `unmigrated`, updates only the managed issue section, and leaves every recognized legacy command unchanged. Then opt into summary-first reads and confirm the exact migration occurs once before later reruns use the `fully migrated` path.
 
-Use a non-GitHub tracker guide. Enable summary-first issue reads and confirm the GitHub migration is skipped while the tracker-neutral summary rules are still shown in the complete draft.
+Use a non-GitHub tracker guide. Enable summary-first issue reads and confirm the GitHub migration is skipped and the rerun matrix is bypassed while the tracker-neutral summary rules are still shown in the complete draft.
 
 Decline the draft once and confirm every target file is unchanged. Approve the next unchanged draft and confirm the three managed sections have one complete marker pair each.
 
@@ -58,7 +60,7 @@ Exercise `runtime: N/A` once for a text-only change with non-runtime evidence an
 
 ## Glossary composition
 
-Enable checkout and closure evidence while rejecting handoff, issue reads, issue writes, and the optional cache. Confirm the glossary contains only the checkout, tested tree state, and PARTIAL closure evidence terms and leaves the same instruction-file link placeholder replacement as the other sections. Translate the target headings once and confirm every glossary link still uses the explicit language-independent anchors.
+Enable checkout and closure evidence while rejecting handoff, issue reads, issue writes, and the optional cache. Confirm the glossary contains only the checkout, tested tree state, and PARTIAL closure evidence terms and links to the root `AGENTS.md` as in the other sections. Translate the target headings once and confirm every glossary link still uses the explicit language-independent anchors.
 
 ## Portability
 

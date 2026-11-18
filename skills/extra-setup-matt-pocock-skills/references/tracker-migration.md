@@ -6,7 +6,7 @@ Detect the state before asking for summary-first reads:
 - `fully migrated`: all recognized legacy defaults are absent, every reviewed replacement occurs exactly once, and the managed issue-operations section has one complete marker pair.
 - `ambiguous`: any other missing, duplicated, altered, partial, or mixed state.
 
-Scan complete and unterminated HTML comments from each opening delimiter to its closing delimiter or end of file. Allow whitespace after the opening delimiter and before the namespace during discovery, then require every managed-namespace comment to match the exact one-line marker grammar. A wrapped, missing, duplicate, reversed, crossed, nested, unclosed, or otherwise invalid marker sequence is `ambiguous`.
+Apply the managed-marker discovery and classification rule in [the setup entrypoint](../SKILL.md#2-explore-before-asking) before selecting a state.
 
 Use this GitHub migration only when the state is `unmigrated`.
 
