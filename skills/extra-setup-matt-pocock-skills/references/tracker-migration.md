@@ -2,20 +2,11 @@
 
 Detect the state before asking for summary-first reads:
 
-- `unmigrated`: all recognized legacy defaults occur exactly once, every
-  reviewed replacement is absent, and the managed issue-operations section is
-  either absent or has one complete marker pair.
-- `fully migrated`: all recognized legacy defaults are absent, every reviewed
-  replacement occurs exactly once, and the managed issue-operations section has
-  one complete marker pair.
+- `unmigrated`: all recognized legacy defaults occur exactly once, every reviewed replacement is absent, and the managed issue-operations section is either absent or has one complete marker pair.
+- `fully migrated`: all recognized legacy defaults are absent, every reviewed replacement occurs exactly once, and the managed issue-operations section has one complete marker pair.
 - `ambiguous`: any other missing, duplicated, altered, partial, or mixed state.
 
-Scan complete and unterminated HTML comments from each opening delimiter to its
-closing delimiter or end of file. Allow whitespace after the opening delimiter
-and before the namespace during discovery, then require every managed-namespace
-comment to match the exact one-line marker grammar. A wrapped, missing,
-duplicate, reversed, crossed, nested, unclosed, or otherwise invalid marker
-sequence is `ambiguous`.
+Scan complete and unterminated HTML comments from each opening delimiter to its closing delimiter or end of file. Allow whitespace after the opening delimiter and before the namespace during discovery, then require every managed-namespace comment to match the exact one-line marker grammar. A wrapped, missing, duplicate, reversed, crossed, nested, unclosed, or otherwise invalid marker sequence is `ambiguous`.
 
 Use this GitHub migration only when the state is `unmigrated`.
 
@@ -29,18 +20,9 @@ Use this GitHub migration only when the state is `unmigrated`.
 | Fully migrated | Disabled | Stop before drafting or writing: the existing pointers require the managed summary rules |
 | Ambiguous | Either | Stop before drafting or writing with the conflicting evidence |
 
-For an unmigrated tracker, every recognized legacy default must match exactly
-once by its full content and no reviewed replacement may appear. Stop if any
-known fact is missing, duplicated, mixed, or materially changed. For a fully
-migrated tracker, every reviewed replacement and the managed marker pair must be
-complete. If none of the recognized states applies, report `ambiguous` and do
-not write.
+For an unmigrated tracker, every recognized legacy default must match exactly once by its full content and no reviewed replacement may appear. Stop if any known fact is missing, duplicated, mixed, or materially changed. For a fully migrated tracker, every reviewed replacement and the managed marker pair must be complete. If none of the recognized states applies, report `ambiguous` and do not write.
 
-Unchanged legacy reads with one complete managed issue-operations section are a
-valid summary-disabled first run. Keep that state `unmigrated`, and update only
-the managed section on a consistent rerun. A later summary-first opt-in applies
-the exact migration below once, then produces `fully migrated`; it never creates
-a duplicate replacement or a second managed section.
+Unchanged legacy reads with one complete managed issue-operations section are a valid summary-disabled first run. Keep that state `unmigrated`, and update only the managed section on a consistent rerun. A later summary-first opt-in applies the exact migration below once, then produces `fully migrated`; it never creates a duplicate replacement or a second managed section.
 
 ## Remove these recognized legacy defaults
 

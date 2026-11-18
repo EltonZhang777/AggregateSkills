@@ -17,12 +17,7 @@
 ## Pull request descriptions
 
 - Before drafting a PR body, check that `/pr` is available; if not, report the missing prerequisite and stop PR-body drafting. When available, invoke it and follow its Summary, Evidence, and Merge Danger template. This gate does not apply to PR titles, PR comments, or other output routes.
-- Begin the PR body with all supplied related issue references, before the
-  existing `/pr` Summary, Evidence, and Merge Danger template. Use `closes #N`
-  only when the change resolves that issue and it should close on merge; use
-  `refs #N` for other related issues. Use only issue numbers supplied in
-  context; never invent references. Preserve the template after the reference
-  block.
+- Begin the PR body with all supplied related issue references, before the existing `/pr` Summary, Evidence, and Merge Danger template. Use `closes #N` only when the change resolves that issue and it should close on merge; use `refs #N` for other related issues. Use only issue numbers supplied in context; never invent references. Preserve the template after the reference block.
 - Do not apply commit-specific title-length or body-wrapping limits.
 - In a full description, explain the impact of breaking changes, security fixes, data migrations, and reverts, including supplied migration or mitigation steps. Ask for missing facts instead of inventing them.
 - If the user asks for a title only, return only the title.

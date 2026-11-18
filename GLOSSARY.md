@@ -19,15 +19,11 @@ _Avoid_: 分支范围（分支名本身不能说明结论适用的确切改动�
 _Avoid_: 总评（会掩盖两个视角之间的差异）
 
 **Review track**:
-An outer independent review path, such as `/code-review` or
-`/ponytail-review`, executed by its own sub-agent. A review track can contain
-one or more review axes.
+An outer independent review path, such as `/code-review` or `/ponytail-review`, executed by its own sub-agent. A review track can contain one or more review axes.
 _Avoid_: using "track" for an individual Standards or Spec axis.
 
 **Partial root exception**:
-A separately approved exception that lets a root proceed to status
-synchronization after a one-track partial review, without changing that review
-into a complete review.
+A separately approved exception that lets a root proceed to status synchronization after a one-track partial review, without changing that review into a complete review.
 _Avoid_: treating partial-mode approval as root completion.
 
 **Finding**:
@@ -71,17 +67,10 @@ An assessment of each distinct target-base commit produced by a batch merge pass
 ### Multi-root implementation
 
 **Task-start authorization**:
-A one-time authorization requested by the root-level coordinator before it
-dispatches any implementation spec in a frozen batch. The request names the
-complete spec set, affected repositories and branches, and the Git and issue
-action categories it covers. It applies only to those listed resources and
-categories; if authorization is missing, the coordinator does not dispatch
-the batch. It does not replace root completion approval.
+A one-time authorization requested by the root-level coordinator before it dispatches any implementation spec in a frozen batch. The request names the complete spec set, affected repositories and branches, and the Git and issue action categories it covers. It applies only to those listed resources and categories; if authorization is missing, the coordinator does not dispatch the batch. It does not replace root completion approval.
 
 **Batch-start approval**:
-A task-start authorization for a frozen multi-root implementation batch, with
-each root's task scope and permitted dependency-directed cross-root Git
-operations named explicitly.
+A task-start authorization for a frozen multi-root implementation batch, with each root's task scope and permitted dependency-directed cross-root Git operations named explicitly.
 _Avoid_: Batch approval (too broad; loses the explicit authorization boundary)
 
 <!-- extra-setup-matt-pocock-skills:glossary:start -->

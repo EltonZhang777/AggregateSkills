@@ -28,8 +28,7 @@ The objective is one reproducible orchestration pass over one frozen code scope.
 
 Read [the route table](references/routing-table.md) and [the contract](references/contract.md). The route table is the only activation registry. Its row order defines dispatch, collection, and aggregation order. Do not infer tracks from adapter files and do not hardcode a track count.
 
-Resolve every routed upstream through the host first, then run the package
-validator with those resolution inputs:
+Resolve every routed upstream through the host first, then run the package validator with those resolution inputs:
 
 ```text
 python scripts/review_contract.py preflight --skill-root <skill package root> \
@@ -40,27 +39,13 @@ python scripts/review_contract.py preflight --skill-root <skill package root> \
   [--upstream-sha /code-review=<normalized-text-sha256>]
 ```
 
-The validator pins the route table, every routed adapter, and every resolved
-upstream by exact-byte SHA-256 and exact byte size. It retains a normalized-text
-SHA-256 as separate attestation when text normalization is needed. It rejects
-an empty route table and any missing, duplicate, unreadable, malformed, version-mismatched, or orphan adapter metadata. It also rejects duplicate
-metadata blocks, unknown metadata fields, unsafe adapter paths, unknown
-required-input categories, and unresolved upstreams. Any of these failures
-blocks the run before dispatch.
+The validator pins the route table, every routed adapter, and every resolved upstream by exact-byte SHA-256 and exact byte size. It retains a normalized-text SHA-256 as separate attestation when text normalization is needed. It rejects an empty route table and any missing, duplicate, unreadable, malformed, version-mismatched, or orphan adapter metadata. It also rejects duplicate metadata blocks, unknown metadata fields, unsafe adapter paths, unknown required-input categories, and unresolved upstreams. Any of these failures blocks the run before dispatch.
 
-An upstream identity is `(name, source)`. Adapters may share the same identity,
-but a declared name must not map to multiple sources; that conflict fails with
-`upstream_identity_conflict` before resolution or pin creation.
+An upstream identity is `(name, source)`. Adapters may share the same identity, but a declared name must not map to multiple sources; that conflict fails with `upstream_identity_conflict` before resolution or pin creation.
 
 For every routed row, read its fixed-marker JSON metadata, resolve the declared upstream skill through the current host and SkillRoute, and collect its required manifest inputs. Report every adapter metadata error, missing upstream dependency, and missing or unreadable supplied input file together, then stop. Do not dispatch a track while any required dependency or input other than standalone `requirements` is unresolved. Verify that every metadata block uses the exact shared contract version before starting work.
 
-The validator does not run SkillRoute or fetch remote text. Pass the
-coordinator-resolved upstream source explicitly. A local skill file or skill
-directory is read and hashed by the validator. A remote URI must be paired with
-the exact-byte SHA-256 and exact byte size returned by the host resolution; a
-normalized-text SHA-256 is optional separate attestation and cannot substitute
-for exact identity. Missing, unreadable, empty, size-mismatched, or
-hash-mismatched resolutions block the run.
+The validator does not run SkillRoute or fetch remote text. Pass the coordinator-resolved upstream source explicitly. A local skill file or skill directory is read and hashed by the validator. A remote URI must be paired with the exact-byte SHA-256 and exact byte size returned by the host resolution; a normalized-text SHA-256 is optional separate attestation and cannot substitute for exact identity. Missing, unreadable, empty, size-mismatched, or hash-mismatched resolutions block the run.
 
 ## Freeze one review scope
 
@@ -87,29 +72,15 @@ python scripts/review_contract.py freeze --repo <repo> --output <external bundle
   --upstream /ponytail-review=<resolved source>
 ```
 
-For each routed remote URI, also pass
-`--upstream-exact-sha <track>=<exact digest>` and
-`--upstream-size <track>=<exact bytes>`; `--upstream-sha` is optional normalized
-attestation. Supply pinned requirements and standards with
-repeatable `--requirements` and `--standards`. When the routed adapters require
-`checks`, supply at least one `--check NAME=RESULT` or `--not-run NAME=REASON`;
-`--check` accepts `passed`, `failed`, or `not_assessed`, while `not_run` must
-use `--not-run` with a non-empty reason. Record every exclusion with `--exclude
-PATH=REASON`.
+For each routed remote URI, also pass `--upstream-exact-sha <track>=<exact digest>` and `--upstream-size <track>=<exact bytes>`; `--upstream-sha` is optional normalized attestation. Supply pinned requirements and standards with repeatable `--requirements` and `--standards`. When the routed adapters require `checks`, supply at least one `--check NAME=RESULT` or `--not-run NAME=REASON`; `--check` accepts `passed`, `failed`, or `not_assessed`, while `not_run` must use `--not-run` with a non-empty reason. Record every exclusion with `--exclude PATH=REASON`.
 
-A standalone freeze may omit `--requirements`; the manifest records
-`requirements` as `not_assessed`. A `/spec-implement-loop` final-review freeze
-must pass `--require-requirements`; missing pinned requirements block with
-`manifest_input_missing`, and empty or whitespace-only pinned requirements
-block with `manifest_input_invalid`.
+A standalone freeze may omit `--requirements`; the manifest records `requirements` as `not_assessed`. A `/spec-implement-loop` final-review freeze must pass `--require-requirements`; missing pinned requirements block with `manifest_input_missing`, and empty or whitespace-only pinned requirements block with `manifest_input_invalid`.
 
 The bundle contains the exact patch, the frozen code tree, pinned input snapshots, a canonical manifest, and a separate patch/manifest attestation. The manifest records the manifest digest source, included sources, checks, exclusions, routing/adapter/upstream pins, and the scope identity. For an explicit patch, every non-deleted changed path must exist in the supplied tree, and the tree must match the patch's exact post-image, or the freeze fails. Do not reconstruct inputs from live workspace reads after the freeze.
 
 Both tree sources accept only regular-file Git modes `100644` and `100755`. Symlinks fail with `tree_symlink_unsupported`; gitlinks and every other unsupported mode fail closed with `tree_entry_unsupported` before copying or post-image validation.
 
-Every supplied `--repo` path is resolved immediately to its Git top level.
-The output directory must stay outside that reviewed repository and outside any
-Git repository containing the frozen tree.
+Every supplied `--repo` path is resolved immediately to its Git top level. The output directory must stay outside that reviewed repository and outside any Git repository containing the frozen tree.
 
 Before each track starts, run:
 
@@ -126,9 +97,7 @@ python scripts/review_contract.py verify --bundle <bundle> --patch <patch> \
 
 Git-range and uncommitted scopes require `--repo`; explicit-patch scope requires `--patch`. Omitting the required live locator blocks verification and never returns current. Verify re-hashes every pinned input snapshot and its original recorded source path, plus every tree-source snapshot. A changed or unreadable source, snapshot, patch, tree source, manifest, route table, adapter document, or upstream pin makes the run stale. Stop and report stale; do not present stale findings as current and do not silently re-freeze mid-run.
 
-Verify and `validate-envelope` always require `--upstream`; do not fall back to
-the manifest copy. For a remote upstream, pass the same exact digest and size
-pin used by freeze.
+Verify and `validate-envelope` always require `--upstream`; do not fall back to the manifest copy. For a remote upstream, pass the same exact digest and size pin used by freeze.
 
 ## Dispatch each review track
 
@@ -155,11 +124,7 @@ python scripts/review_contract.py validate-envelope --bundle <bundle> --envelope
 
 The coordinator validates the schema, routed track ID, contract version, and attestation. Each envelope's `coverage.checks` must echo the frozen manifest checks exactly by name, result, reason, and order. It must validate but do not reclassify or reorder findings, change native severity or grouping, merge findings, or choose a cross-track winner. A malformed, truncated, blank, stale, or attestation-mismatched report blocks the run.
 
-Checked source hashes must match the frozen manifest. Every finding location
-must exist in the frozen tree at a valid line, and every citation must match
-the exact frozen or pinned source text. A synthetic envelope used by package
-tests only validates coordinator behavior; it is not evidence that a live
-model, model discovery, or an independent reviewer ran.
+Checked source hashes must match the frozen manifest. Every finding location must exist in the frozen tree at a valid line, and every citation must match the exact frozen or pinned source text. A synthetic envelope used by package tests only validates coordinator behavior; it is not evidence that a live model, model discovery, or an independent reviewer ran.
 
 Present native track sections separately, preserve route order and finding order, and render each finding as:
 

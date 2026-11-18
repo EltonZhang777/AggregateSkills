@@ -122,11 +122,7 @@ For each ready ticket:
 
 When no non-deferred ready ticket remains, resolve the recorded starting `HEAD` and the final `HEAD` to full commit object IDs with `git rev-parse --verify`, then read and follow the original `SKILL.md` for `/parallel-code-review` before invoking it. Call `/parallel-code-review` exactly once for that final-review round with `--range <starting-oid>...<final-oid>`, using those exact object IDs rather than branch or tag names.
 
-Pass `--require-requirements` when freezing the final-review scope. After
-freezing, require `manifest.input_status.requirements` to be `included`; a
-current root review whose pinned requirements are missing, empty,
-whitespace-only, or `not_assessed` cannot pass the final-review gate, partial
-mode, or the root exception.
+Pass `--require-requirements` when freezing the final-review scope. After freezing, require `manifest.input_status.requirements` to be `included`; a current root review whose pinned requirements are missing, empty, whitespace-only, or `not_assessed` cannot pass the final-review gate, partial mode, or the root exception.
 
 Before freezing, require `git merge-base <starting-oid> <final-oid>` to equal `<starting-oid>`. If the command fails or returns another object, block without re-basing or substituting a merge-base. After freezing, require `manifest.scope.base` and `manifest.scope.merge_base` to equal `<starting-oid>` and `manifest.scope.head` to equal `<final-oid>`; any mismatch blocks before dispatch.
 
