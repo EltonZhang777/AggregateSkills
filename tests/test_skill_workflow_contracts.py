@@ -803,7 +803,16 @@ class RequirementsToSpecTicketsBehaviorTests(unittest.TestCase):
             linking, ("after all planned tickets exist",), ("publication gates",), ("pass",),
         ))
         self.assertTrue(sentence_with_concepts(
+            linking, ("outside the /to-tickets run",), ("parent-issue boundary",), ("intact",),
+        ))
+        self.assertTrue(sentence_with_concepts(
             linking, ("required permissions are unavailable",), ("report the blocker",), ("stop",),
+        ))
+        self.assertTrue(sentence_with_concepts(
+            linking, ("created issues",), ("successful links",), ("keep", "preserve"),
+        ))
+        self.assertTrue(sentence_with_concepts(
+            linking, ("do not", "never"), ("textual",), ("task-list", "task list"), ("fallback",),
         ))
         self.assertTrue(sentence_with_concepts(
             linking, ("before each write", "before each link"), ("ticket exists",),
@@ -854,6 +863,9 @@ class RequirementsToSpecTicketsBehaviorTests(unittest.TestCase):
         self.assertTrue(language_rule)
         for phase in (*phases, "/conventional-git-messages"):
             self.assertIn(phase, language_rule)
+        self.assertTrue(sentence_with_concepts(
+            workflow, ("preserve",), ("report",), ("language mixtures",), ("pause",),
+        ))
         self.assertTrue(sentence_with_concepts(
             workflow, ("shared workspace",), ("write-authorization rules", "write authorization rules"),
             ("preserve", "follow", "carry"),
@@ -942,7 +954,13 @@ class RequirementsToSpecTicketsBehaviorTests(unittest.TestCase):
             ("open and closed", "all states"),
         ))
         self.assertIn("ready-for-agent", publication)
+        self.assertTrue(sentence_with_concepts(
+            publication, ("before any github-specific read or write",), ("tracker",),
+            ("github",), ("stop",),
+        ))
         self.assertIn("gh api --paginate", publication)
+        self.assertIn("state=all", publication)
+        self.assertIn("per_page=100", publication)
         self.assertIn("fully paginated issue listing", publication)
         self.assertIn("pull_request", publication)
         self.assertTrue(sentence_with_concepts(
@@ -959,9 +977,12 @@ class RequirementsToSpecTicketsBehaviorTests(unittest.TestCase):
             publication, ("clearly transient",), ("three total", "at most three"),
             ("attempts",), ("preserve",),
         ))
-        self.assertTrue(sentence_with_concepts(
+        self.assertTrue(mentions_concepts(
             publication, ("carry", "record"), ("attempt count",), ("before",), ("retry", "create"),
         ))
+        self.assertIn("/to-tickets", publication)
+        self.assertIn("publication report", publication)
+        self.assertIn("child task progress summary", publication)
         self.assertTrue(sentence_with_concepts(
             publication, ("before every issue write",), ("fresh authoritative read",),
             ("compare",), ("intended delta",),
@@ -1008,7 +1029,8 @@ class RequirementsToSpecTicketsBehaviorTests(unittest.TestCase):
         ))
         self.assertTrue(sentence_with_concepts(
             workflow, ("this prompt", "generated prompt"), ("snapshot", "self-contained"),
-            ("must not require", "does not require"), ("re-read", "read"), ("template",),
+            ("must not require", "does not require"), ("re-read", "read"),
+            ("template", "canonical child contract"),
         ))
         self.assertTrue(sentence_with_concepts(
             workflow, ("runtime state", "runtime facts"), ("contradict",),
@@ -1073,14 +1095,13 @@ class RequirementsToSpecTicketsBehaviorTests(unittest.TestCase):
         self.assertIn("optional document integration follow-up", unknown_applicability)
 
     def test_local_artifact_document_integration_handoff_is_scoped(self):
-        workflow = skill("requirements-to-spec-tickets").lower().replace(chr(96), "")
+        parent = skill("requirements-to-spec-tickets").lower().replace(chr(96), "")
         prompt = skill_reference(
             "requirements-to-spec-tickets", "child-session-initial-prompt.md",
         ).lower().replace(chr(96), "")
         manual = (
             ROOT / "tests" / "manual" / "requirements-to-spec-tickets.md"
         ).read_text(encoding="utf-8").lower()
-        workflow_handoff = section(workflow, "### optional document integration follow-up")
         prompt_handoff = section(prompt, "### optional document integration follow-up")
         scenario = section(manual, "## optional post-workflow document integration")
         overwrite_guard = (("do not overwrite", "never overwrite"), ("destination work",))
@@ -1090,51 +1111,47 @@ class RequirementsToSpecTicketsBehaviorTests(unittest.TestCase):
             ("grilling confirmation", "existing grilling step"),
         )
 
-        for handoff in (workflow_handoff, prompt_handoff):
-            self.assertTrue(sentence_with_concepts(
-                handoff, ("summary",), ("task branch",), ("exact document paths",),
-                ("proposed destination branch",), ("before",), ("ask", "asking"),
-            ))
-            self.assertTrue(sentence_with_concepts(
-                handoff, ("approved generated document set",), ("only",),
-            ))
-            self.assertTrue(sentence_with_concepts(
-                handoff, ("affirmative",), ("authorizes",), ("only",),
-                ("listed documents",), ("named destination branch",),
-                ("focused local commit",), ("does not extend", "doesn't extend"),
-                ("task-branch grant",),
-            ))
-            self.assertTrue(sentence_with_concepts(
-                handoff, ("declining", "decline"), ("no clear authorization",),
-                ("destination unchanged",), ("task branch",),
-            ))
-            self.assertTrue(sentence_with_concepts(
-                handoff, ("same host agent",), ("same conversation",),
-                ("do not", "never"), ("new conversation",), ("subagent",),
-            ))
-            self.assertTrue(sentence_with_concepts(
-                handoff, ("destination is unclear",), ("unrelated changes",),
-                ("conflicts",), ("stop",), ("overwrite",),
-            ))
-            self.assertTrue(sentence_with_concepts(handoff, *overwrite_guard))
-            self.assertTrue(sentence_with_concepts(
-                handoff, ("destination push", "pushing the destination branch"), ("separate",),
-                ("explicit",), ("grilling confirmation", "confirmation from the existing grilling step"),
-            ))
-            self.assertTrue(sentence_with_concepts(handoff, *push_guard))
+        self.assertIn("sole normative source", parent)
+        self.assertIn("references/child-session-initial-prompt.md", parent)
+        self.assertNotIn("### optional document integration follow-up", parent)
+
+        handoff = prompt_handoff
+        self.assertTrue(sentence_with_concepts(
+            handoff, ("summary",), ("task branch",), ("exact document paths",),
+            ("proposed destination branch",), ("before",), ("ask", "asking"),
+        ))
+        self.assertTrue(sentence_with_concepts(
+            handoff, ("approved generated document set",), ("only",),
+        ))
+        self.assertTrue(sentence_with_concepts(
+            handoff, ("affirmative",), ("authorizes",), ("only",),
+            ("listed documents",), ("named destination branch",),
+            ("focused local commit",), ("does not extend", "doesn't extend"),
+            ("task-branch grant",),
+        ))
+        self.assertTrue(sentence_with_concepts(
+            handoff, ("declining", "decline"), ("no clear authorization",),
+            ("destination unchanged",), ("task branch",),
+        ))
+        self.assertTrue(sentence_with_concepts(
+            handoff, ("same host agent",), ("same conversation",),
+            ("do not", "never"), ("new conversation",), ("subagent",),
+        ))
+        self.assertTrue(sentence_with_concepts(
+            handoff, ("destination is unclear",), ("unrelated changes",),
+            ("conflicts",), ("stop",), ("overwrite",),
+        ))
+        self.assertTrue(sentence_with_concepts(handoff, *overwrite_guard))
+        self.assertTrue(sentence_with_concepts(
+            handoff, ("destination push", "pushing the destination branch"), ("separate",),
+            ("explicit",), ("grilling confirmation", "confirmation from the existing grilling step"),
+        ))
+        self.assertTrue(sentence_with_concepts(handoff, *push_guard))
 
         self.assertFalse(sentence_with_concepts("do overwrite destination work", *overwrite_guard))
         self.assertFalse(sentence_with_concepts(
             "the integration authorization does not authorize pushing the destination branch; pushing it does not require the separate explicit confirmation from the existing grilling step",
             *push_guard,
-        ))
-        self.assertTrue(sentence_with_concepts(
-            workflow_handoff, ("does not authorize pushing the destination branch",),
-        ))
-
-        self.assertTrue(sentence_with_concepts(
-            workflow_handoff, ("issue-only",), ("application-code branch policy",),
-            ("unchanged",),
         ))
         self.assertTrue(sentence_with_concepts(
             scenario, ("disposable repository",), ("authorized",), ("declined",),
@@ -1152,43 +1169,57 @@ class RequirementsToSpecTicketsBehaviorTests(unittest.TestCase):
         ))
 
     def test_complete_group_approval_starts_documentation_phase(self):
-        text = skill("requirements-to-spec-tickets").lower().replace(chr(96), "")
-        grouping = section(text, "## 2. turn the request into groups")
-        protocol = section(text, "## 4. child-session protocol")
-        git = section(text, "## 5. task branches and git publication")
-        documents = section(text, "## 6. shared workspace and document writes")
+        parent = skill("requirements-to-spec-tickets").lower().replace(chr(96), "")
+        template = skill_reference(
+            "requirements-to-spec-tickets", "child-session-initial-prompt.md",
+        ).lower().replace(chr(96), "")
+        grouping = section(parent, "## 2. turn the request into groups")
+        contract = section(parent, "## 4. canonical child contract")
+        startup = section(template, "## first response and grilling gate")
+        workflow = section(template, "## workflow gates")
+        publication = section(template, "### local-artifact publication")
         self.assertTrue(sentence_with_concepts(
             grouping, ("complete", "entire", "whole"), ("grouping", "groups"),
             ("approval", "approved"), ("wait", "pause"),
         ))
         self.assertTrue(sentence_with_concepts(
-            grouping, ("approval",), ("group",), ("start", "begin"), ("grill-duo-with-docs",),
+            grouping, ("approval",), ("group",), ("start", "begin"),
+            ("canonical child contract",),
         ))
         self.assertTrue(sentence_with_concepts(
             grouping, ("group", "grouping"), ("no", "without", "not"), ("opt-in", "opt in"),
         ))
         self.assertTrue(sentence_with_concepts(
-            protocol, ("group",), ("grill-duo-with-docs",), ("invoke", "run"),
+            contract, ("sole normative source",), ("child-executed",), ("template",),
         ))
         self.assertTrue(sentence_with_concepts(
-            protocol, ("frontier",), ("empty", "no answerable questions"),
+            startup, ("grill-duo-with-docs",), ("frontier",), ("invoke", "run"), ("wait",),
+        ))
+        self.assertTrue(sentence_with_concepts(
+            startup, ("empty", "no answerable questions"),
             ("shared-understanding", "summary"), ("wait", "pause"), ("confirmation", "confirm"),
         ))
         sequence = sentence_with_concepts(
-            protocol, ("grill-duo-with-docs",), ("to-spec",), ("to-tickets",),
-            ("first", "before", "prior"), ("then", "next", "order"),
+            workflow, ("grill-duo-with-docs",), ("to-spec",), ("to-tickets",),
+            ("first", "before", "prior", "this order"), ("then", "next", "order"),
         )
         self.assertTrue(sequence)
         self.assertLess(sequence.index("grill-duo-with-docs"), sequence.index("to-spec"))
         self.assertLess(sequence.index("to-spec"), sequence.index("to-tickets"))
-        self.assertTrue(sentence_with_concepts(git, ("approval", "authorize"), ("group",), ("commit",)))
-        self.assertTrue(sentence_with_concepts(documents, ("user-confirmed",), ("project documents",)))
+        self.assertTrue(sentence_with_concepts(
+            publication, ("approval", "authorize"), ("group",), ("commit",),
+        ))
+        self.assertTrue(sentence_with_concepts(
+            workflow, ("confirmation",), ("shared project-document changes",),
+        ))
 
     def test_phase_sources_and_global_prerequisites_have_distinct_failure_scopes(self):
-        text = skill("requirements-to-spec-tickets").lower().replace(chr(96), "")
-        dependencies = section(text, "## dependencies")
-        protocol = section(text, "## 4. child-session protocol")
-        phase_rules = protocol.split("the first response must", 1)[0]
+        parent = skill("requirements-to-spec-tickets").lower().replace(chr(96), "")
+        template = skill_reference(
+            "requirements-to-spec-tickets", "child-session-initial-prompt.md",
+        ).lower().replace(chr(96), "")
+        dependencies = section(parent, "## dependencies")
+        phase_rules = section(template, "## workflow gates")
 
         self.assertTrue(mentions_concepts(dependencies, ("skill",), ("tool",)))
         self.assertTrue(sentence_with_concepts(
@@ -1253,11 +1284,118 @@ class RequirementsToSpecTicketsBehaviorTests(unittest.TestCase):
         self.assertTrue(global_install_rule)
         self.assertRegex(global_install_rule, AUTO_INSTALL_PROHIBITION)
 
+    def test_parent_retains_lifecycle_and_delegates_child_contract(self):
+        parent = skill("requirements-to-spec-tickets").lower().replace(chr(96), "")
+        template = skill_reference(
+            "requirements-to-spec-tickets", "child-session-initial-prompt.md",
+        ).lower().replace(chr(96), "")
+        contract = section(parent, "## 4. canonical child contract")
+        readiness = section(parent, "## 5. child readiness, handoff, and resumption")
+        glossary = (ROOT / "GLOSSARY.md").read_text(encoding="utf-8").lower()
+
+        self.assertIn("references/child-session-initial-prompt.md", contract)
+        self.assertIn("sole normative source", contract)
+        self.assertIn("canonical child contract", glossary)
+        self.assertNotIn("canonical child workflow", parent)
+        self.assertTrue(sentence_with_concepts(
+            contract, ("parent",), ("preflight",), ("grouping approval",),
+            ("child creation",), ("readiness",), ("handoff",), ("retry",), ("resumption",),
+        ))
+        self.assertTrue(sentence_with_concepts(
+            contract, ("do not", "never"), ("restate", "duplicate", "redefine"),
+            ("child",), ("workflow", "protocol"),
+        ))
+        self.assertIn("shared checkout", parent)
+        self.assertIn("serialize", parent)
+        self.assertTrue(sentence_with_concepts(
+            readiness, ("parent",), ("first response",), ("canonical child contract",),
+            ("evidence",), ("handoff",),
+        ))
+
+        for duplicate in (
+            "## 5. task branches and git publication",
+            "## 6. shared workspace and document writes",
+            "### optional document integration follow-up",
+            "for every approved group, run `/grill-duo-with-docs` first",
+            "before `/to-spec` or `/to-tickets` drafts",
+            "add each ticket with",
+            "gh issue edit",
+            "for an issue-only group, do not create",
+            "pass that rule to `/grill-duo-with-docs`",
+            "report resulting language mixtures",
+            "apply conventional messages",
+            "keep spec-specific documents",
+        ):
+            with self.subTest(duplicate=duplicate):
+                self.assertNotIn(duplicate, parent)
+
+        workflow = section(template, "## workflow gates")
+        boundaries = section(template, "## boundaries and completion")
+        self.assertTrue(sentence_with_concepts(
+            workflow, ("grill-duo-with-docs",), ("to-spec",), ("to-tickets",),
+        ))
+        self.assertTrue(mentions_concepts(
+            workflow, ("conventional-git-messages", "conventional messages"),
+            ("issue-title",), ("compatible",),
+            ("required formats",),
+        ))
+        self.assertTrue(sentence_with_concepts(
+            workflow, ("to-spec",), ("headings",), ("to-tickets",), ("structure",),
+            ("short, descriptive titles",), ("compatible",),
+        ))
+        self.assertTrue(sentence_with_concepts(
+            workflow, ("uniquely named",), ("feature slug",), ("repository conventions",),
+        ))
+        self.assertTrue(sentence_with_concepts(
+            workflow, ("only user-confirmed content",), ("project documents",),
+        ))
+        self.assertTrue(sentence_with_concepts(
+            workflow, ("shared glossary",), ("decision documents",),
+            ("latest-content",), ("semantic-conflict",),
+        ))
+        self.assertTrue(sentence_with_concepts(
+            workflow, ("conclusions conflict",), ("show both",), ("wait",), ("user",),
+        ))
+        self.assertTrue(sentence_with_concepts(
+            boundaries, ("protocol is complete",), ("grill-duo-with-docs",),
+            ("to-spec",), ("to-tickets",), ("in order",), ("blocker",), ("stopped",),
+        ))
+        self.assertIn("gh issue edit --add-sub-issue", workflow)
+        self.assertIn("### local-artifact publication", template)
+        self.assertIn("### optional document integration follow-up", template)
+
+    def test_manual_conditional_child_prompt_acceptance_covers_no_write_matrix(self):
+        manual = (
+            ROOT / "tests" / "manual" / "requirements-to-spec-tickets.md"
+        ).read_text(encoding="utf-8").lower()
+        scenario = section(manual, "## conditional child-prompt acceptance")
+
+        self.assertTrue(mentions_concepts(
+            scenario, ("disposable",), ("issue-only",), ("local-artifact",),
+        ))
+        self.assertTrue(mentions_concepts(
+            scenario, ("fill",), ("no unresolved placeholder", "without unresolved placeholders"),
+        ))
+        self.assertTrue(sentence_with_concepts(
+            scenario, ("statically inapplicable", "static"), ("omit",),
+            ("runtime",), ("preserve",),
+        ))
+        self.assertTrue(sentence_with_concepts(
+            scenario, ("unknown applicability",), ("all conditional", "all blocks"),
+        ))
+        self.assertTrue(sentence_with_concepts(
+            scenario, ("contradict",), ("existing blocker or handoff",), ("stop",),
+        ))
+        self.assertTrue(mentions_concepts(scenario, ("no production", "without production")))
+
     def test_task_publication_authorization_is_scoped_and_preserves_other_gates(self):
-        text = skill("requirements-to-spec-tickets").lower().replace(chr(96), "")
-        protocol = section(text, "## 4. child-session protocol")
-        git = section(text, "## 5. task branches and git publication")
-        target_policy = section(text, "## 3. create interactive child sessions")
+        parent = skill("requirements-to-spec-tickets").lower().replace(chr(96), "")
+        template = skill_reference(
+            "requirements-to-spec-tickets", "child-session-initial-prompt.md",
+        ).lower().replace(chr(96), "")
+        protocol = section(template, "## workflow gates")
+        git = section(template, "### local-artifact publication")
+        target_policy = section(parent, "## 3. create interactive child sessions")
 
         self.assertTrue(sentence_with_concepts(
             protocol, ("missing", "unavailable"), ("dependency", "prerequisite"),
@@ -1268,7 +1406,7 @@ class RequirementsToSpecTicketsBehaviorTests(unittest.TestCase):
             ("repository",), ("receiving", "target"),
         ))
         self.assertTrue(sentence_with_concepts(
-            target_policy, ("source", "installation"), ("agents.md",), ("substitute", "replace"),
+            target_policy, ("source", "installation"), ("agents.md",), ("substitut", "replace"),
         ))
 
         decision = (
@@ -1314,11 +1452,14 @@ class RequirementsToSpecTicketsBehaviorTests(unittest.TestCase):
 
         denied = sentence_with_concepts(
             git, ("force-push", "force push"), ("remote-ref", "remote ref", "remote reference"),
-            ("delete", "deletion", "remove"), ("other branch", "different branch"), ("pull request", "pull-request"),
+            ("delete", "deletion", "remove"), ("other branch", "different branch"),
             ("issue",), ("status",), ("sub-issue", "sub issue"), ("github",), ("write",),
             ("separate approval",), ("retain", "require", "need", "necessary", "must"),
         )
         self.assertTrue(denied)
+        self.assertTrue(sentence_with_concepts(
+            protocol, ("does not",), ("pull request", "pull-request"), ("merge",),
+        ))
         self.assertRegex(
             denied,
             (

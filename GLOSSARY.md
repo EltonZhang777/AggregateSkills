@@ -64,6 +64,12 @@ An assessment of each distinct target-base commit produced by a batch merge pass
 
 **Validation-blocked base**: A target base whose post-merge verification cannot proceed because a preparation failure is confirmed local to that base.
 
+### Child workflow delegation
+
+**Canonical child contract**:
+The copy-ready prompt in `skills/requirements-to-spec-tickets/references/child-session-initial-prompt.md` that is the sole normative source for child-executed workflow behavior; the parent skill retains only lifecycle responsibilities and validates child evidence against it.
+_Avoid_: canonical child workflow (blurs the contract with parent lifecycle work)
+
 ### Multi-root implementation
 
 **Task-start authorization**:
