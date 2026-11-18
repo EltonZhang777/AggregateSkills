@@ -1,8 +1,16 @@
 # RFC 2119 vocabulary and application
 
-This document is the normative vocabulary contract for the `rfc2119-audit` skill. It follows [RFC 2119](https://datatracker.ietf.org/doc/html/rfc2119).
+This document follows [RFC 2119](https://datatracker.ietf.org/doc/html/rfc2119).
 
-This contract is normative for this skill's workflow and advisory when used to review arbitrary audited roots. Before applying another instruction from this skill, the agent MUST read this document.
+## Authority and reading order
+
+This reference is the sole normative source for the RFC 2119 keyword definitions, the required reading order, and the advisory boundary that applies to an arbitrary audited root.
+
+After this skill is selected, the agent's first substantive action MUST be reading the complete reference. Only the single startup link in the workflow guide may precede that read.
+
+The contract and audit procedure bind the agent's execution. Uppercase RFC 2119 instructions in this skill's authored documentation remain normative for this skill; the advisory boundary applies only to claims about an arbitrary audited root.
+
+Paths, line numbers, categories, and source text are observations of what the scan found. A candidate is a lexical finding for manual review, not proof that the text is normative. Neither the presence nor the absence of a candidate establishes that the root adopts RFC 2119, that the text is a binding requirement, or that the root is compliant or noncompliant. The absence of a candidate establishes only that no candidate was found within the scan scope.
 
 ## RFC 2119 keywords
 
@@ -26,8 +34,6 @@ Capitalization and the exact keyword or phrase determine the requirement level. 
 - Descriptive facts, headings, non-normative explanations, and illustrative example prose MAY omit an RFC 2119 keyword. Examples MUST NOT be rewritten solely to add a requirement-level word when the example is not itself prescribing behavior.
 - External documentation, source code, and verbatim quotations MUST retain their original wording. Their wording is not silently normalized to this contract; surrounding skill or audit text MAY identify the material as external or quoted.
 - Future changes that add or change normative requirement wording MUST scan the complete installed skill documentation for consistent RFC 2119 usage, including all Markdown under this skill directory.
-
-When applied to an arbitrary audited root, this vocabulary is advisory. The audit reports candidates for manual review and does not decide whether descriptive prose is normative.
 
 ## Exception handling
 
