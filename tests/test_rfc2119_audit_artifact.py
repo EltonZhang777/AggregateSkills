@@ -62,19 +62,24 @@ class Rfc2119AuditArtifactTests(unittest.TestCase):
     def test_authority_section_is_single_and_linked(self):
         skill = (SKILL_ROOT / "SKILL.md").read_text(encoding="utf-8")
         reference = REFERENCE.read_text(encoding="utf-8")
+        normalized_skill = re.sub(r"\s+", " ", skill)
+        normalized_reference = re.sub(r"\s+", " ", reference)
         normalized = " ".join(
-            re.sub(r"\s+", " ", text) for text in (skill, reference)
+            (normalized_skill, normalized_reference)
         )
         startup_link = (
             "(references/rfc2119-reference.md#authority-and-reading-order)"
         )
+        authority_heading = "## Authority and reading order"
 
-        self.assertIn("## Authority and reading order", reference)
+        self.assertEqual(1, reference.count(authority_heading))
         self.assertLess(
-            reference.index("## Authority and reading order"),
+            reference.index(authority_heading),
             reference.index("## RFC 2119 keywords"),
         )
         self.assertEqual(1, skill.count(startup_link))
+        authority = reference.split(authority_heading, 1)[1].split("\n## ", 1)[0]
+        normalized_authority = re.sub(r"\s+", " ", authority)
 
         for sentence in (
             "This reference is the sole normative source for the RFC 2119 keyword "
@@ -93,6 +98,8 @@ class Rfc2119AuditArtifactTests(unittest.TestCase):
         ):
             with self.subTest(sentence=sentence):
                 self.assertEqual(1, normalized.count(sentence))
+                self.assertEqual(1, normalized_authority.count(sentence))
+                self.assertNotIn(sentence, normalized_skill)
 
         for removed_definition in (
             "normative for this skill's workflow",
