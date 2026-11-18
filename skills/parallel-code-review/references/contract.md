@@ -1,5 +1,7 @@
 # Parallel Review Contract
 
+The entry point owns activation, preflight order, command forms, dispatch sequence, and links to this contract. The sections below are the sole normative source for frozen scope and tree mechanics, upstream resolution and pins, the common report envelope, coordinator run aggregation, and one-track partial results.
+
 ## Version
 
 The routing adapter metadata and the common report envelope use `contract_version: 1`. The coordinator supports exactly that integer version. Unknown fields, unknown required-input categories, invalid field types, and any other version fail preflight.
@@ -36,9 +38,13 @@ Every adapter starts with exactly one fixed-marker metadata object:
 
 Track ID, adapter path, and order come only from the routing table. Adapter metadata does not contain a track count, native sections, review criteria, or an optional-track flag.
 
-## Upstream resolution
+## Upstream resolution and pins
 
 The coordinator resolves every declared upstream through the host and SkillRoute. The validator does not perform network resolution. Preflight and freeze require a resolved local skill file/directory, or a resolved URI plus the host-supplied exact-byte SHA-256 and exact byte size. Verify and envelope validation require that same resolution explicitly; the manifest alone is not an upstream fallback.
+
+Preflight pins the route table and every routed adapter, as well as every resolved upstream, by exact-byte SHA-256 and exact byte size. A normalized-text SHA-256 is separate attestation and cannot substitute for exact-byte identity.
+
+Preflight rejects an empty route table and any missing, duplicate, unreadable, malformed, version-mismatched, or orphan adapter metadata. It also rejects duplicate metadata blocks, unknown metadata fields, unsafe adapter paths, unknown required-input categories, and unresolved upstreams. Any of these failures blocks the run before dispatch.
 
 The pinned upstream record contains the exact dependency name, resolved URI, exact-byte SHA-256, exact byte size, and, when available, a normalized-text SHA-256. A local file is read by the validator, which computes and cross-checks all three values. A remote URI is accepted only with the host's exact digest and size. Its normalized digest is optional normalized attestation and cannot substitute for exact-byte identity. Missing, duplicate, unreadable, empty, malformed, size-mismatched, or hash-mismatched resolutions fail before dispatch. Preflight and freeze-source validation collect all independently detectable adapter metadata, upstream resolution, and supplied input-file failures into one blocked result; valid adapter metadata still contributes resolution checks, and diagnostics retain routing, dependency, and argument order. Freeze reports supplied requirement and standards file failures in argument order, then adapter and routing metadata errors in row order, upstream resolution errors in dependency order, check-argument errors, and finally required-input availability errors.
 
@@ -61,11 +67,13 @@ The fixed input categories are:
 
 An adapter may require a subset of this registry. A new category needs an explicit contract change and version increment.
 
-`requirements` is the sole conditional category for a standalone freeze. If no requirement source is supplied, a standalone freeze records `requirements: not_assessed` and may proceed. `freeze --require-requirements` makes the category mandatory again and requires every supplied requirements snapshot to contain non-whitespace UTF-8 text. `/spec-implement-loop` uses it for final review, whose gate rejects a current root review whose requirements are missing, empty, whitespace-only, or `not_assessed`.
+`requirements` is the sole conditional category for a standalone freeze. If no requirement source is supplied, a standalone freeze records `requirements: not_assessed` and may proceed. `freeze --require-requirements` makes the category mandatory again and requires every supplied requirements snapshot to contain non-whitespace UTF-8 text. `/spec-implement-loop` uses it for final review, whose gate rejects a current root review whose requirements are missing, empty, whitespace-only, or `not_assessed`. Missing pinned requirements block with `manifest_input_missing`; empty or whitespace-only pinned requirements block with `manifest_input_invalid`.
 
 When `checks` is required, at least one check or `not_run` record is required. Observed results are `passed`, `failed`, or `not_assessed`. A `not_run` record must carry a non-empty reason and is supplied as `--not-run NAME=REASON`; the `--check` form does not accept `not_run`.
 
-## Frozen bundle
+## Frozen scope and tree
+
+Freeze one immutable patch/tree snapshot before any track starts. The snapshot must originate from exactly one of a Git range, an explicit patch plus its frozen code tree, or the current uncommitted worktree state.
 
 `scripts/review_contract.py freeze` creates:
 
@@ -79,6 +87,8 @@ When `checks` is required, at least one check or `not_run` record is required. O
 ```
 
 The manifest is canonical UTF-8 JSON with sorted keys and is itself outside the digest it describes. The separate attestation records the exact manifest SHA-256, patch SHA-256 and byte size, and included paths.
+
+Every supplied `--repo` path is resolved immediately to its Git top level. The output directory must stay outside that reviewed repository and outside any Git repository containing the frozen tree.
 
 Successful `freeze` output and current `verify` output report `scope_sha256`: the lowercase hexadecimal SHA-256 of the UTF-8 bytes of canonical JSON for the manifest `scope` object. Canonical JSON sorts object keys recursively, keeps array order, uses `,` and `:` separators without surrounding whitespace, emits non-ASCII characters directly, and adds no trailing newline. This is equivalent to Python `json.dumps(scope, ensure_ascii=False, separators=(",", ":"), sort_keys=True).encode("utf-8")`. The value is derived output only: it is not stored in the manifest or attestation, changes neither schema, and does not change the contract version. The manifest `scope` remains authoritative.
 
@@ -113,6 +123,8 @@ An explicit patch also requires a separately supplied frozen tree. Every non-del
 Excluded paths are omitted from the frozen tree and recorded with their reasons. A patch that changes an excluded path fails the freeze instead of claiming the path was both reviewed and excluded.
 
 Both tree sources accept only regular-file Git modes `100644` and `100755`. A Git-range freeze inspects tracked tree modes before copying; an explicit-patch freeze inspects patch-summary and index-header modes before post-image validation, and an explicit-tree freeze also rejects filesystem symlinks. Mode `120000` fails with `tree_symlink_unsupported`; mode `160000` and every other unsupported mode fail closed with `tree_entry_unsupported`. Neither source stores non-regular content as a regular tree file.
+
+Do not reconstruct inputs from live workspace reads after the freeze.
 
 ## Common report envelope
 
@@ -163,7 +175,7 @@ Optional native fields are `native_axis`, `native_id`, `native_severity`, and `n
 
 Native semantic ordering belongs to the upstream track and remains opaque to the coordinator. A schema-valid synthetic envelope is contract-test data, not evidence of live model discovery or independent execution.
 
-## Coordinator run result
+## Coordinator run aggregation
 
 One review run record aggregates every required routed track without changing the track envelope. The run record has exactly these fields:
 
@@ -226,6 +238,10 @@ Transient failure evidence has exactly `source`, `phase`, and `detail`. `source`
 
 `request_sha256` must equal the SHA-256 of canonical JSON containing the routed `track_id`, frozen `manifest`, and frozen `attestation`. The validator recomputes that digest for every attempt and requires recovery attempts to match the failed attempt. This proves the recorded request identity matches the frozen bundle; it does not prove the host sent those bytes or that hidden analysis was not reused.
 
+Track `coverage.status` remains a report fact separate from launch status. A valid report may record `partial` or `not_assessed` coverage without being misreported as a launch failure. Unavailable host independence or recovery capability is recorded in run `checks` as `independence_capability` or `recovery_capability` with result `not_run` and a non-empty reason, not inferred as passed. Every run needs at least one such capability check. A recovery needs `recovery_capability`; a complete run needs `independence_capability` with result `passed`, and a run with a recorded recovery also needs `recovery_capability` with result `passed`. A required capability check with result `not_run`, `failed`, or `not_assessed` blocks completion. A capability check with result `failed` or `not_assessed` makes the overall result blocked. A completed report with `coverage.status: blocked` also makes the overall result blocked with a distinct `coverage_blocked` run error; the track remains completed and its original report remains present. `partial` and `not_assessed` coverage remain visible limitations and do not trigger that failure.
+
+## One-track partial results
+
 After a blocked result has been shown, an explicit user approval may retain exactly one completed report as `partial`. First save the blocked `validate-run` JSON result as an external artifact. Then use a separate follow-up run record:
 
 ```json
@@ -246,8 +262,6 @@ After a blocked result has been shown, an explicit user approval may retain exac
 ```
 
 The artifact path is relative to the follow-up run record and cannot be the current run record or a hard link to it. Its resolved path must remain inside the run directory. Its exact bytes must match `sha256`; it must contain the complete `validate-run` result schema with overall status `blocked`, no partial approval, and rendered output. Its tracks, coverage, checks, missing tracks, and full completed envelopes and run errors must exactly match the follow-up run. Its rendered output must exactly equal the canonical render of those blocked result values; substituted summary or display text is invalid. The approval source must be `user` and include non-empty evidence. The missing-track list must match the tracks that did not complete, and exactly one track must have completed. The derived result labels the run `partial`, records the artifact digest, missing tracks, reduced independence, coverage, and completed-report identities, and includes each original completed envelope without truncation. Partial mode is never a complete parallel review. The digest binds the artifact content but cannot prove wall-clock order or the human identity behind `source: "user"`.
-
-Track `coverage.status` remains a report fact separate from launch status. A valid report may record `partial` or `not_assessed` coverage without being misreported as a launch failure. Unavailable host independence or recovery capability is recorded in run `checks` as `independence_capability` or `recovery_capability` with result `not_run` and a non-empty reason, not inferred as passed. Every run needs at least one such capability check. A recovery needs `recovery_capability`; a complete run needs `independence_capability` with result `passed`, and a run with a recorded recovery also needs `recovery_capability` with result `passed`. A required capability check with result `not_run`, `failed`, or `not_assessed` blocks completion. A capability check with result `failed` or `not_assessed` makes the overall result blocked. A completed report with `coverage.status: blocked` also makes the overall result blocked with a distinct `coverage_blocked` run error; the track remains completed and its original report remains present. `partial` and `not_assessed` coverage remain visible limitations and do not trigger that failure.
 
 ## Severity
 
