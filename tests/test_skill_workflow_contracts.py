@@ -878,6 +878,200 @@ class RequirementsToSpecTicketsBehaviorTests(unittest.TestCase):
             ("artifacts", "outputs"), ("blockers",),
         ))
 
+    def test_child_prompt_template_carries_publication_and_conditional_assembly_contract(self):
+        template = skill_reference(
+            "requirements-to-spec-tickets", "child-session-initial-prompt.md",
+        ).lower().replace(chr(96), "")
+        self.assertIn("### conditional prompt assembly", template)
+        self.assertIn("### issue publication and recovery", template)
+        self.assertIn("### issue-only publication", template)
+        self.assertIn("### local-artifact publication", template)
+
+        fill_instructions = section(template, "## fill instructions")
+        assembly = section(fill_instructions, "### conditional prompt assembly")
+        workflow = section(template, "## workflow gates")
+        publication = section(template, "### issue publication and recovery")
+        linking = section(template, "### native ticket linking")
+        issue_only = section(template, "### issue-only publication")
+        local_artifacts = section(template, "### local-artifact publication")
+
+        self.assertTrue(sentence_with_concepts(
+            fill_instructions, ("write authority",), ("source",), ("action",), ("normalized_target",),
+            ("lifetime",), ("invalidators",), ("do not", "never"), ("infer",),
+        ))
+
+        self.assertTrue(sentence_with_concepts(
+            assembly, ("static", "approved group"), ("inapplicable", "does not apply"),
+            ("omit", "remove", "leave out"), ("conditional block",),
+        ))
+        self.assertTrue(sentence_with_concepts(
+            assembly, ("runtime",), ("preserve", "retain", "remain"),
+            ("conditional block",), ("intact", "possible", "applicable"),
+        ))
+        self.assertTrue(sentence_with_concepts(
+            assembly, ("unknown applicability",), ("possible", "possibly applicable", "applicable"),
+        ))
+        self.assertTrue(sentence_with_concepts(
+            assembly, ("unknown applicability",),
+            ("retaining all conditional publication and integration blocks",),
+        ))
+        self.assertTrue(sentence_with_concepts(
+            assembly, ("unresolved placeholder",), ("delivered prompt",), ("no", "must not", "may not"),
+        ))
+        self.assertTrue(sentence_with_concepts(
+            assembly, ("delivered prompt",), ("snapshot", "self-contained"),
+            ("must not require", "without re-reading", "does not require"),
+            ("template",), ("reconstruct", "read"),
+        ))
+        self.assertTrue(sentence_with_concepts(
+            assembly, ("runtime state", "runtime facts"), ("contradict",),
+            ("existing blocker or handoff", "blocker or handoff"), ("stop",),
+            ("do not", "never"), ("infer", "compose", "invent"),
+        ))
+        self.assertTrue(sentence_with_concepts(
+            assembly, ("issue-only",), ("omit",), ("task-branch", "local-artifact"),
+            ("instructions", "publication"),
+        ))
+        self.assertTrue(sentence_with_concepts(
+            assembly, ("local-artifact",), ("include",), ("task branch", "task-branch"),
+            ("commit",), ("push",),
+        ))
+
+        self.assertTrue(sentence_with_concepts(
+            publication, ("partial",), ("retain",), ("defer",), ("reconcile",),
+            ("open and closed", "all states"),
+        ))
+        self.assertIn("ready-for-agent", publication)
+        self.assertIn("gh api --paginate", publication)
+        self.assertIn("fully paginated issue listing", publication)
+        self.assertIn("pull_request", publication)
+        self.assertTrue(sentence_with_concepts(
+            publication, ("complete listing",), ("cannot be read",), ("pause",),
+        ))
+        self.assertTrue(sentence_with_concepts(
+            publication, ("exact", "single"), ("title-and-body",), ("ambiguous", "multiple"),
+            ("pause",), ("do not", "never"), ("resubmit", "reparent"),
+        ))
+        self.assertTrue(sentence_with_concepts(
+            publication, ("unknown",), ("zero matches",), ("do not resubmit", "do not retry"),
+        ))
+        self.assertTrue(sentence_with_concepts(
+            publication, ("clearly transient",), ("three total", "at most three"),
+            ("attempts",), ("preserve",),
+        ))
+        self.assertTrue(sentence_with_concepts(
+            publication, ("carry", "record"), ("attempt count",), ("before",), ("retry", "create"),
+        ))
+        self.assertTrue(sentence_with_concepts(
+            publication, ("before every issue write",), ("fresh authoritative read",),
+            ("compare",), ("intended delta",),
+        ))
+        self.assertTrue(sentence_with_concepts(
+            publication, ("after every write",), ("reread", "re-read"), ("verify",), ("expected state",),
+        ))
+        self.assertIn("gh issue edit --add-sub-issue", linking)
+
+        self.assertTrue(sentence_with_concepts(
+            issue_only, ("issue-only",), ("do not",), ("branch",), ("worktree",),
+            ("commit",), ("push",),
+        ))
+        self.assertTrue(sentence_with_concepts(
+            local_artifacts, ("local-artifact",), ("dedicated task branch",),
+            ("before",), ("first local file write", "first file write"),
+        ))
+        self.assertTrue(sentence_with_concepts(
+            local_artifacts, ("reuse",), ("same group",), ("clean",),
+        ))
+        self.assertTrue(sentence_with_concepts(
+            local_artifacts, ("worktree",), ("branch",), ("differ",),
+        ))
+        self.assertTrue(sentence_with_concepts(
+            local_artifacts, ("force-pushing",), ("reconcile",),
+            ("divergent",), ("uncertain",),
+        ))
+        self.assertTrue(sentence_with_concepts(
+            local_artifacts, ("approval",), ("authorizes", "grants"), ("focused",),
+            ("commits",), ("ordinary", "normal", "non-force"), ("pushes",),
+            ("dedicated task branch",), ("initial", "first"), ("remote ref", "remote branch"),
+        ))
+        self.assertTrue(sentence_with_concepts(
+            local_artifacts, ("clearly transient",), ("three total", "at most three"),
+            ("same ref and commit",), ("uncertain",), ("reconcile",),
+        ))
+        self.assertTrue(sentence_with_concepts(
+            local_artifacts, ("preserve", "retain"),
+            ("local artifacts", "commits", "remote branches", "issues"),
+            ("do not", "never"), ("delete", "roll back", "amend", "rewrite"),
+        ))
+        self.assertTrue(sentence_with_concepts(
+            local_artifacts, ("handoff approval record",), ("missing", "changed"), ("stop",),
+        ))
+        self.assertTrue(sentence_with_concepts(
+            workflow, ("this prompt", "generated prompt"), ("snapshot", "self-contained"),
+            ("must not require", "does not require"), ("re-read", "read"), ("template",),
+        ))
+        self.assertTrue(sentence_with_concepts(
+            workflow, ("runtime state", "runtime facts"), ("contradict",),
+            ("existing blocker or handoff", "blocker or handoff"), ("stop",),
+            ("do not", "never"), ("infer", "compose", "invent"),
+        ))
+        self.assertTrue(sentence_with_concepts(
+            workflow, ("does not",), ("pull request", "pull-request"), ("merge",),
+        ))
+
+    def test_child_prompt_template_conditional_matrix_is_deterministic(self):
+        template = skill_reference(
+            "requirements-to-spec-tickets", "child-session-initial-prompt.md",
+        ).lower().replace(chr(96), "")
+        copy_ready = template[template.index("# copy-ready prompt (below):"):]
+        conditional_blocks = (
+            "### issue-only publication",
+            "### local-artifact publication",
+            "### optional document integration follow-up",
+        )
+
+        def drop_section(text, heading):
+            start = text.index(heading)
+            endings = [
+                position for position in (
+                    text.find("\n### ", start + len(heading)),
+                    text.find("\n## ", start + len(heading)),
+                ) if position != -1
+            ]
+            end = min(endings) if endings else len(text)
+            return text[:start] + text[end + 1:]
+
+        def render(*included):
+            prompt = copy_ready
+            for heading in conditional_blocks:
+                if heading not in included:
+                    prompt = drop_section(prompt, heading)
+            return re.sub(r"\[[^\]]+\]", "confirmed group fact", prompt)
+
+        issue_only = render("### issue-only publication")
+        local_artifacts = render(
+            "### local-artifact publication", "### optional document integration follow-up",
+        )
+        unknown_applicability = render(*conditional_blocks)
+
+        for prompt in (issue_only, local_artifacts, unknown_applicability):
+            with self.subTest(prompt=prompt[:40]):
+                self.assertIsNone(re.search(r"\[[^\]]+\]", prompt))
+                self.assertIsNone(re.search(r"<[^>\n]+>", prompt))
+                self.assertIn("self-contained snapshot", prompt)
+                self.assertIn("existing blocker or handoff mechanism", prompt)
+                self.assertIn("does not open pull requests or merge branches", prompt)
+
+        self.assertIn("do not create or switch branches", issue_only)
+        self.assertNotIn("dedicated task branch", issue_only)
+        self.assertNotIn("optional document integration follow-up", issue_only)
+        self.assertIn("dedicated task branch", local_artifacts)
+        self.assertIn("optional document integration follow-up", local_artifacts)
+        self.assertNotIn("issue-only publication", local_artifacts)
+        self.assertIn("issue-only publication", unknown_applicability)
+        self.assertIn("local-artifact publication", unknown_applicability)
+        self.assertIn("optional document integration follow-up", unknown_applicability)
+
     def test_local_artifact_document_integration_handoff_is_scoped(self):
         workflow = skill("requirements-to-spec-tickets").lower().replace(chr(96), "")
         prompt = skill_reference(
