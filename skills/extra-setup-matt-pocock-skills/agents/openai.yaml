@@ -1,0 +1,5 @@
+interface:
+  display_name: "Extra Setup Matt Pocock Skills"
+  short_description: "Deploy a portable agent operating contract"
+policy:
+  allow_implicit_invocation: false

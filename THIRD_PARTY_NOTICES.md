@@ -27,6 +27,8 @@ Covered local skills:
 - `skills/grill-duo-with-docs/` also adapts
   `skills/engineering/grill-with-docs/SKILL.md` and
   `skills/engineering/domain-modeling/SKILL.md`.
+- `skills/extra-setup-matt-pocock-skills/` adapts the interactive setup flow
+  and tracker conventions used by `setup-matt-pocock-skills`.
 
 Upstream revision:
 [84fdeffd12f2ee307994d1eb6feb48173b6e0502](https://github.com/mattpocock/skills/tree/84fdeffd12f2ee307994d1eb6feb48173b6e0502).
