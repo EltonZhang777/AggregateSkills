@@ -1,6 +1,6 @@
 # Parallel Review Contract
 
-The entry point owns activation, preflight order, command forms, dispatch sequence, and links to this contract. The sections below are the sole normative source for frozen scope and tree mechanics, upstream resolution and pins, the common report envelope, coordinator run aggregation, and one-track partial results.
+The entry point owns activation, preflight order, command forms, dispatch sequence, and links to this contract. The sections below are the sole normative source for frozen scope and tree mechanics, the bundle output boundary, upstream resolution and pins, the common report envelope, coordinator run aggregation, and one-track partial results.
 
 ## Version
 
@@ -88,8 +88,6 @@ Freeze one immutable patch/tree snapshot before any track starts. The snapshot m
 
 The manifest is canonical UTF-8 JSON with sorted keys and is itself outside the digest it describes. The separate attestation records the exact manifest SHA-256, patch SHA-256 and byte size, and included paths.
 
-Every supplied `--repo` path is resolved immediately to its Git top level. The output directory must stay outside that reviewed repository and outside any Git repository containing the frozen tree.
-
 Successful `freeze` output and current `verify` output report `scope_sha256`: the lowercase hexadecimal SHA-256 of the UTF-8 bytes of canonical JSON for the manifest `scope` object. Canonical JSON sorts object keys recursively, keeps array order, uses `,` and `:` separators without surrounding whitespace, emits non-ASCII characters directly, and adds no trailing newline. This is equivalent to Python `json.dumps(scope, ensure_ascii=False, separators=(",", ":"), sort_keys=True).encode("utf-8")`. The value is derived output only: it is not stored in the manifest or attestation, changes neither schema, and does not change the contract version. The manifest `scope` remains authoritative.
 
 The manifest records:
@@ -124,7 +122,13 @@ Excluded paths are omitted from the frozen tree and recorded with their reasons.
 
 Both tree sources accept only regular-file Git modes `100644` and `100755`. A Git-range freeze inspects tracked tree modes before copying; an explicit-patch freeze inspects patch-summary and index-header modes before post-image validation, and an explicit-tree freeze also rejects filesystem symlinks. Mode `120000` fails with `tree_symlink_unsupported`; mode `160000` and every other unsupported mode fail closed with `tree_entry_unsupported`. Neither source stores non-regular content as a regular tree file.
 
+Every supplied `--repo` path is resolved immediately to its Git top level.
+
 Do not reconstruct inputs from live workspace reads after the freeze.
+
+## Output boundary
+
+The bundle output directory must be outside the reviewed repository and, when an explicit frozen tree is supplied, outside the Git repository containing that tree. The validator does not check nested lexical-ancestor repositories.
 
 ## Common report envelope
 

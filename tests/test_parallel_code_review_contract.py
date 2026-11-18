@@ -5523,8 +5523,11 @@ class ParallelCodeReviewPackageTests(unittest.TestCase):
             "## Frozen scope and tree": (
                 "the snapshot must originate from exactly one of",
                 "every supplied `--repo` path is resolved immediately",
-                "output directory must stay outside that reviewed repository",
                 "tree_symlink_unsupported",
+            ),
+            "## Output boundary": (
+                "the bundle output directory must be outside the reviewed repository and, when an explicit frozen tree is supplied, outside the git repository containing that tree.",
+                "does not check nested lexical-ancestor repositories",
             ),
             "## Upstream resolution and pins": (
                 "the pinned upstream record contains",
@@ -5562,10 +5565,35 @@ class ParallelCodeReviewPackageTests(unittest.TestCase):
                     skill,
                 )
 
+    def test_output_boundary_links_use_the_canonical_rule_without_weaker_copies(self):
+        skill_path = SKILL_ROOT / "SKILL.md"
+        scenario_path = SKILL_ROOT / "references" / "acceptance-scenario.md"
+        skill = skill_path.read_text(encoding="utf-8")
+        scenario = scenario_path.read_text(encoding="utf-8")
+
+        self.assertIn(
+            "[Output boundary](references/contract.md#output-boundary)",
+            skill,
+        )
+        self.assertIn("[Output boundary](contract.md#output-boundary)", scenario)
+        self.assertNotIn(
+            "The output directory must stay outside that reviewed repository and outside any Git repository containing the frozen tree.",
+            CONTRACT.read_text(encoding="utf-8"),
+        )
+        self.assertNotIn(
+            "Use the package script with an output directory outside the reviewed repository:",
+            skill,
+        )
+        self.assertNotIn(
+            "Write the bundle outside the reviewed repository.",
+            scenario,
+        )
+
     def test_known_complete_rule_copies_are_absent_from_noncanonical_documents(self):
         canonical_rule_copies = (
             "The validator pins the route table, every routed adapter, and every resolved upstream by exact-byte SHA-256 and exact byte size.",
             "The snapshot must originate from exactly one of:",
+            "The bundle output directory must be outside the reviewed repository and, when an explicit frozen tree is supplied, outside the Git repository containing that tree.",
             "The bundle contains the exact patch, the frozen code tree, pinned input snapshots, a canonical manifest, and a separate patch/manifest attestation.",
             "Every track returns the versioned common report envelope defined in the contract.",
             "Run aggregation repeats the complete freshness verification used before each track.",

@@ -22,7 +22,7 @@ Before dispatch, confirm that the `skillroute` command and the host's independen
 
 Use this skill for an explicit `/parallel-code-review` request, a request for parallel review, combined review tracks, multiple independent reviewers over one frozen scope, or `/spec-implement-loop` final review. Do not select it for a generic single-path review request; those requests continue to use their named single review path.
 
-The objective is one reproducible orchestration pass over one frozen code scope. The routing table decides which tracks run and in what order. The contract is the sole normative source for [Frozen scope and tree](references/contract.md#frozen-scope-and-tree), [Upstream resolution and pins](references/contract.md#upstream-resolution-and-pins), the [Common report envelope](references/contract.md#common-report-envelope), [Coordinator run aggregation](references/contract.md#coordinator-run-aggregation), and [One-track partial results](references/contract.md#one-track-partial-results). This entry point owns activation, preflight order, command forms, dispatch sequence, and links to those sections; it does not own any upstream track's review criteria.
+The objective is one reproducible orchestration pass over one frozen code scope. The routing table decides which tracks run and in what order. The contract is the sole normative source for [Frozen scope and tree](references/contract.md#frozen-scope-and-tree), [Output boundary](references/contract.md#output-boundary), [Upstream resolution and pins](references/contract.md#upstream-resolution-and-pins), the [Common report envelope](references/contract.md#common-report-envelope), [Coordinator run aggregation](references/contract.md#coordinator-run-aggregation), and [One-track partial results](references/contract.md#one-track-partial-results). This entry point owns activation, preflight order, command forms, dispatch sequence, and links to those sections; it does not own any upstream track's review criteria.
 
 ## Preflight the routed contract
 
@@ -45,9 +45,9 @@ The validator does not run SkillRoute or fetch remote text. Pass each coordinato
 
 ## Freeze one review scope
 
-Before any track starts, freeze one immutable patch/tree snapshot. [Frozen scope and tree](references/contract.md#frozen-scope-and-tree) defines the permitted scope sources, bundle and tree mechanics, exclusions, non-regular entry rejection, output location, pins, freshness, and staleness.
+Before any track starts, freeze one immutable patch/tree snapshot. [Frozen scope and tree](references/contract.md#frozen-scope-and-tree) defines the permitted scope sources, bundle and tree mechanics, exclusions, non-regular entry rejection, pins, freshness, and staleness. Apply [Output boundary](references/contract.md#output-boundary) before selecting the bundle path.
 
-Use the package script with an output directory outside the reviewed repository:
+Use the package script:
 
 ```text
 python scripts/review_contract.py freeze --repo <repo> --output <external bundle> --range <base...head> \
