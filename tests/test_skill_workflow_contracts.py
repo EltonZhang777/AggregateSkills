@@ -1922,20 +1922,12 @@ class ConventionalGitMessagesBehaviorTests(unittest.TestCase):
         canonical = normalized("issue-references.md")
         commit = normalized("commit-messages.md")
         pull_request = normalized("pull-request-text.md")
-        canonical_bullets = [
-            line
-            for line in skill_reference(
-                "conventional-git-messages", "issue-references.md"
-            ).splitlines()
-            if line.startswith("- ")
-        ]
-        self.assertEqual(3, len(canonical_bullets))
-        self.assertTrue(
-            canonical_bullets[0].startswith(
-                "- Preserve every supplied issue or pull request reference."
-            )
-        )
         self.assertIn("preserve every supplied issue or pull request reference", canonical)
+        self.assertIn(
+            "commit messages accept issue and pull request references",
+            canonical,
+        )
+        self.assertIn("pull request descriptions accept issue references", canonical)
         for semantic in ("closes #n", "refs #n", "never invent references"):
             with self.subTest(semantic=semantic):
                 self.assertIn(semantic, canonical)
@@ -1948,6 +1940,11 @@ class ConventionalGitMessagesBehaviorTests(unittest.TestCase):
             "after the rationale and any other trailers",
             commit,
         )
+        self.assertIn(
+            "apply the shared issue-reference semantics in "
+            "[issue references](issue-references.md)",
+            commit,
+        )
         self.assertIn("[issue references](issue-references.md)", pull_request)
         self.assertIn(
             "begin the pr body with all supplied related issue references, "
@@ -1956,7 +1953,7 @@ class ConventionalGitMessagesBehaviorTests(unittest.TestCase):
         )
         self.assertIn(
             "apply the shared issue-reference semantics in "
-            "[issue references](issue-references.md)",
+            "[issue references](issue-references.md) to those issue references",
             pull_request,
         )
         self.assertIn("preserve the template after the reference block", pull_request)

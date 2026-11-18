@@ -135,6 +135,8 @@ Then repeat the PR-body request for the same change, supplying `closes #128` bec
 
 Confirm the complete supplied issue-reference block appears first, before the template's `## Summary`, `## Evidence`, and `## Merge Danger` headings. Confirm the body preserves those headings in that order, uses `closes #128` only for the resolved issue and `refs #129` for the related issue, and invents no issue number beyond the supplied `#128` and `#129`.
 
+Also supply a related pull request number `#127`. Confirm the PR body's reference block contains only the supplied issue references and does not add `#127`; keep `#127` for any commit-message draft.
+
 ## Full descriptions for important changes
 
 Run once each for a breaking change, a security fix, a data migration, and a

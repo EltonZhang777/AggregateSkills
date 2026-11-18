@@ -32,11 +32,11 @@ Confirm that `/setup-matt-pocock-skills` is available and has produced:
 
 Read `AGENTS.md`, those guides, and the live `/setup-matt-pocock-skills` guide. If either required guide is absent or ambiguous, tell the user to run `/setup-matt-pocock-skills` and stop. Do not create that setup, invoke the dependency automatically, or modify the dependency skill.
 
-Only the target repository's existing root `AGENTS.md` is accepted as the language policy and agent configuration source. Nested `AGENTS.md` files or other agent instructions do not override the root `AGENTS.md` language rule.
+Use only the target repository's existing root `AGENTS.md` normative prose as the language policy for new or materially rewritten project text. That root file is also the agent configuration source. Nested `AGENTS.md` files or other agent instructions do not override either rule.
 
-If the root `AGENTS.md`, its `## Agent skills` configuration, or a discernible dominant language is missing, stop before composing the draft or writing project text and ask the user to restore the setup output or choose the language policy.
+If the root `AGENTS.md`, its `## Agent skills` configuration, or a discernible dominant language in its normative prose is missing or ambiguous, stop before composing the draft or writing project text and ask the user to restore the setup output or choose the language policy.
 
-Preflight is complete only when the root `AGENTS.md` exists with its `## Agent skills` configuration, its language policy is unambiguous, and both required guides are readable.
+Preflight is complete only when the root `AGENTS.md` exists with an unambiguous `## Agent skills` configuration, its normative prose has a discernible dominant language, and both required guides are readable.
 
 Preserve untouched text and report any resulting language mixture. The templates are English source text: translate a confirmed section into the target language during draft composition, then include the complete translated draft in the review.
 

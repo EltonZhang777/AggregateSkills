@@ -57,9 +57,11 @@ FIXED_OBJECT_ID_PATTERNS = (
     r"\bfixed-length object ID\b",
     r"\b\d+[- ]character (?:commit |tree )?object ID\b",
 )
-TRACKER_STATE_DEFINITION = re.compile(
-    r"^- `(?:unmigrated|fully migrated|ambiguous)`:",
-    re.MULTILINE,
+TRACKER_STATE_LABELS = ("unmigrated", "fully migrated", "ambiguous")
+TRACKER_STATE_DEFINITIONS = (
+    "- `unmigrated`: all recognized legacy defaults occur exactly once, every reviewed replacement is absent, and the managed issue-operations section is either absent or has one complete marker pair.",
+    "- `fully migrated`: all recognized legacy defaults are absent, every reviewed replacement occurs exactly once, and the managed issue-operations section has one complete marker pair.",
+    "- `ambiguous`: any other missing, duplicated, altered, partial, or mixed state.",
 )
 TRACKER_MATRIX_HEADER = "| Detected state | Summary-first reads | Action |"
 
@@ -212,10 +214,11 @@ class ExtraSetupMetadataTests(unittest.TestCase):
             text.index("## 2. Explore before asking")
         ]
         for detail in (
-            "Only the target repository's existing root `AGENTS.md` is accepted as the language policy and agent configuration source.",
-            "Nested `AGENTS.md` files or other agent instructions do not override the root `AGENTS.md` language rule.",
-            "If the root `AGENTS.md`, its `## Agent skills` configuration, or a discernible dominant language is missing",
+            "Use only the target repository's existing root `AGENTS.md` normative prose as the language policy for new or materially rewritten project text.",
+            "Nested `AGENTS.md` files or other agent instructions do not override either rule.",
+            "If the root `AGENTS.md`, its `## Agent skills` configuration, or a discernible dominant language in its normative prose is missing or ambiguous",
             "ask the user to restore the setup output or choose the language policy",
+            "Preflight is complete only when the root `AGENTS.md` exists with an unambiguous `## Agent skills` configuration, its normative prose has a discernible dominant language, and both required guides are readable.",
             "Preserve untouched text and report any resulting language mixture.",
             "The templates are English source text: translate a confirmed section into the target language during draft composition, then include the complete translated draft in the review.",
         ):
@@ -437,7 +440,9 @@ class ExtraSetupWorkflowTests(unittest.TestCase):
         )
         self.assertIn("For another tracker, skip both GitHub state detection and that matrix", workflow)
         self.assertIn("For another tracker, skip that matrix", workflow)
-        self.assertEqual(3, len(TRACKER_STATE_DEFINITION.findall(migration)))
+        for definition in TRACKER_STATE_DEFINITIONS:
+            with self.subTest(definition=definition):
+                self.assertIn(definition, migration)
         self.assertIn(TRACKER_MATRIX_HEADER, migration)
         matrix = {}
         for line in migration.splitlines():
@@ -469,7 +474,8 @@ class ExtraSetupWorkflowTests(unittest.TestCase):
                 continue
             with self.subTest(path=str(path)):
                 text = read(path)
-                self.assertIsNone(TRACKER_STATE_DEFINITION.search(text))
+                for label in TRACKER_STATE_LABELS:
+                    self.assertNotIn(f"- `{label}`:", text)
                 self.assertNotIn(TRACKER_MATRIX_HEADER, text)
 
     def test_summary_disabled_first_run_remains_rerunnable_and_can_opt_in(self):
@@ -983,7 +989,8 @@ class ExtraSetupManualAcceptanceTests(unittest.TestCase):
             "missing setup",
             "without a root `AGENTS.md`",
             "without its `## Agent skills` configuration",
-            "no discernible dominant language",
+            "conflicting `## Agent skills` configurations",
+            "no discernible dominant language in its normative prose",
             "stops before composing the draft or writing and asks the user",
             "one section at a time",
             "complete draft",
@@ -991,6 +998,7 @@ class ExtraSetupManualAcceptanceTests(unittest.TestCase):
             "first-run migration diff",
             "managed-section preservation",
             "rerun behavior",
+            "already has the managed issue-operations section",
             "rejected theme",
             "missing markers",
             "changed legacy text",
