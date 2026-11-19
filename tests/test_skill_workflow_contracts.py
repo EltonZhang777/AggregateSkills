@@ -1676,6 +1676,10 @@ class SpecImplementLoopBehaviorTests(unittest.TestCase):
             completion, ("root status synchronization",), ("task-start grant",),
             ("without a separate approval pause",), ("same retry and reconciliation rules",),
         ))
+        self.assertTrue(sentence_with_concepts(
+            completion, ("current complete review",), ("root issue",), ("completed",),
+            ("sync", "synchronization"), ("task-start grant",),
+        ))
 
         ticket_sync_rule = next(line for line in issue_loop.splitlines() if line.lstrip().startswith("6."))
         self.assertTrue(mentions_concepts(
