@@ -114,7 +114,7 @@ observations only.
 
 Supply controlled responses through a temporary `gh` executable created outside the reviewed repository. On POSIX create an executable `gh`; on Windows create `gh.cmd`. Select a non-secret case selector such as `PR_MERGE_SHIM_CASE`; store the selected plan and response fixtures only in the temporary run directory. Do not make the wrapper inspect credentials, tokens, or the real `gh` configuration. Capture the real executable path before changing `PATH`, pass it as `PR_MERGE_REAL_GH`, and forward every invocation whose exact API path is not in the selected case to that executable with the original arguments unchanged. Forwarded commands include the live `gh pr view`, `gh pr checks`, and `gh pr merge` gates; only the exact permission-gate API paths named by the case are controlled.
 
-The plan is JSON. Each case maps an exact invoked API path to an ordered list of response fixtures, so entries A and B have independent counters in one batch. Each fixture supplies `stdout`, `stderr`, and `exit_status`; relative fixture paths resolve under the shim directory. The dispatcher consumes the next fixture for the exact path and repeats the last fixture after the sequence ends. For `transient-then-positive`, the permission route lists a 503 fixture first and an ADMIN fixture second. For `batch-isolation`, entry A's permission route lists READ while entry B's distinct base-repository permission route lists ADMIN; only entry B's later `gh pr merge` reaches the real executable. Run entries sequentially and use one shim directory per invocation.
+The plan is JSON. Each case maps an exact invoked API path to an ordered list of response fixtures, so entries A and B have independent counters in one batch. Each fixture supplies `stdout`, `stderr`, and `exit_status`; relative fixture paths resolve under the shim directory. The dispatcher consumes the next fixture for the exact path and repeats the last fixture after the sequence ends. For `transient-then-positive`, the permission route lists two 503 fixtures followed by an ADMIN fixture. For `batch-isolation`, entries A, B, and dependent C use the same exact repository; A receives READ and B receives the next ADMIN response on the shared permission route. Run A then B sequentially and use one shim directory per invocation.
 
 ```powershell
 $shimDir = Join-Path ([IO.Path]::GetTempPath()) "pr-merge-gh-$([guid]::NewGuid())"
@@ -125,7 +125,7 @@ $env:PR_MERGE_SHIM_CASE = "<case>"
 $originalPath = $env:PATH
 $env:PATH = "$shimDir$([IO.Path]::PathSeparator)$originalPath"
 try {
-    # Write plan.json, response fixtures, gh_shim.py, and gh.cmd or gh here.
+    # Materialize the plan and fixture blocks below in $shimDir.
 } finally {
     $env:PATH = $originalPath
     Remove-Item -LiteralPath $shimDir -Recurse -Force
@@ -134,18 +134,139 @@ try {
 
 ```json
 {
+  "positive-admin": {
+    "repos/OWNER/REPO/pulls/12": ["pull.json"],
+    "user": ["user.json"],
+    "repos/OWNER/REPO/collaborators/USER/permission": ["permission-admin.json"]
+  },
+  "positive-write": {
+    "repos/OWNER/REPO/pulls/12": ["pull.json"],
+    "user": ["user.json"],
+    "repos/OWNER/REPO/collaborators/USER/permission": ["permission-write.json"]
+  },
+  "positive-maintain": {
+    "repos/OWNER/REPO/pulls/12": ["pull.json"],
+    "user": ["user.json"],
+    "repos/OWNER/REPO/collaborators/USER/permission": ["permission-maintain.json"]
+  },
+  "positive-custom": {
+    "repos/OWNER/REPO/pulls/12": ["pull.json"],
+    "user": ["user.json"],
+    "repos/OWNER/REPO/collaborators/USER/permission": ["permission-custom.json"]
+  },
+  "denied-read": {
+    "repos/OWNER/REPO/pulls/12": ["pull.json"],
+    "user": ["user.json"],
+    "repos/OWNER/REPO/collaborators/USER/permission": ["permission-read.json"]
+  },
+  "denied-triage": {
+    "repos/OWNER/REPO/pulls/12": ["pull.json"],
+    "user": ["user.json"],
+    "repos/OWNER/REPO/collaborators/USER/permission": ["permission-triage.json"]
+  },
+  "inconclusive-404": {
+    "repos/OWNER/REPO/pulls/12": ["pull.json"],
+    "user": ["user.json"],
+    "repos/OWNER/REPO/collaborators/USER/permission": ["permission-404.json"]
+  },
+  "inconclusive-empty": {
+    "repos/OWNER/REPO/pulls/12": ["pull.json"],
+    "user": ["user.json"],
+    "repos/OWNER/REPO/collaborators/USER/permission": ["permission-empty.json"]
+  },
+  "inconclusive-missing-base": {
+    "repos/OWNER/REPO/pulls/12": ["pull-missing-base.json"],
+    "user": ["user.json"]
+  },
+  "inconclusive-missing-identity": {
+    "repos/OWNER/REPO/pulls/12": ["pull.json"],
+    "user": ["user-missing-login.json"]
+  },
+  "inconclusive-none": {
+    "repos/OWNER/REPO/pulls/12": ["pull.json"],
+    "user": ["user.json"],
+    "repos/OWNER/REPO/collaborators/USER/permission": ["permission-none.json"]
+  },
+  "inconclusive-conflict": {
+    "repos/OWNER/REPO/pulls/12": ["pull.json"],
+    "user": ["user.json"],
+    "repos/OWNER/REPO/collaborators/USER/permission": ["permission-conflict.json"]
+  },
+  "inconclusive-unmappable": {
+    "repos/OWNER/REPO/pulls/12": ["pull.json"],
+    "user": ["user.json"],
+    "repos/OWNER/REPO/collaborators/USER/permission": ["permission-unmappable.json"]
+  },
   "transient-then-positive": {
     "repos/OWNER/REPO/pulls/12": ["pull.json"],
     "user": ["user.json"],
-    "repos/OWNER/REPO/collaborators/USER/permission": ["permission-503.json", "permission-admin.json"]
+    "repos/OWNER/REPO/collaborators/USER/permission": ["permission-503.json", "permission-503.json", "permission-admin.json"]
+  },
+  "exhausted-budget": {
+    "repos/OWNER/REPO/pulls/12": ["pull.json"],
+    "user": ["user.json"],
+    "repos/OWNER/REPO/collaborators/USER/permission": ["permission-503.json"]
+  },
+  "user-authorized-retry": {
+    "repos/OWNER/REPO/pulls/12": ["pull.json"],
+    "user": ["user.json"],
+    "repos/OWNER/REPO/collaborators/USER/permission": ["permission-503.json", "permission-503.json", "permission-503.json", "permission-admin.json"]
+  },
+  "rate-limit-auto-wait": {
+    "repos/OWNER/REPO/pulls/12": ["pull.json"],
+    "user": ["user.json"],
+    "repos/OWNER/REPO/collaborators/USER/permission": ["permission-rate-limit-short.json", "permission-admin.json"]
+  },
+  "rate-limit-long": {
+    "repos/OWNER/REPO/pulls/12": ["pull.json"],
+    "user": ["user.json"],
+    "repos/OWNER/REPO/collaborators/USER/permission": ["permission-rate-limit-long.json"]
+  },
+  "rate-limit-no-headers": {
+    "repos/OWNER/REPO/pulls/12": ["pull.json"],
+    "user": ["user.json"],
+    "repos/OWNER/REPO/collaborators/USER/permission": ["permission-rate-limit-no-headers.json", "permission-admin.json"]
+  },
+  "auth-failure": {
+    "repos/OWNER/REPO/pulls/12": ["pull.json"],
+    "user": ["user.json"],
+    "repos/OWNER/REPO/collaborators/USER/permission": ["permission-auth-failure.json"]
   },
   "batch-isolation": {
-    "repos/OWNER-A/REPO-A/pulls/12": ["a-pull.json"],
+    "repos/OWNER/REPO/pulls/12": ["pull.json"],
+    "repos/OWNER/REPO/pulls/13": ["pull.json"],
+    "repos/OWNER/REPO/pulls/14": ["pull.json"],
     "user": ["user.json"],
-    "repos/OWNER-A/REPO-A/collaborators/USER/permission": ["permission-read.json"],
-    "repos/OWNER-B/REPO-B/pulls/13": ["b-pull.json"],
-    "repos/OWNER-B/REPO-B/collaborators/USER/permission": ["permission-admin.json"]
+    "repos/OWNER/REPO/collaborators/USER/permission": ["permission-read.json", "permission-admin.json"]
   }
+}
+```
+
+Write each value below to the file named by its key. Each `stdout` is the complete
+`--include` output: status line, headers, a blank line, and the JSON body.
+
+```json
+{
+  "pull.json": {"stdout": "HTTP/2 200\r\nContent-Type: application/json\r\n\r\n{\"base\":{\"repo\":{\"full_name\":\"OWNER/REPO\"}}}\n", "stderr": "", "exit_status": 0},
+  "pull-missing-base.json": {"stdout": "HTTP/2 200\r\nContent-Type: application/json\r\n\r\n{\"number\":12}\n", "stderr": "", "exit_status": 0},
+  "user.json": {"stdout": "HTTP/2 200\r\nContent-Type: application/json\r\n\r\n{\"login\":\"USER\"}\n", "stderr": "", "exit_status": 0},
+  "user-missing-login.json": {"stdout": "HTTP/2 200\r\nContent-Type: application/json\r\n\r\n{\"id\":123}\n", "stderr": "", "exit_status": 0},
+  "permission-admin.json": {"stdout": "HTTP/2 200\r\nContent-Type: application/json\r\n\r\n{\"permission\":\"admin\",\"role_name\":\"admin\"}\n", "stderr": "", "exit_status": 0},
+  "permission-write.json": {"stdout": "HTTP/2 200\r\nContent-Type: application/json\r\n\r\n{\"permission\":\"write\",\"role_name\":\"write\"}\n", "stderr": "", "exit_status": 0},
+  "permission-maintain.json": {"stdout": "HTTP/2 200\r\nContent-Type: application/json\r\n\r\n{\"permission\":\"write\",\"role_name\":\"maintain\"}\n", "stderr": "", "exit_status": 0},
+  "permission-custom.json": {"stdout": "HTTP/2 200\r\nContent-Type: application/json\r\n\r\n{\"permission\":\"write\",\"role_name\":\"release-manager\"}\n", "stderr": "", "exit_status": 0},
+  "permission-read.json": {"stdout": "HTTP/2 200\r\nContent-Type: application/json\r\n\r\n{\"permission\":\"read\",\"role_name\":\"read\"}\n", "stderr": "", "exit_status": 0},
+  "permission-triage.json": {"stdout": "HTTP/2 200\r\nContent-Type: application/json\r\n\r\n{\"permission\":\"read\",\"role_name\":\"triage\"}\n", "stderr": "", "exit_status": 0},
+  "permission-404.json": {"stdout": "HTTP/2 404\r\nContent-Type: application/json\r\n\r\n{\"message\":\"Not Found\"}\n", "stderr": "", "exit_status": 1},
+  "permission-empty.json": {"stdout": "HTTP/2 200\r\nContent-Type: application/json\r\n\r\n\n", "stderr": "", "exit_status": 0},
+  "permission-none.json": {"stdout": "HTTP/2 200\r\nContent-Type: application/json\r\n\r\n{\"permission\":\"none\",\"role_name\":\"none\"}\n", "stderr": "", "exit_status": 0},
+  "permission-conflict.json": {"stdout": "HTTP/2 200\r\nContent-Type: application/json\r\n\r\n{\"permission\":\"read\",\"role_name\":\"maintain\"}\n", "stderr": "", "exit_status": 0},
+  "permission-unmappable.json": {"stdout": "HTTP/2 200\r\nContent-Type: application/json\r\n\r\n{\"permission\":\"custom\",\"role_name\":\"custom\"}\n", "stderr": "", "exit_status": 0},
+  "permission-503.json": {"stdout": "HTTP/2 503\r\nContent-Type: application/json\r\n\r\n{\"message\":\"Service Unavailable\"}\n", "stderr": "", "exit_status": 1},
+  "permission-rate-limit-short.json": {"stdout": "HTTP/2 429\r\nContent-Type: application/json\r\nRetry-After: 1\r\n\r\n{\"message\":\"secondary rate limit\"}\n", "stderr": "", "exit_status": 1},
+  "permission-rate-limit-long.json": {"stdout": "HTTP/2 429\r\nContent-Type: application/json\r\nRetry-After: 600\r\n\r\n{\"message\":\"secondary rate limit\"}\n", "stderr": "", "exit_status": 1},
+  "permission-rate-limit-no-headers.json": {"stdout": "HTTP/2 403\r\nContent-Type: application/json\r\n\r\n{\"message\":\"You have exceeded a secondary rate limit.\"}\n", "stderr": "", "exit_status": 1},
+  "permission-auth-failure.json": {"stdout": "HTTP/2 401\r\nContent-Type: application/json\r\n\r\n{\"message\":\"Bad credentials\"}\n", "stderr": "", "exit_status": 1}
 }
 ```
 
@@ -211,21 +332,39 @@ Prepend only the shim directory to `PATH` for the invoked process; do not change
 - For positive cases, create a PR whose base repository grants the current `gh`
   user ADMIN, WRITE, or MAINTAIN. Use that merge-capable base for controlled
   positive responses so the approved merge can complete and be verified.
-- For every executed case, record the base repository, login, controlled
-  response, result category, started-check count, pause or retry decision,
-  refreshed pre-merge gates, and whether `gh pr merge` was invoked.
+- For every executed case, use the matching fixture sequence below and record
+  the base repository, login, controlled response, result category,
+  started-check count, pause or retry decision, refreshed pre-merge gates, and
+  whether `gh pr merge` was invoked.
 
-| Case | Controlled input | Expected observation |
-| --- | --- | --- |
-| Positive | A controlled response that yields ADMIN, WRITE, or MAINTAIN, including a custom role name | Positive result; record the started-check count; refreshed pre-merge gates; merge allowed only with the exact PR approval; verify the post-merge result |
-| Denied | A controlled response that yields READ or TRIAGE | READ or TRIAGE; entry blocked immediately; no retry prompt; `gh pr merge` not invoked |
-| Inconclusive | Empty or malformed evidence, a missing base or identity, 404, `permission=none`, conflicting fields, or an unmappable custom value | Inconclusive; pause and ask retry or skip; no automatic retry; `gh pr merge` not invoked |
-| Transient | A recognizable timeout, reset, or retryable HTTP response | Transient result; automatic checks stay within the canonical budget; waiting consumes no check; after the budget, pause and ask; merge only after a later positive result and refreshed gates |
-| Exhausted budget | The canonical automatic budget ends without a positive result or known denial | Pause and ask whether to authorize an extra check or skip; start no further automatic check |
-| User-authorized retry | A user-authorized extra check returns positive, READ/TRIAGE, or inconclusive | Positive may proceed after gate refresh; READ/TRIAGE blocks; inconclusive pauses again; skip never merges |
-| Rate-limit wait | A primary or secondary limit within the canonical auto-wait window, a longer delay, and a secondary limit without timing headers | Within the window: wait, refresh gates, and continue within the budget; longer: pause with the earliest safe time and make no call before it; no headers: apply the canonical backoff; waits consume no check |
-| Authentication or access failure | A 401/403 without rate-limit evidence, or an identity or configuration lookup failure | Pause and ask retry or skip; after a retry, refresh gates before the extra check; a definite denial blocks; skip never merges |
-| Batch isolation | Independent positive entry B beside denied or inconclusive entry A and dependent entry C stacked on A | A and C blocked; B continues and may merge under its own approval and live gates; `gh pr merge` not invoked for A or C |
+The expected observations are fixed, not tester-defined. Any different result,
+count, decision, gate refresh, or merge invocation fails that case.
+
+| Case | Fixture sequence | Expected result | Started checks | Decision | Gates refreshed | Merge invoked |
+| --- | --- | --- | ---: | --- | --- | --- |
+| positive-admin | `permission-admin.json` | positive:admin | 1 | continue | yes | yes |
+| positive-write | `permission-write.json` | positive:write | 1 | continue | yes | yes |
+| positive-maintain | `permission-maintain.json` | positive:maintain | 1 | continue | yes | yes |
+| positive-custom | `permission-custom.json` | positive:write (custom role) | 1 | continue | yes | yes |
+| denied-read | `permission-read.json` | denied:read | 1 | block | no | no |
+| denied-triage | `permission-triage.json` | denied:triage | 1 | block | no | no |
+| inconclusive-404 | `permission-404.json` | inconclusive:404 | 1 | pause | no | no |
+| inconclusive-empty | `permission-empty.json` | inconclusive:empty | 1 | pause | no | no |
+| inconclusive-missing-base | `pull-missing-base.json` | inconclusive:missing-base | 1 | pause | no | no |
+| inconclusive-missing-identity | `user-missing-login.json` | inconclusive:missing-identity | 1 | pause | no | no |
+| inconclusive-none | `permission-none.json` | inconclusive:none | 1 | pause | no | no |
+| inconclusive-conflict | `permission-conflict.json` | inconclusive:conflict | 1 | pause | no | no |
+| inconclusive-unmappable | `permission-unmappable.json` | inconclusive:unmappable | 1 | pause | no | no |
+| transient-then-positive | `permission-503.json` x2, `permission-admin.json` | positive:admin after transient | 3 | automatic retry | yes | yes |
+| exhausted-budget | `permission-503.json` (repeats) | transient:exhausted | 3 | pause | no | no |
+| user-authorized-retry | `permission-503.json` x3, `permission-admin.json` | positive:admin after authorized retry | 4 | user retry | yes | yes |
+| rate-limit-auto-wait | `permission-rate-limit-short.json`, `permission-admin.json` | positive:admin after wait | 2 | wait, continue | yes | yes |
+| rate-limit-long | `permission-rate-limit-long.json` | transient:rate-limit-long | 1 | pause until safe time | no | no |
+| rate-limit-no-headers | `permission-rate-limit-no-headers.json`, `permission-admin.json` | positive:admin after backoff | 2 | backoff, continue | yes | yes |
+| auth-failure | `permission-auth-failure.json` | access-failure | 1 | pause | no | no |
+| batch-isolation A | `permission-read.json` | denied:read | 1 | block A and C | no | no |
+| batch-isolation B | next `permission-admin.json` on the shared route | positive:admin | 1 | continue | yes | yes |
+| batch-isolation C | none | blocked by A | 0 | block | no | no |
 
 For every denied or inconclusive result, confirm `gh pr merge` is never
 invoked, including after automatic retries, rate-limit waits, and skipped or

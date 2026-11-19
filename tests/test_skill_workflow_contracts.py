@@ -451,7 +451,7 @@ class PrAndMergeBehaviorTests(unittest.TestCase):
             "run the batch's confirmed test set separately in each eligible base worktree",
             "if a command's applicability to a base is unclear, ask the user before running it for that base",
             "report that base's verification as incomplete until applicability is resolved",
-            "report the base ref, tested commit oid, retained worktree path, and each test outcome",
+            "report the base ref, tested commit oid, validation provenance (reused or newly executed), retained worktree path, and each test outcome",
             "mark overall coverage as partial",
             "identify every unresolved entry",
         ):
@@ -461,10 +461,13 @@ class PrAndMergeBehaviorTests(unittest.TestCase):
         text = skill_reference("pr-and-merge", "multi-pr-batch.md").lower().replace(chr(96), "")
         verification = section(text, "## verify the merged base")
 
-        self.assertIn("record completed multi-base validation results by base ref, commit oid, and test command", verification)
+        self.assertIn("record completed multi-base validation results by base ref, commit oid, test command, and validation provenance", verification)
+        self.assertIn("validation provenance", verification)
         self.assertIn("when a resumed batch adds a confirmed merge", verification)
-        self.assertIn("verify the new resulting base oid in a separate retained worktree", verification)
+        self.assertIn("record its new resulting base oid as newly executed", verification)
+        self.assertIn("record its new resulting base oid as newly executed and verify it in a separate retained worktree", verification)
         self.assertIn("do not rerun a completed validation for the same base ref and commit oid solely because the batch resumed", verification)
+        self.assertIn("report an existing same-base and same-oid result as reused", verification)
         self.assertIn("retry a blocked or interrupted attempt only after its cause is resolved", verification)
 
     def test_manual_multi_base_verification_covers_partial_progress_and_resume(self):
@@ -816,10 +819,12 @@ class PrAndMergeBehaviorTests(unittest.TestCase):
             "@echo off",
             'python "%~dp0gh_shim.py" %*',
             "transient-then-positive",
-            '"permission-503.json", "permission-admin.json"',
+            '"permission-503.json", "permission-503.json", "permission-admin.json"',
             "batch-isolation",
-            '"permission-read.json"',
-            "only entry b's later gh pr merge reaches the real executable",
+            "entries a, b, and dependent c use the same exact repository",
+            "shared permission route",
+            "run a then b sequentially",
+            '"repos/owner/repo/collaborators/user/permission": ["permission-read.json", "permission-admin.json"]',
             "prepend only the shim directory to path for the invoked process",
             "do not change a shell profile, user or machine environment, or repository file",
             "original path is restored",
@@ -838,52 +843,51 @@ class PrAndMergeBehaviorTests(unittest.TestCase):
             "denied",
             "inconclusive",
             "transient",
-            "exhausted budget",
-            "user-authorized retry",
+            "exhausted-budget",
+            "user-authorized-retry",
             "rate-limit wait",
-            "authentication or access failure",
-            "batch isolation",
+            "auth-failure",
+            "batch-isolation",
         ):
             with self.subTest(required=required):
                 self.assertIn(required, scenario)
+        self.assertNotIn("owner-a/repo-a", scenario)
+        self.assertNotIn("owner-b/repo-b", scenario)
+        for fixture_body in (
+            '"permission-admin.json": {"stdout": "http/2 200',
+            '{\\"permission\\":\\"admin\\",\\"role_name\\":\\"admin\\"}',
+            '{\\"permission\\":\\"read\\",\\"role_name\\":\\"read\\"}',
+            '{\\"permission\\":\\"write\\",\\"role_name\\":\\"maintain\\"}',
+            "retry-after: 1",
+            "retry-after: 600",
+            '{\\"message\\":\\"bad credentials\\"}',
+        ):
+            with self.subTest(fixture_body=fixture_body):
+                self.assertIn(fixture_body, scenario)
         for expected_row in (
-            "| positive | a controlled response that yields admin, write, or "
-            "maintain, including a custom role name | positive result; record the "
-            "started-check count; refreshed pre-merge gates; merge allowed only "
-            "with the exact pr approval; verify the post-merge result |",
-            "| denied | a controlled response that yields read or triage | "
-            "read or triage; entry blocked immediately; no retry prompt; "
-            "gh pr merge not invoked |",
-            "| inconclusive | empty or malformed evidence, a missing base or "
-            "identity, 404, permission=none, conflicting fields, or an "
-            "unmappable custom value | inconclusive; pause and ask retry or "
-            "skip; no automatic retry; gh pr merge not invoked |",
-            "| transient | a recognizable timeout, reset, or retryable http "
-            "response | transient result; automatic checks stay within the "
-            "canonical budget; waiting consumes no check; after the budget, pause "
-            "and ask; merge only after a later positive result and refreshed "
-            "gates |",
-            "| exhausted budget | the canonical automatic budget ends without a "
-            "positive result or known denial | pause and ask whether to authorize "
-            "an extra check or skip; start no further automatic check |",
-            "| user-authorized retry | a user-authorized extra check returns "
-            "positive, read/triage, or inconclusive | positive may proceed after "
-            "gate refresh; read/triage blocks; inconclusive pauses again; skip "
-            "never merges |",
-            "| rate-limit wait | a primary or secondary limit within the "
-            "canonical auto-wait window, a longer delay, and a secondary limit "
-            "without timing headers | within the window: wait, refresh gates, and "
-            "continue within the budget; longer: pause with the earliest safe "
-            "time and make no call before it; no headers: apply the canonical "
-            "backoff; waits consume no check |",
-            "| authentication or access failure | a 401/403 without rate-limit "
-            "evidence, or an identity or configuration lookup failure | pause and "
-            "ask retry or skip; after a retry, refresh gates before the extra "
-            "check; a definite denial blocks; skip never merges |",
-            "| batch isolation | independent positive entry b beside denied or "
-            "inconclusive entry a and dependent entry c stacked on a | a and c "
-            "blocked; b continues and may merge under its own approval and live "
-            "gates; gh pr merge not invoked for a or c |",
+            "| positive-admin | permission-admin.json | positive:admin | 1 | continue | yes | yes |",
+            "| positive-write | permission-write.json | positive:write | 1 | continue | yes | yes |",
+            "| positive-maintain | permission-maintain.json | positive:maintain | 1 | continue | yes | yes |",
+            "| positive-custom | permission-custom.json | positive:write (custom role) | 1 | continue | yes | yes |",
+            "| denied-read | permission-read.json | denied:read | 1 | block | no | no |",
+            "| denied-triage | permission-triage.json | denied:triage | 1 | block | no | no |",
+            "| inconclusive-404 | permission-404.json | inconclusive:404 | 1 | pause | no | no |",
+            "| inconclusive-empty | permission-empty.json | inconclusive:empty | 1 | pause | no | no |",
+            "| inconclusive-missing-base | pull-missing-base.json | inconclusive:missing-base | 1 | pause | no | no |",
+            "| inconclusive-missing-identity | user-missing-login.json | inconclusive:missing-identity | 1 | pause | no | no |",
+            "| inconclusive-none | permission-none.json | inconclusive:none | 1 | pause | no | no |",
+            "| inconclusive-conflict | permission-conflict.json | inconclusive:conflict | 1 | pause | no | no |",
+            "| inconclusive-unmappable | permission-unmappable.json | inconclusive:unmappable | 1 | pause | no | no |",
+            "| transient-then-positive | permission-503.json x2, permission-admin.json | positive:admin after transient | 3 | automatic retry | yes | yes |",
+            "| exhausted-budget | permission-503.json (repeats) | transient:exhausted | 3 | pause | no | no |",
+            "| user-authorized-retry | permission-503.json x3, permission-admin.json | positive:admin after authorized retry | 4 | user retry | yes | yes |",
+            "| rate-limit-auto-wait | permission-rate-limit-short.json, permission-admin.json | positive:admin after wait | 2 | wait, continue | yes | yes |",
+            "| rate-limit-long | permission-rate-limit-long.json | transient:rate-limit-long | 1 | pause until safe time | no | no |",
+            "| rate-limit-no-headers | permission-rate-limit-no-headers.json, permission-admin.json | positive:admin after backoff | 2 | backoff, continue | yes | yes |",
+            "| auth-failure | permission-auth-failure.json | access-failure | 1 | pause | no | no |",
+            "| batch-isolation a | permission-read.json | denied:read | 1 | block a and c | no | no |",
+            "| batch-isolation b | next permission-admin.json on the shared route | positive:admin | 1 | continue | yes | yes |",
+            "| batch-isolation c | none | blocked by a | 0 | block | no | no |",
         ):
             with self.subTest(expected_row=expected_row):
                 self.assertIn(expected_row, scenario)
