@@ -114,11 +114,11 @@ observations only.
 
 Supply controlled responses through a temporary `gh` executable created outside the reviewed repository. On POSIX create an executable `gh`; on Windows create `gh.cmd`. Select a non-secret case selector such as `PR_MERGE_SHIM_CASE`; store the selected plan and response fixtures only in the temporary run directory. Do not make the wrapper inspect credentials, tokens, or the real `gh` configuration. Capture the real executable path before changing `PATH`, pass it as `PR_MERGE_REAL_GH`, and forward every invocation whose exact API path is not in the selected case to that executable with the original arguments unchanged. Forwarded commands include the live `gh pr view`, `gh pr checks`, and `gh pr merge` gates; only the exact permission-gate API paths named by the case are controlled.
 
-Keep the shim active for the complete user-visible `/pr-and-merge` invocation. Set up the shim in a dedicated PowerShell process or an isolated test host, start the complete invocation from a child of that process (or import the same four variables into the isolated host process), capture the observations, and only then restore the environment and clean up. A setup block that exits before the invocation starts is invalid.
+Keep the shim active for the complete user-visible `/pr-and-merge` invocation. Set up the shim in a dedicated PowerShell process or an isolated test host, start the complete invocation from a child of that process (or import the same four variables into the isolated host process), capture the observations even when the workflow throws, and only then restore the environment and clean up. A setup block that exits before the invocation starts is invalid.
 
 The plan is JSON. Each case maps an exact invoked API path to an ordered list of response fixtures. State is keyed by the exact route, so entries that use the same route consume one ordered queue. Each fixture supplies `stdout`, `stderr`, and `exit_status`; relative fixture paths resolve under the shim directory. The dispatcher consumes the next fixture for the exact path and repeats the last fixture after the sequence ends. For `transient-then-positive`, the permission route lists two 503 fixtures followed by an ADMIN fixture. For `batch-isolation`, entries A, B, and dependent C use the same exact repository; reuse the same shim directory and state across entries A, B, and C. A receives READ and B receives the next ADMIN response on the shared permission route. Do not reset `state.json` between A and B.
 
-Create a distinct open merge-capable PR for each positive case and replace `OWNER`, `REPO`, `USER`, and each PR number with the actual disposable-repository values before writing the plan. Do not reuse a PR after a positive case has merged it.
+Create a distinct open merge-capable PR for each row whose final result merges, including retry, rate-limit, and batch-isolation rows. The plan below uses PRs 12-15 for the four `positive-*` cases, 16-20 for the remaining merge-positive retry and rate-limit cases, and 21-23 for batch entries A, B, and C. Replace `OWNER`, `REPO`, `USER`, and each PR number with the actual disposable-repository values before writing the plan. Do not reuse a PR after a positive case has merged it.
 
 ```powershell
 function Invoke-WithPermissionShim {
@@ -138,6 +138,9 @@ function Invoke-WithPermissionShim {
         $previous[$name] = [Environment]::GetEnvironmentVariable($name, 'Process')
     }
 
+    $workflowResult = $null
+    $workflowError = $null
+    $mergeCalls = @()
     try {
         & $PopulateShim $shimDir
         $env:PR_MERGE_REAL_GH = (Get-Command gh -CommandType Application -ErrorAction Stop).Source
@@ -146,16 +149,16 @@ function Invoke-WithPermissionShim {
         $previousPath = $previous['PATH']
         $env:PATH = "$shimDir$([IO.Path]::PathSeparator)$previousPath"
 
-        # Start the complete /pr-and-merge invocation here, wait for it to
-        # return, and capture its observations before leaving this scope.
-        $workflowResult = & $Workflow
-        $mergeCalls = if (Test-Path -LiteralPath (Join-Path $shimDir 'merge-calls.log')) {
-            @(Get-Content -LiteralPath (Join-Path $shimDir 'merge-calls.log'))
-        } else {
-            @()
+        try {
+            # Start the complete /pr-and-merge invocation here and wait for it.
+            $workflowResult = & $Workflow
+        } catch {
+            $workflowError = $_
         }
-        [pscustomobject]@{ WorkflowResult = $workflowResult; MergeCalls = $mergeCalls }
     } finally {
+        if (Test-Path -LiteralPath (Join-Path $shimDir 'merge-calls.log')) {
+            $mergeCalls = @(Get-Content -LiteralPath (Join-Path $shimDir 'merge-calls.log'))
+        }
         foreach ($name in $names) {
             if ($present[$name]) {
                 [Environment]::SetEnvironmentVariable($name, $previous[$name], 'Process')
@@ -164,6 +167,11 @@ function Invoke-WithPermissionShim {
             }
         }
         Remove-Item -LiteralPath $shimDir -Recurse -Force
+    }
+    [pscustomobject]@{
+        WorkflowResult = $workflowResult
+        WorkflowError = $workflowError
+        MergeCalls = $mergeCalls
     }
 }
 
@@ -176,7 +184,7 @@ $record = Invoke-WithPermissionShim -Case "<case>" -PopulateShim {
     # process that inherits this environment; return only after it finishes.
     Read-Host 'Press Enter after the complete /pr-and-merge invocation returns'
 }
-$record.MergeCalls
+$record | Format-List WorkflowResult, WorkflowError, MergeCalls
 ```
 
 ```json
@@ -245,12 +253,12 @@ $record.MergeCalls
     "repos/OWNER/REPO/collaborators/USER/permission": ["permission-unmappable.json"]
   },
   "transient-then-positive": {
-    "repos/OWNER/REPO/pulls/12": ["pull.json"],
+    "repos/OWNER/REPO/pulls/16": ["pull.json"],
     "user": ["user.json"],
     "repos/OWNER/REPO/collaborators/USER/permission": ["permission-503.json", "permission-503.json", "permission-admin.json"]
   },
   "timeout-then-positive": {
-    "repos/OWNER/REPO/pulls/16": ["pull.json"],
+    "repos/OWNER/REPO/pulls/17": ["pull.json"],
     "user": ["user.json"],
     "repos/OWNER/REPO/collaborators/USER/permission": ["permission-timeout.json", "permission-admin.json"]
   },
@@ -260,12 +268,12 @@ $record.MergeCalls
     "repos/OWNER/REPO/collaborators/USER/permission": ["permission-503.json"]
   },
   "user-authorized-retry": {
-    "repos/OWNER/REPO/pulls/12": ["pull.json"],
+    "repos/OWNER/REPO/pulls/18": ["pull.json"],
     "user": ["user.json"],
     "repos/OWNER/REPO/collaborators/USER/permission": ["permission-503.json", "permission-503.json", "permission-503.json", "permission-admin.json"]
   },
   "rate-limit-auto-wait": {
-    "repos/OWNER/REPO/pulls/12": ["pull.json"],
+    "repos/OWNER/REPO/pulls/19": ["pull.json"],
     "user": ["user.json"],
     "repos/OWNER/REPO/collaborators/USER/permission": ["permission-rate-limit-short.json", "permission-admin.json"]
   },
@@ -275,7 +283,7 @@ $record.MergeCalls
     "repos/OWNER/REPO/collaborators/USER/permission": ["permission-rate-limit-long.json"]
   },
   "rate-limit-no-headers": {
-    "repos/OWNER/REPO/pulls/12": ["pull.json"],
+    "repos/OWNER/REPO/pulls/20": ["pull.json"],
     "user": ["user.json"],
     "repos/OWNER/REPO/collaborators/USER/permission": ["permission-rate-limit-no-headers.json", "permission-admin.json"]
   },
@@ -285,9 +293,9 @@ $record.MergeCalls
     "repos/OWNER/REPO/collaborators/USER/permission": ["permission-auth-failure.json"]
   },
   "batch-isolation": {
-    "repos/OWNER/REPO/pulls/12": ["pull.json"],
-    "repos/OWNER/REPO/pulls/13": ["pull.json"],
-    "repos/OWNER/REPO/pulls/14": ["pull.json"],
+    "repos/OWNER/REPO/pulls/21": ["pull.json"],
+    "repos/OWNER/REPO/pulls/22": ["pull.json"],
+    "repos/OWNER/REPO/pulls/23": ["pull.json"],
     "user": ["user.json"],
     "repos/OWNER/REPO/collaborators/USER/permission": ["permission-read.json", "permission-admin.json"]
   }
@@ -360,7 +368,7 @@ responses = plan[case_name].get(route) if route else None
 if not responses:
     if args[:2] == ["pr", "merge"]:
         with (shim_dir / "merge-calls.log").open("a", encoding="utf-8") as stream:
-            stream.write("gh pr merge\n")
+            stream.write("gh " + " ".join(args) + "\n")
     raise SystemExit(subprocess.run([real_gh, *args]).returncode)
 
 state_path = shim_dir / "state.json"
@@ -379,7 +387,7 @@ sys.stderr.buffer.flush()
 raise SystemExit(response.get("exit_status", 0))
 ```
 
-Prepend only the shim directory to `PATH` for the invoked process; do not change a shell profile, user or machine environment, or repository file. The function snapshots both the value and presence of all four changed environment variables and restores or unsets each of them in `finally`. Before cleanup, `merge-calls.log` records whether the dispatcher forwarded `gh pr merge` for that case. After the run, confirm the original environment is restored, the temporary directory is removed, and a later `gh --version` resolves to the real executable.
+Prepend only the shim directory to `PATH` for the invoked process; do not change a shell profile, user or machine environment, or repository file. The function snapshots both the value and presence of all four changed environment variables and restores or unsets each of them in `finally`. It captures `merge-calls.log` in `finally` before cleanup, including when the workflow throws, and returns the forwarded commands as `MergeCalls`; a non-null `WorkflowError` fails the case. The log records the complete forwarded `gh pr merge` arguments, including the PR number, so batch entries remain distinguishable. After the run, confirm the original environment is restored, the temporary directory is removed, and a later `gh --version` resolves to the real executable.
 
 ### Permission fixtures
 

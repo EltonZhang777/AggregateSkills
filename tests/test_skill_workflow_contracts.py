@@ -810,6 +810,7 @@ class PrAndMergeBehaviorTests(unittest.TestCase):
             "repeats the last fixture after the sequence ends",
             "keep the shim active for the complete user-visible /pr-and-merge invocation",
             "a setup block that exits before the invocation starts is invalid",
+            "capture the observations even when the workflow throws",
             "state.json",
             "reuse the same shim directory and state across entries a, b, and c",
             "do not reset state.json between a and b",
@@ -817,7 +818,10 @@ class PrAndMergeBehaviorTests(unittest.TestCase):
             "original arguments unchanged",
             "gh pr view, gh pr checks, and gh pr merge",
             "only the exact permission-gate api paths named by the case are controlled",
-            "create a distinct open merge-capable pr for each positive case",
+            "create a distinct open merge-capable pr for each row whose final result merges",
+            "the plan below uses prs 12-15",
+            "16-20 for the remaining merge-positive retry and rate-limit cases",
+            "21-23 for batch entries a, b, and c",
             "replace owner, repo, user, and each pr number",
             "do not reuse a pr after a positive case has merged it",
             "#!/usr/bin/env python3",
@@ -837,8 +841,14 @@ class PrAndMergeBehaviorTests(unittest.TestCase):
             "snapshots both the value and presence of all four changed environment variables",
             "restores or unsets each of them in finally",
             "merge-calls.log",
+            "captures merge-calls.log in finally before cleanup",
+            "including when the workflow throws",
+            "a non-null workflowerror fails the case",
+            "the log records the complete forwarded gh pr merge arguments",
             "args[:2] == [\"pr\", \"merge\"]",
+            "stream.write(\"gh \" + \" \".join(args) + \"\\n\")",
             "sys.stdout.buffer.write",
+            "sys.stderr.buffer.write",
             "original environment is restored",
             "temporary directory is removed",
             "a later gh --version resolves to the real executable",
@@ -877,6 +887,16 @@ class PrAndMergeBehaviorTests(unittest.TestCase):
         ):
             with self.subTest(fixture_body=fixture_body):
                 self.assertIn(fixture_body, scenario)
+        for distinct_pr_route in (
+            '"transient-then-positive": { "repos/owner/repo/pulls/16"',
+            '"timeout-then-positive": { "repos/owner/repo/pulls/17"',
+            '"user-authorized-retry": { "repos/owner/repo/pulls/18"',
+            '"rate-limit-auto-wait": { "repos/owner/repo/pulls/19"',
+            '"rate-limit-no-headers": { "repos/owner/repo/pulls/20"',
+            '"batch-isolation": { "repos/owner/repo/pulls/21": ["pull.json"], "repos/owner/repo/pulls/22": ["pull.json"], "repos/owner/repo/pulls/23"',
+        ):
+            with self.subTest(distinct_pr_route=distinct_pr_route):
+                self.assertIn(distinct_pr_route, scenario)
         for expected_row in (
             "| positive-admin | permission-admin.json | positive:admin | 1 | continue | yes | yes |",
             "| positive-write | permission-write.json | positive:write | 1 | continue | yes | yes |",
@@ -914,6 +934,7 @@ class PrAndMergeBehaviorTests(unittest.TestCase):
             "select one fixed response per run",
             "the shim must return only the selected case's fixed output",
             "sys.stdout.write(response.get(\"stdout\", \"\"))",
+            "sys.stderr.write(response.get(\"stderr\", \"\"))",
             "positive: in separate runs return permission=write, role_name=write "
             "(write), permission=write, role_name=maintain (maintain), "
             "permission=admin, role_name=admin (admin), and permission=write "
