@@ -48,18 +48,13 @@ python scripts/review_contract.py verify --bundle <old-bundle> \
 
 Do not attach old track reports to the remediated code. Create a new freeze from the remediated patch and the refreshed requirement, standards, checks, and exclusion inputs, then rerun every routed track. Build a new run record from new completed envelopes and validate it against the new bundle. Confirm overall `complete`, route order, the new manifest and patch attestations, and that every routed-track report belongs to the new run rather than the stale bundle.
 
-## Partial root exception and permanent record
+## Per-root exception and permanent record
 
-After a blocked result is shown, the separate partial-mode approval retains one completed report but remains incomplete and cannot pass `/spec-implement-loop`. For root completion, the loop must obtain a separate per-root exception after remediation and final verification.
+This scenario checks outcomes only. The normative rules are in [partial results and per-root exceptions](../../spec-implement-loop/references/final-review-remediation.md#partial-results-and-per-root-exceptions), [permanent append-only records](../../spec-implement-loop/references/final-review-remediation.md#permanent-append-only-records), [retry and reconciliation](../../spec-implement-loop/references/final-review-remediation.md#retry-and-reconciliation), and [the completion gate](../../spec-implement-loop/references/final-review-remediation.md#completion-gate).
 
-Show the proposed exception, wrapper, and completed report before requesting approval. Confirm the exception names:
+Show a blocked result, then confirm the separate partial-mode approval retains exactly one completed report while the review remains labeled `partial` and cannot pass `/spec-implement-loop`. Confirm the record preserves that complete completed-track report exactly as received and unchanged. Confirm the exception, record, retry, and root-status steps match those canonical sections.
 
-- the starting OID, final OID, manifest digest, and scope digest;
-- the latest partial-mode approval source and evidence, plus the blocked result path and SHA-256;
-- the missing track, loss of independence, residual risk, and permanent partial state;
-- the one complete completed-track report, exactly as received and unchanged.
-
-Obtain the separate per-root exception approval. Add only its exact root-exception approval source and evidence to the record metadata. Freeze and show the final append-only comment series. Then obtain separate issue-comment write approval for that exact series. Root status synchronization waits until every part of the confirmed append-only record is present, and the separate root completion checkpoint remains mandatory.
+After remediation and final verification, confirm the separate root completion checkpoint is still required.
 
 The review stays labeled `partial`; approval never turns it into a complete parallel review. This package performs no GitHub write. Treat the live append-only record and status transition as `not run` unless a separately authorized host scenario supplies real issue evidence.
 

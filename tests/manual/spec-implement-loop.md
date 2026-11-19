@@ -48,7 +48,7 @@ With complete track reports containing P0/P1/P2 findings from different tracks, 
 
 In separate runs, fail a track launch, change a frozen input after review, and return incomplete coverage; confirm none of those results passes the final-review gate or normal root completion, and complete current reports remain evidence only. Confirm the root completion checkpoint remains required. If the host cannot execute the live caller seam or independent track execution, record that check as `not run`.
 
-## Partial root exception
+## Per-root exception
 
 Create a blocked one-track partial final review and obtain its explicit partial-mode approval. Confirm that approval does not authorize the root exception, issue comments, root status synchronization, or completion.
 

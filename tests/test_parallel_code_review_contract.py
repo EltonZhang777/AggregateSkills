@@ -5588,10 +5588,12 @@ class ParallelCodeReviewPackageTests(unittest.TestCase):
             skill,
         )
         self.assertIn("[Output boundary](contract.md#output-boundary)", scenario)
-        self.assertNotIn(
-            "The output directory must stay outside that reviewed repository and outside any Git repository containing the frozen tree.",
-            CONTRACT.read_text(encoding="utf-8"),
+        old_weaker = (
+            "The output directory must stay outside that reviewed repository and outside "
+            "any Git repository containing the frozen tree."
         )
+        for text in (skill, scenario, CONTRACT.read_text(encoding="utf-8")):
+            self.assertNotIn(old_weaker, text)
         self.assertNotIn(
             "Use the package script with an output directory outside the reviewed repository:",
             skill,
@@ -6146,19 +6148,18 @@ class ParallelCodeReviewPackageTests(unittest.TestCase):
         self.assertEqual(positions, sorted(positions))
 
     def test_acceptance_package_covers_spec_loop_seam_and_root_exception(self):
-        scenario = " ".join(
-            (SKILL_ROOT / "references" / "acceptance-scenario.md")
-            .read_text(encoding="utf-8")
-            .lower()
-            .split()
-        )
+        scenario_text = (
+            SKILL_ROOT / "references" / "acceptance-scenario.md"
+        ).read_text(encoding="utf-8")
+        scenario = " ".join(scenario_text.lower().split())
         for phrase in (
             "remediation code change",
             "new freeze",
             "rerun every routed track",
-            "separate per-root exception",
-            "confirmed append-only record",
-            "root status synchronization",
+            "blocked result",
+            "exactly one completed report",
+            "remains labeled `partial`",
+            "exactly as received",
             "root completion checkpoint",
             "one third-track adapter",
             "one routing-table row",
@@ -6172,24 +6173,19 @@ class ParallelCodeReviewPackageTests(unittest.TestCase):
             "not run",
         ):
             self.assertIn(phrase, scenario)
-        for field in (
-            "starting oid",
-            "final oid",
-            "manifest digest",
-            "scope digest",
-            "blocked result path and sha-256",
-            "root-exception approval source and evidence",
+        for anchor in (
+            "../../spec-implement-loop/references/final-review-remediation.md#partial-results-and-per-root-exceptions",
+            "../../spec-implement-loop/references/final-review-remediation.md#permanent-append-only-records",
+            "../../spec-implement-loop/references/final-review-remediation.md#retry-and-reconciliation",
+            "../../spec-implement-loop/references/final-review-remediation.md#completion-gate",
         ):
-            self.assertIn(field, scenario)
-        approval_order = (
-            "show the proposed exception",
-            "obtain the separate per-root exception approval",
-            "add only its exact root-exception approval source and evidence",
-            "freeze and show the final append-only comment series",
-            "separate issue-comment write approval",
-        )
-        positions = [scenario.index(phrase) for phrase in approval_order]
-        self.assertEqual(positions, sorted(positions))
+            self.assertIn(anchor, scenario)
+        for local_copy in (
+            "obtain the separate per-root exception approval. add only its exact root-exception approval source and evidence",
+            "freeze and show the final append-only comment series. then obtain separate issue-comment write approval",
+            "root status synchronization waits until every part of the confirmed append-only record is present",
+        ):
+            self.assertNotIn(local_copy, scenario)
         self.assertIn(
             "<third-review-publisher-source>",
             scenario,

@@ -1769,6 +1769,7 @@ class SpecImplementLoopBehaviorTests(unittest.TestCase):
         self.assertIn("included", final_review)
         self.assertIn("missing, empty, whitespace-only, or `not_assessed`", completion)
         self.assertIn("cannot pass the final-review gate, partial mode, or the per-root exception", completion)
+        self.assertIn("deferred and final verification passes", completion)
 
     def test_final_review_has_one_canonical_source_and_navigable_lifecycle_map(self):
         text = skill("spec-implement-loop").lower().replace(chr(96), "")
@@ -1881,10 +1882,9 @@ class SpecImplementLoopBehaviorTests(unittest.TestCase):
             records.index("freeze the final comment series"),
             records.index("separate issue-comment write approval"),
         )
-        self.assertIn(
-            "partial root exception",
-            (ROOT / "GLOSSARY.md").read_text(encoding="utf-8").lower(),
-        )
+        glossary = (ROOT / "GLOSSARY.md").read_text(encoding="utf-8").lower()
+        self.assertIn("**per-root exception**:", glossary)
+        self.assertIn("_avoid_: partial root exception", glossary)
         self.assertIn("one-track partial review", remediation)
         self.assertIn("separate per-root exception", remediation)
         self.assertIn("new partial-mode approval bound to its latest blocked artifact", remediation)
@@ -1895,7 +1895,7 @@ class SpecImplementLoopBehaviorTests(unittest.TestCase):
         manual = (
             ROOT / "tests" / "manual" / "spec-implement-loop.md"
         ).read_text(encoding="utf-8").lower()
-        scenario = section(manual, "## partial root exception")
+        scenario = section(manual, "## per-root exception")
 
         self.assertIn("partial-mode approval", scenario)
         self.assertIn("does not authorize the root exception", scenario)

@@ -307,7 +307,7 @@ class ExtraSetupDeploymentTests(unittest.TestCase):
             outside_managed_digest(ROOT / "AGENTS.md", "root-operations"),
         )
         self.assertEqual(
-            "b8897f2ef431455b3f9689ee20a391fc5dca844a2a807f4097927088c65bea47",
+            "251da6a2836d9aea555debbc9d72776bcc674193e8b04ee5af78213b934ae4a1",
             outside_managed_digest(ROOT / "GLOSSARY.md", "glossary"),
         )
         self.assertEqual(
