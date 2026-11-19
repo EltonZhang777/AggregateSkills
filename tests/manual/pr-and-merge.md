@@ -114,22 +114,69 @@ observations only.
 
 Supply controlled responses through a temporary `gh` executable created outside the reviewed repository. On POSIX create an executable `gh`; on Windows create `gh.cmd`. Select a non-secret case selector such as `PR_MERGE_SHIM_CASE`; store the selected plan and response fixtures only in the temporary run directory. Do not make the wrapper inspect credentials, tokens, or the real `gh` configuration. Capture the real executable path before changing `PATH`, pass it as `PR_MERGE_REAL_GH`, and forward every invocation whose exact API path is not in the selected case to that executable with the original arguments unchanged. Forwarded commands include the live `gh pr view`, `gh pr checks`, and `gh pr merge` gates; only the exact permission-gate API paths named by the case are controlled.
 
-The plan is JSON. Each case maps an exact invoked API path to an ordered list of response fixtures, so entries A and B have independent counters in one batch. Each fixture supplies `stdout`, `stderr`, and `exit_status`; relative fixture paths resolve under the shim directory. The dispatcher consumes the next fixture for the exact path and repeats the last fixture after the sequence ends. For `transient-then-positive`, the permission route lists two 503 fixtures followed by an ADMIN fixture. For `batch-isolation`, entries A, B, and dependent C use the same exact repository; A receives READ and B receives the next ADMIN response on the shared permission route. Run A then B sequentially and use one shim directory per invocation.
+Keep the shim active for the complete user-visible `/pr-and-merge` invocation. Set up the shim in a dedicated PowerShell process or an isolated test host, start the complete invocation from a child of that process (or import the same four variables into the isolated host process), capture the observations, and only then restore the environment and clean up. A setup block that exits before the invocation starts is invalid.
+
+The plan is JSON. Each case maps an exact invoked API path to an ordered list of response fixtures. State is keyed by the exact route, so entries that use the same route consume one ordered queue. Each fixture supplies `stdout`, `stderr`, and `exit_status`; relative fixture paths resolve under the shim directory. The dispatcher consumes the next fixture for the exact path and repeats the last fixture after the sequence ends. For `transient-then-positive`, the permission route lists two 503 fixtures followed by an ADMIN fixture. For `batch-isolation`, entries A, B, and dependent C use the same exact repository; reuse the same shim directory and state across entries A, B, and C. A receives READ and B receives the next ADMIN response on the shared permission route. Do not reset `state.json` between A and B.
+
+Create a distinct open merge-capable PR for each positive case and replace `OWNER`, `REPO`, `USER`, and each PR number with the actual disposable-repository values before writing the plan. Do not reuse a PR after a positive case has merged it.
 
 ```powershell
-$shimDir = Join-Path ([IO.Path]::GetTempPath()) "pr-merge-gh-$([guid]::NewGuid())"
-$null = New-Item -ItemType Directory -Path $shimDir
-$env:PR_MERGE_REAL_GH = (Get-Command gh -CommandType Application -ErrorAction Stop).Source
-$env:PR_MERGE_SHIM_PLAN = Join-Path $shimDir "plan.json"
-$env:PR_MERGE_SHIM_CASE = "<case>"
-$originalPath = $env:PATH
-$env:PATH = "$shimDir$([IO.Path]::PathSeparator)$originalPath"
-try {
-    # Materialize the plan and fixture blocks below in $shimDir.
-} finally {
-    $env:PATH = $originalPath
-    Remove-Item -LiteralPath $shimDir -Recurse -Force
+function Invoke-WithPermissionShim {
+    param(
+        [Parameter(Mandatory)][string]$Case,
+        [Parameter(Mandatory)][scriptblock]$PopulateShim,
+        [Parameter(Mandatory)][scriptblock]$Workflow
+    )
+
+    $shimDir = Join-Path ([IO.Path]::GetTempPath()) "pr-merge-gh-$([guid]::NewGuid())"
+    $null = New-Item -ItemType Directory -Path $shimDir
+    $names = @('PATH', 'PR_MERGE_REAL_GH', 'PR_MERGE_SHIM_PLAN', 'PR_MERGE_SHIM_CASE')
+    $present = @{}
+    $previous = @{}
+    foreach ($name in $names) {
+        $present[$name] = Test-Path -LiteralPath "Env:$name"
+        $previous[$name] = [Environment]::GetEnvironmentVariable($name, 'Process')
+    }
+
+    try {
+        & $PopulateShim $shimDir
+        $env:PR_MERGE_REAL_GH = (Get-Command gh -CommandType Application -ErrorAction Stop).Source
+        $env:PR_MERGE_SHIM_PLAN = Join-Path $shimDir "plan.json"
+        $env:PR_MERGE_SHIM_CASE = $Case
+        $previousPath = $previous['PATH']
+        $env:PATH = "$shimDir$([IO.Path]::PathSeparator)$previousPath"
+
+        # Start the complete /pr-and-merge invocation here, wait for it to
+        # return, and capture its observations before leaving this scope.
+        $workflowResult = & $Workflow
+        $mergeCalls = if (Test-Path -LiteralPath (Join-Path $shimDir 'merge-calls.log')) {
+            @(Get-Content -LiteralPath (Join-Path $shimDir 'merge-calls.log'))
+        } else {
+            @()
+        }
+        [pscustomobject]@{ WorkflowResult = $workflowResult; MergeCalls = $mergeCalls }
+    } finally {
+        foreach ($name in $names) {
+            if ($present[$name]) {
+                [Environment]::SetEnvironmentVariable($name, $previous[$name], 'Process')
+            } else {
+                [Environment]::SetEnvironmentVariable($name, $null, 'Process')
+            }
+        }
+        Remove-Item -LiteralPath $shimDir -Recurse -Force
+    }
 }
+
+$record = Invoke-WithPermissionShim -Case "<case>" -PopulateShim {
+    param($shimDir)
+    # Materialize plan.json, the selected fixtures, the gh or gh.cmd
+    # launcher, gh_shim.py on Windows, and any required state.json here.
+} -Workflow {
+    # Start the complete /pr-and-merge invocation in this process or a child
+    # process that inherits this environment; return only after it finishes.
+    Read-Host 'Press Enter after the complete /pr-and-merge invocation returns'
+}
+$record.MergeCalls
 ```
 
 ```json
@@ -140,17 +187,17 @@ try {
     "repos/OWNER/REPO/collaborators/USER/permission": ["permission-admin.json"]
   },
   "positive-write": {
-    "repos/OWNER/REPO/pulls/12": ["pull.json"],
+    "repos/OWNER/REPO/pulls/13": ["pull.json"],
     "user": ["user.json"],
     "repos/OWNER/REPO/collaborators/USER/permission": ["permission-write.json"]
   },
   "positive-maintain": {
-    "repos/OWNER/REPO/pulls/12": ["pull.json"],
+    "repos/OWNER/REPO/pulls/14": ["pull.json"],
     "user": ["user.json"],
     "repos/OWNER/REPO/collaborators/USER/permission": ["permission-maintain.json"]
   },
   "positive-custom": {
-    "repos/OWNER/REPO/pulls/12": ["pull.json"],
+    "repos/OWNER/REPO/pulls/15": ["pull.json"],
     "user": ["user.json"],
     "repos/OWNER/REPO/collaborators/USER/permission": ["permission-custom.json"]
   },
@@ -201,6 +248,11 @@ try {
     "repos/OWNER/REPO/pulls/12": ["pull.json"],
     "user": ["user.json"],
     "repos/OWNER/REPO/collaborators/USER/permission": ["permission-503.json", "permission-503.json", "permission-admin.json"]
+  },
+  "timeout-then-positive": {
+    "repos/OWNER/REPO/pulls/16": ["pull.json"],
+    "user": ["user.json"],
+    "repos/OWNER/REPO/collaborators/USER/permission": ["permission-timeout.json", "permission-admin.json"]
   },
   "exhausted-budget": {
     "repos/OWNER/REPO/pulls/12": ["pull.json"],
@@ -262,6 +314,7 @@ Write each value below to the file named by its key. Each `stdout` is the comple
   "permission-none.json": {"stdout": "HTTP/2 200\r\nContent-Type: application/json\r\n\r\n{\"permission\":\"none\",\"role_name\":\"none\"}\n", "stderr": "", "exit_status": 0},
   "permission-conflict.json": {"stdout": "HTTP/2 200\r\nContent-Type: application/json\r\n\r\n{\"permission\":\"read\",\"role_name\":\"maintain\"}\n", "stderr": "", "exit_status": 0},
   "permission-unmappable.json": {"stdout": "HTTP/2 200\r\nContent-Type: application/json\r\n\r\n{\"permission\":\"custom\",\"role_name\":\"custom\"}\n", "stderr": "", "exit_status": 0},
+  "permission-timeout.json": {"stdout": "", "stderr": "gh: request timed out\n", "exit_status": 124},
   "permission-503.json": {"stdout": "HTTP/2 503\r\nContent-Type: application/json\r\n\r\n{\"message\":\"Service Unavailable\"}\n", "stderr": "", "exit_status": 1},
   "permission-rate-limit-short.json": {"stdout": "HTTP/2 429\r\nContent-Type: application/json\r\nRetry-After: 1\r\n\r\n{\"message\":\"secondary rate limit\"}\n", "stderr": "", "exit_status": 1},
   "permission-rate-limit-long.json": {"stdout": "HTTP/2 429\r\nContent-Type: application/json\r\nRetry-After: 600\r\n\r\n{\"message\":\"secondary rate limit\"}\n", "stderr": "", "exit_status": 1},
@@ -305,6 +358,9 @@ def api_route(arguments):
 route = api_route(args)
 responses = plan[case_name].get(route) if route else None
 if not responses:
+    if args[:2] == ["pr", "merge"]:
+        with (shim_dir / "merge-calls.log").open("a", encoding="utf-8") as stream:
+            stream.write("gh pr merge\n")
     raise SystemExit(subprocess.run([real_gh, *args]).returncode)
 
 state_path = shim_dir / "state.json"
@@ -316,12 +372,14 @@ if not fixture.is_absolute():
 state[route] = index + 1
 state_path.write_text(json.dumps(state), encoding="utf-8")
 response = json.loads(fixture.read_text(encoding="utf-8"))
-sys.stdout.write(response.get("stdout", ""))
-sys.stderr.write(response.get("stderr", ""))
+sys.stdout.buffer.write(response.get("stdout", "").encode("utf-8"))
+sys.stdout.buffer.flush()
+sys.stderr.buffer.write(response.get("stderr", "").encode("utf-8"))
+sys.stderr.buffer.flush()
 raise SystemExit(response.get("exit_status", 0))
 ```
 
-Prepend only the shim directory to `PATH` for the invoked process; do not change a shell profile, user or machine environment, or repository file. After the run, confirm the original `PATH` is restored, the temporary directory is removed, and a later `gh --version` resolves to the real executable.
+Prepend only the shim directory to `PATH` for the invoked process; do not change a shell profile, user or machine environment, or repository file. The function snapshots both the value and presence of all four changed environment variables and restores or unsets each of them in `finally`. Before cleanup, `merge-calls.log` records whether the dispatcher forwarded `gh pr merge` for that case. After the run, confirm the original environment is restored, the temporary directory is removed, and a later `gh --version` resolves to the real executable.
 
 ### Permission fixtures
 
@@ -356,6 +414,7 @@ count, decision, gate refresh, or merge invocation fails that case.
 | inconclusive-conflict | `permission-conflict.json` | inconclusive:conflict | 1 | pause | no | no |
 | inconclusive-unmappable | `permission-unmappable.json` | inconclusive:unmappable | 1 | pause | no | no |
 | transient-then-positive | `permission-503.json` x2, `permission-admin.json` | positive:admin after transient | 3 | automatic retry | yes | yes |
+| timeout-then-positive | `permission-timeout.json`, `permission-admin.json` | positive:admin after timeout | 2 | automatic retry | yes | yes |
 | exhausted-budget | `permission-503.json` (repeats) | transient:exhausted | 3 | pause | no | no |
 | user-authorized-retry | `permission-503.json` x3, `permission-admin.json` | positive:admin after authorized retry | 4 | user retry | yes | yes |
 | rate-limit-auto-wait | `permission-rate-limit-short.json`, `permission-admin.json` | positive:admin after wait | 2 | wait, continue | yes | yes |
