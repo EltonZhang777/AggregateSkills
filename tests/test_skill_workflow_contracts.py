@@ -703,6 +703,7 @@ class PrAndMergeBehaviorTests(unittest.TestCase):
         multi = skill_reference("pr-and-merge", "multi-pr-batch.md").lower().replace(chr(96), "")
         gate = section(multi, "## gate conflict resolution")
         normalized_gate = " ".join(gate.split())
+        normalized_multi = " ".join(multi.split())
         for requirement in (
             ".wt",
             "dirty worktree",
@@ -745,13 +746,13 @@ class PrAndMergeBehaviorTests(unittest.TestCase):
             "resolution and record its head and base oids.",
             "if any changed path is outside the conflict resolution, stop.",
         ):
-            self.assertNotIn(shared_rule, gate)
+            self.assertNotIn(shared_rule, normalized_gate)
         self.assertNotIn(
             "the rules below extend verification to multiple bases without "
             "defining failure isolation.",
-            multi,
+            normalized_multi,
         )
-        self.assertIn("define failure isolation", multi)
+        self.assertIn("define failure isolation", normalized_multi)
 
         skill_text = skill("pr-and-merge").lower().replace(chr(96), "")
         batch = " ".join(section(skill_text, "## process a batch").split())
@@ -803,6 +804,21 @@ class PrAndMergeBehaviorTests(unittest.TestCase):
         ):
             with self.subTest(required=required):
                 self.assertIn(required, scenario)
+        for expected_row in (
+            "| denied | a controlled response that yields read or triage | "
+            "read or triage; entry blocked immediately; no retry prompt; "
+            "gh pr merge not invoked |",
+            "| inconclusive | empty or malformed evidence, a missing base or "
+            "identity, 404, permission=none, conflicting fields, or an "
+            "unmappable custom value | inconclusive; pause and ask retry or "
+            "skip; no automatic retry; gh pr merge not invoked |",
+        ):
+            with self.subTest(expected_row=expected_row):
+                self.assertIn(expected_row, scenario)
+        self.assertIn(
+            "for every denied or inconclusive result, confirm gh pr merge is never invoked",
+            scenario,
+        )
 
         for removed in (
             "positive: in separate runs return permission=write, role_name=write "
@@ -2792,7 +2808,7 @@ class ReleaseNotesDraftingContractTests(unittest.TestCase):
 
 
 class ContractCoverageTests(unittest.TestCase):
-    def test_changed_contracts_map_to_current_assertions_and_evidence(self):
+    def test_changed_contracts_map_to_current_assertions_and_manual_scenarios(self):
         manuals = {
             "pr-and-merge": (
                 ROOT / "tests" / "manual" / "pr-and-merge.md"
@@ -2809,7 +2825,6 @@ class ContractCoverageTests(unittest.TestCase):
                     "test_post_approval_reference_owns_shared_permission_and_conflict_rules",
                 ),
                 ("pr-and-merge", "## Conflict resolution and second approval"),
-                "#368 acceptance evidence recorded 2026-11-19T06:42:32Z",
             ),
             (
                 "#371 PR-title syntax reuse",
@@ -2821,7 +2836,6 @@ class ContractCoverageTests(unittest.TestCase):
                     "conventional-git-messages",
                     "## Pull request title conventions",
                 ),
-                None,
             ),
             (
                 "#372 release-note single source",
@@ -2833,7 +2847,6 @@ class ContractCoverageTests(unittest.TestCase):
                     "conventional-git-messages",
                     "## Release notes from supplied facts",
                 ),
-                None,
             ),
             (
                 "#373 permission outcome matrix",
@@ -2845,7 +2858,6 @@ class ContractCoverageTests(unittest.TestCase):
                     "pr-and-merge",
                     "## Base-repository permission gate immediately before merge",
                 ),
-                None,
             ),
             (
                 "#374 multi-base outcome matrix",
@@ -2857,22 +2869,14 @@ class ContractCoverageTests(unittest.TestCase):
                     "pr-and-merge",
                     "## Multi-PR batch: multiple target bases",
                 ),
-                None,
             ),
         )
 
-        for contract, (owner, assertion), scenario, reused in contracts:
+        for contract, (owner, assertion), scenario in contracts:
             with self.subTest(contract=contract):
                 self.assertTrue(callable(getattr(owner, assertion, None)))
-                self.assertTrue(scenario is not None or reused is not None)
-                if scenario is not None:
-                    filename, heading = scenario
-                    self.assertIn(heading, manuals[filename])
-                if reused is not None:
-                    self.assertRegex(
-                        reused,
-                        r"#\d+.*\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z",
-                    )
+                filename, heading = scenario
+                self.assertIn(heading, manuals[filename])
 
 
 class ReadmeBehaviorTests(unittest.TestCase):
