@@ -907,10 +907,10 @@ class RequirementsToSpecTicketsBehaviorTests(unittest.TestCase):
         issue_only = section(template, "### issue-only publication")
         local_artifacts = section(template, "### local-artifact publication")
 
-        self.assertTrue(sentence_with_concepts(
-            fill_instructions, ("write authority",), ("source",), ("action",), ("normalized_target",),
-            ("lifetime",), ("invalidators",), ("do not", "never"), ("infer",),
-        ))
+        self.assertNotIn("normalized_target", template)
+        self.assertNotIn("normalized target", template)
+        self.assertNotIn("handoff approval record", template)
+        self.assertIn("authorization evidence exactly as supplied by the parent", fill_instructions)
 
         self.assertTrue(sentence_with_concepts(
             assembly, ("static", "approved group"), ("inapplicable", "does not apply"),
@@ -1023,9 +1023,6 @@ class RequirementsToSpecTicketsBehaviorTests(unittest.TestCase):
             local_artifacts, ("preserve", "retain"),
             ("local artifacts", "commits", "remote branches", "issues"),
             ("do not", "never"), ("delete", "roll back", "amend", "rewrite"),
-        ))
-        self.assertTrue(sentence_with_concepts(
-            local_artifacts, ("handoff approval record",), ("missing", "changed"), ("stop",),
         ))
         self.assertTrue(sentence_with_concepts(
             workflow, ("this prompt", "generated prompt"), ("snapshot", "self-contained"),
