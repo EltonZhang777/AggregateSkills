@@ -786,6 +786,9 @@ class PrAndMergeBehaviorTests(unittest.TestCase):
         for required in (
             "disposable github repository",
             "fork",
+            "for denied cases, create a pr from a disposable fork",
+            "for positive cases, create a pr whose base repository grants the current gh user admin, write, or maintain",
+            "merge-capable base",
             "base.repo.full_name",
             "result category",
             "started-check count",
@@ -805,6 +808,10 @@ class PrAndMergeBehaviorTests(unittest.TestCase):
             with self.subTest(required=required):
                 self.assertIn(required, scenario)
         for expected_row in (
+            "| positive | a controlled response that yields admin, write, or "
+            "maintain, including a custom role name | positive result; record the "
+            "started-check count; refreshed pre-merge gates; merge allowed only "
+            "with the exact pr approval; verify the post-merge result |",
             "| denied | a controlled response that yields read or triage | "
             "read or triage; entry blocked immediately; no retry prompt; "
             "gh pr merge not invoked |",
@@ -812,6 +819,32 @@ class PrAndMergeBehaviorTests(unittest.TestCase):
             "identity, 404, permission=none, conflicting fields, or an "
             "unmappable custom value | inconclusive; pause and ask retry or "
             "skip; no automatic retry; gh pr merge not invoked |",
+            "| transient | a recognizable timeout, reset, or retryable http "
+            "response | transient result; automatic checks stay within the "
+            "canonical budget; waiting consumes no check; after the budget, pause "
+            "and ask; merge only after a later positive result and refreshed "
+            "gates |",
+            "| exhausted budget | the canonical automatic budget ends without a "
+            "positive result or known denial | pause and ask whether to authorize "
+            "an extra check or skip; start no further automatic check |",
+            "| user-authorized retry | a user-authorized extra check returns "
+            "positive, read/triage, or inconclusive | positive may proceed after "
+            "gate refresh; read/triage blocks; inconclusive pauses again; skip "
+            "never merges |",
+            "| rate-limit wait | a primary or secondary limit within the "
+            "canonical auto-wait window, a longer delay, and a secondary limit "
+            "without timing headers | within the window: wait, refresh gates, and "
+            "continue within the budget; longer: pause with the earliest safe "
+            "time and make no call before it; no headers: apply the canonical "
+            "backoff; waits consume no check |",
+            "| authentication or access failure | a 401/403 without rate-limit "
+            "evidence, or an identity or configuration lookup failure | pause and "
+            "ask retry or skip; after a retry, refresh gates before the extra "
+            "check; a definite denial blocks; skip never merges |",
+            "| batch isolation | independent positive entry b beside denied or "
+            "inconclusive entry a and dependent entry c stacked on a | a and c "
+            "blocked; b continues and may merge under its own approval and live "
+            "gates; gh pr merge not invoked for a or c |",
         ):
             with self.subTest(expected_row=expected_row):
                 self.assertIn(expected_row, scenario)
@@ -839,6 +872,25 @@ class PrAndMergeBehaviorTests(unittest.TestCase):
             "wait as an attempt.",
             "secondary limit without timing headers: return a secondary "
             "rate-limit response with neither retry-after nor x-ratelimit-reset.",
+            "- rate limit over five minutes: return a reset or retry time more "
+            "than five minutes away. confirm the skill pauses, reports the "
+            "earliest safe retry time, and makes no permission or merge call "
+            "before it. resume at or after that time; confirm it refreshes all "
+            "existing pre-merge gates and permits exactly one extra permission "
+            "check, immediately before any merge.",
+            "- authentication, configuration, or unexplained access failure: "
+            "return a 401/403 without rate-limit evidence or make the "
+            "identity/configuration lookup fail. confirm the skill asks whether "
+            "to retry or skip; after a retry choice, confirm existing pre-merge "
+            "gates are refreshed before the single extra permission check. a "
+            "definite denial blocks immediately; an inconclusive result pauses "
+            "and asks again. skipping never merges.",
+            "- batch isolation: run an independent positive entry b beside a "
+            "denied or inconclusive entry a and a dependent entry c stacked on a. "
+            "confirm a and c are blocked, gh pr merge is never invoked for "
+            "either, and b continues through its own live gates and can merge "
+            "when its permission check is positive and b has explicit per-pr "
+            "approval.",
         ):
             with self.subTest(removed=removed):
                 self.assertNotIn(removed, scenario)

@@ -112,10 +112,13 @@ observations only.
 
 Setup:
 
-- Create a PR from a disposable fork into its upstream repository. Give the
-  current `gh` user WRITE on the fork and READ or TRIAGE on the upstream base.
-  Confirm the lookup uses `.base.repo.full_name` and the base role blocks the PR
-  without invoking `gh pr merge`.
+- For denied cases, create a PR from a disposable fork into its upstream
+  repository. Give the current `gh` user WRITE on the fork and READ or TRIAGE on
+  the upstream base. Confirm the lookup uses `.base.repo.full_name` and the base
+  role blocks the PR without invoking `gh pr merge`.
+- For positive cases, create a PR whose base repository grants the current `gh`
+  user ADMIN, WRITE, or MAINTAIN. Use that merge-capable base for controlled
+  positive responses so the approved merge can complete and be verified.
 - For every executed case, record the base repository, login, controlled
   response, result category, started-check count, pause or retry decision,
   refreshed pre-merge gates, and whether `gh pr merge` was invoked.
