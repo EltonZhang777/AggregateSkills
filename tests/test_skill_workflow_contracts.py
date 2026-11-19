@@ -798,6 +798,28 @@ class PrAndMergeBehaviorTests(unittest.TestCase):
             "temporary gh executable created outside the reviewed repository",
             "non-secret case selector",
             "do not make the wrapper inspect credentials, tokens, or the real gh configuration",
+            "pr_merge_real_gh",
+            "pr_merge_shim_plan",
+            "ordered list of response fixtures",
+            "each case maps an exact invoked api path",
+            "relative fixture paths resolve under the shim directory",
+            "consumes the next fixture for the exact path",
+            "repeats the last fixture after the sequence ends",
+            "entries a and b have independent counters",
+            "state.json",
+            "forward every invocation whose exact api path is not in the selected case",
+            "original arguments unchanged",
+            "gh pr view, gh pr checks, and gh pr merge",
+            "only the exact permission-gate api paths named by the case are controlled",
+            "#!/usr/bin/env python3",
+            'chmod 700 "$shimdir/gh"',
+            "@echo off",
+            'python "%~dp0gh_shim.py" %*',
+            "transient-then-positive",
+            '"permission-503.json", "permission-admin.json"',
+            "batch-isolation",
+            '"permission-read.json"',
+            "only entry b's later gh pr merge reaches the real executable",
             "prepend only the shim directory to path for the invoked process",
             "do not change a shell profile, user or machine environment, or repository file",
             "original path is restored",
@@ -871,6 +893,8 @@ class PrAndMergeBehaviorTests(unittest.TestCase):
         )
 
         for removed in (
+            "select one fixed response per run",
+            "the shim must return only the selected case's fixed output",
             "positive: in separate runs return permission=write, role_name=write "
             "(write), permission=write, role_name=maintain (maintain), "
             "permission=admin, role_name=admin (admin), and permission=write "

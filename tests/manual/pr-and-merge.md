@@ -110,34 +110,100 @@ for permission mapping, retry budgets, rate-limit waits, status classification,
 and renewed-approval rules. This scenario supplies controlled inputs and records
 observations only.
 
-Setup:
+### Controlled-response shim
 
-- Supply controlled responses through a temporary `gh` executable created
-  outside the reviewed repository. On POSIX create `gh`; on Windows create
-  `gh.cmd`. Select one fixed response per run through a non-secret case
-  selector such as `PR_MERGE_SHIM_CASE`; do not make the wrapper inspect
-  credentials, tokens, or the real `gh` configuration.
+Supply controlled responses through a temporary `gh` executable created outside the reviewed repository. On POSIX create an executable `gh`; on Windows create `gh.cmd`. Select a non-secret case selector such as `PR_MERGE_SHIM_CASE`; store the selected plan and response fixtures only in the temporary run directory. Do not make the wrapper inspect credentials, tokens, or the real `gh` configuration. Capture the real executable path before changing `PATH`, pass it as `PR_MERGE_REAL_GH`, and forward every invocation whose exact API path is not in the selected case to that executable with the original arguments unchanged. Forwarded commands include the live `gh pr view`, `gh pr checks`, and `gh pr merge` gates; only the exact permission-gate API paths named by the case are controlled.
 
-  ```powershell
-  $shimDir = Join-Path ([IO.Path]::GetTempPath()) "pr-merge-gh-$([guid]::NewGuid())"
-  $null = New-Item -ItemType Directory -Path $shimDir
-  $originalPath = $env:PATH
-  $env:PATH = "$shimDir$([IO.Path]::PathSeparator)$originalPath"
-  try {
-      # Create $shimDir/gh or $shimDir/gh.cmd, then run this scenario.
-  } finally {
-      $env:PATH = $originalPath
-      Remove-Item -LiteralPath $shimDir -Recurse -Force
+The plan is JSON. Each case maps an exact invoked API path to an ordered list of response fixtures, so entries A and B have independent counters in one batch. Each fixture supplies `stdout`, `stderr`, and `exit_status`; relative fixture paths resolve under the shim directory. The dispatcher consumes the next fixture for the exact path and repeats the last fixture after the sequence ends. For `transient-then-positive`, the permission route lists a 503 fixture first and an ADMIN fixture second. For `batch-isolation`, entry A's permission route lists READ while entry B's distinct base-repository permission route lists ADMIN; only entry B's later `gh pr merge` reaches the real executable. Run entries sequentially and use one shim directory per invocation.
+
+```powershell
+$shimDir = Join-Path ([IO.Path]::GetTempPath()) "pr-merge-gh-$([guid]::NewGuid())"
+$null = New-Item -ItemType Directory -Path $shimDir
+$env:PR_MERGE_REAL_GH = (Get-Command gh -CommandType Application -ErrorAction Stop).Source
+$env:PR_MERGE_SHIM_PLAN = Join-Path $shimDir "plan.json"
+$env:PR_MERGE_SHIM_CASE = "<case>"
+$originalPath = $env:PATH
+$env:PATH = "$shimDir$([IO.Path]::PathSeparator)$originalPath"
+try {
+    # Write plan.json, response fixtures, gh_shim.py, and gh.cmd or gh here.
+} finally {
+    $env:PATH = $originalPath
+    Remove-Item -LiteralPath $shimDir -Recurse -Force
+}
+```
+
+```json
+{
+  "transient-then-positive": {
+    "repos/OWNER/REPO/pulls/12": ["pull.json"],
+    "user": ["user.json"],
+    "repos/OWNER/REPO/collaborators/USER/permission": ["permission-503.json", "permission-admin.json"]
+  },
+  "batch-isolation": {
+    "repos/OWNER-A/REPO-A/pulls/12": ["a-pull.json"],
+    "user": ["user.json"],
+    "repos/OWNER-A/REPO-A/collaborators/USER/permission": ["permission-read.json"],
+    "repos/OWNER-B/REPO-B/pulls/13": ["b-pull.json"],
+    "repos/OWNER-B/REPO-B/collaborators/USER/permission": ["permission-admin.json"]
   }
-  ```
+}
+```
 
-  The shim must return only the selected case's fixed output, such as a
-  positive role, a denial, a 404 or malformed response, a timeout, or a
-  rate-limit response, while preserving the invoked `gh` argument path. Prepend
-  only the shim directory to `PATH` for the invoked process; do not change a
-  shell profile, user or machine environment, or repository file. After the
-  run, confirm the original `PATH` is restored, the temporary directory is
-  removed, and a later `gh --version` resolves to the real executable.
+On POSIX capture `PR_MERGE_REAL_GH="$(command -v gh)"` before prepending the shim directory, write the dispatcher below to `gh`, and run `chmod 700 "$shimDir/gh"`. On Windows write the same dispatcher to `gh_shim.py` and create this `gh.cmd` beside it:
+
+```bat
+@echo off
+python "%~dp0gh_shim.py" %*
+```
+
+Use this dispatcher, or an equivalent that preserves the same route and forwarding contract:
+
+```python
+#!/usr/bin/env python3
+
+import json
+import os
+import pathlib
+import subprocess
+import sys
+
+shim_dir = pathlib.Path(__file__).resolve().parent
+real_gh = os.environ["PR_MERGE_REAL_GH"]
+case_name = os.environ["PR_MERGE_SHIM_CASE"]
+plan = json.loads(pathlib.Path(os.environ["PR_MERGE_SHIM_PLAN"]).read_text(encoding="utf-8"))
+args = sys.argv[1:]
+
+def api_route(arguments):
+    for argument in arguments:
+        if argument == "user":
+            return argument
+        if argument.startswith("repos/") and ("/pulls/" in argument or argument.endswith("/permission")):
+            return argument
+    return None
+
+route = api_route(args)
+responses = plan[case_name].get(route) if route else None
+if not responses:
+    raise SystemExit(subprocess.run([real_gh, *args]).returncode)
+
+state_path = shim_dir / "state.json"
+state = json.loads(state_path.read_text(encoding="utf-8")) if state_path.exists() else {}
+index = state.get(route, 0)
+fixture = pathlib.Path(responses[min(index, len(responses) - 1)])
+if not fixture.is_absolute():
+    fixture = shim_dir / fixture
+state[route] = index + 1
+state_path.write_text(json.dumps(state), encoding="utf-8")
+response = json.loads(fixture.read_text(encoding="utf-8"))
+sys.stdout.write(response.get("stdout", ""))
+sys.stderr.write(response.get("stderr", ""))
+raise SystemExit(response.get("exit_status", 0))
+```
+
+Prepend only the shim directory to `PATH` for the invoked process; do not change a shell profile, user or machine environment, or repository file. After the run, confirm the original `PATH` is restored, the temporary directory is removed, and a later `gh --version` resolves to the real executable.
+
+### Permission fixtures
+
 - For denied cases, create a PR from a disposable fork into its upstream
   repository. Give the current `gh` user WRITE on the fork and READ or TRIAGE on
   the upstream base. Confirm the lookup uses `.base.repo.full_name` and the base
