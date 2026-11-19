@@ -482,6 +482,9 @@ class PrAndMergeBehaviorTests(unittest.TestCase):
             "two distinct target bases",
             "at least two prs for each of two distinct target bases",
             "separate retained worktree",
+            "validation provenance",
+            "reused",
+            "newly executed",
             "mark overall coverage as partial",
             "asks before running a test command when its applicability to a base is unclear",
             "exact command and observed exit status",
@@ -490,9 +493,15 @@ class PrAndMergeBehaviorTests(unittest.TestCase):
             "passed only after observing a successful exit status",
             "resume the batch",
             "new resulting base commit",
+            "reported as newly executed",
+            "provenance as reused",
             "completed same-base and same-oid validation is not rerun",
         ):
             self.assertIn(requirement, scenario)
+        self.assertIn(
+            "for each base, record the base ref, tested commit oid, validation provenance",
+            scenario,
+        )
 
         for removed in (
             "fetch each base from its remote, record each `fetch_head` oid, and "
@@ -786,6 +795,14 @@ class PrAndMergeBehaviorTests(unittest.TestCase):
         for required in (
             "disposable github repository",
             "fork",
+            "temporary gh executable created outside the reviewed repository",
+            "non-secret case selector",
+            "do not make the wrapper inspect credentials, tokens, or the real gh configuration",
+            "prepend only the shim directory to path for the invoked process",
+            "do not change a shell profile, user or machine environment, or repository file",
+            "original path is restored",
+            "temporary directory is removed",
+            "a later gh --version resolves to the real executable",
             "for denied cases, create a pr from a disposable fork",
             "for positive cases, create a pr whose base repository grants the current gh user admin, write, or maintain",
             "merge-capable base",

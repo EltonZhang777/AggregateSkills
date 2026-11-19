@@ -112,6 +112,32 @@ observations only.
 
 Setup:
 
+- Supply controlled responses through a temporary `gh` executable created
+  outside the reviewed repository. On POSIX create `gh`; on Windows create
+  `gh.cmd`. Select one fixed response per run through a non-secret case
+  selector such as `PR_MERGE_SHIM_CASE`; do not make the wrapper inspect
+  credentials, tokens, or the real `gh` configuration.
+
+  ```powershell
+  $shimDir = Join-Path ([IO.Path]::GetTempPath()) "pr-merge-gh-$([guid]::NewGuid())"
+  $null = New-Item -ItemType Directory -Path $shimDir
+  $originalPath = $env:PATH
+  $env:PATH = "$shimDir$([IO.Path]::PathSeparator)$originalPath"
+  try {
+      # Create $shimDir/gh or $shimDir/gh.cmd, then run this scenario.
+  } finally {
+      $env:PATH = $originalPath
+      Remove-Item -LiteralPath $shimDir -Recurse -Force
+  }
+  ```
+
+  The shim must return only the selected case's fixed output, such as a
+  positive role, a denial, a 404 or malformed response, a timeout, or a
+  rate-limit response, while preserving the invoked `gh` argument path. Prepend
+  only the shim directory to `PATH` for the invoked process; do not change a
+  shell profile, user or machine environment, or repository file. After the
+  run, confirm the original `PATH` is restored, the temporary directory is
+  removed, and a later `gh --version` resolves to the real executable.
 - For denied cases, create a PR from a disposable fork into its upstream
   repository. Give the current `gh` user WRITE on the fork and READ or TRIAGE on
   the upstream base. Confirm the lookup uses `.base.repo.full_name` and the base
@@ -175,9 +201,10 @@ failure isolation.
 
 In the first merge pass, confirm one PR targeting each base is merged while
 other entries remain pending or blocked. For each base, record the base ref,
-tested commit OID, a separate retained worktree path, exact command and observed
-exit status, coverage status, and every unresolved entry. Mark overall coverage
-as partial while any entry remains unresolved.
+tested commit OID, validation provenance (`reused` or `newly executed`), a
+separate retained worktree path, exact command and observed exit status,
+coverage status, and every unresolved entry. Mark overall coverage as partial
+while any entry remains unresolved. A newly advanced base OID is newly executed.
 
 Repeat with the command's applicability to `release` unclear. Confirm the
 workflow asks before running a test command when its applicability to a base is
@@ -187,12 +214,13 @@ available; give a reason for every test not run, and report a test as passed
 only after observing a successful exit status.
 
 Resume the batch and merge one more entry for each base. Confirm each new
-resulting base commit is verified separately in a new retained worktree.
-Confirm a completed same-base and same-OID validation is not rerun solely
-because the batch resumed; allow a same-commit rerun only on explicit user
-request or to retry a blocked or interrupted attempt after its cause is
-resolved. Keep validation outcomes separate from PR merge states. Do not execute
-this scenario outside a disposable repository.
+resulting base commit is reported as newly executed and verified separately in
+a new retained worktree. Confirm a completed same-base and same-OID validation
+is not rerun solely because the batch resumed; report its provenance as reused.
+Allow a same-commit rerun only on explicit user request or to retry a blocked or
+interrupted attempt after its cause is resolved. Keep validation outcomes
+separate from PR merge states. Do not execute this scenario outside a disposable
+repository.
 
 ## Multi-PR batch: post-merge validation failure isolation
 
