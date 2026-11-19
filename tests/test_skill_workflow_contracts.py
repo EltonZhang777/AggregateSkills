@@ -1703,7 +1703,7 @@ class SpecImplementLoopBehaviorTests(unittest.TestCase):
         )
         self.assertTrue(interruption)
 
-    def test_partial_root_exception_requires_current_review_and_separate_approval(self):
+    def test_per_root_exception_requires_current_review_and_separate_approval(self):
         text = skill("spec-implement-loop").lower().replace(chr(96), "")
         lifecycle = section(text, "## root-run lifecycle")
         remediation = skill_reference(
@@ -1732,6 +1732,9 @@ class SpecImplementLoopBehaviorTests(unittest.TestCase):
         self.assertIn("after every remediation code change", partial)
         self.assertIn("re-freeze", partial)
         self.assertIn("rerun every routed track", partial)
+        self.assertIn("re-freeze the scope, checks, and exclusions", partial)
+        self.assertIn("manifest.checks", partial)
+        self.assertIn("manifest.exclusions", partial)
         self.assertIn("new partial-mode approval", partial)
         self.assertIn("bound to its latest blocked artifact", partial)
         self.assertIn(
@@ -1840,8 +1843,12 @@ class SpecImplementLoopBehaviorTests(unittest.TestCase):
             "without restating exception conditions, thresholds, or approval ordering",
             manual_navigation,
         )
+        self.assertIn(
+            "../../skills/parallel-code-review/references/contract.md#evidence-boundary",
+            manual,
+        )
 
-    def test_partial_root_exception_record_is_append_only_and_blocks_status(self):
+    def test_per_root_exception_record_is_append_only_and_blocks_status(self):
         remediation = skill_reference(
             "spec-implement-loop",
             "final-review-remediation.md",
@@ -1891,7 +1898,7 @@ class SpecImplementLoopBehaviorTests(unittest.TestCase):
         self.assertIn("exactly as received", remediation)
         self.assertIn("does not make the review complete or passing", remediation)
 
-    def test_manual_partial_root_exception_covers_record_and_checkpoint(self):
+    def test_manual_per_root_exception_covers_record_and_checkpoint(self):
         manual = (
             ROOT / "tests" / "manual" / "spec-implement-loop.md"
         ).read_text(encoding="utf-8").lower()
