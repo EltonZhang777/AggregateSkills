@@ -28,6 +28,7 @@ class Rfc2119AuditArtifactTests(unittest.TestCase):
         lowered = text.lower()
 
         for heading in (
+            "## Authority and reading order",
             "## RFC 2119 keywords",
             "## Applying the vocabulary",
             "## Exception handling",
@@ -52,13 +53,62 @@ class Rfc2119AuditArtifactTests(unittest.TestCase):
             "illustrative example prose",
             "external documentation",
             "verbatim quotations",
-            "normative for this skill's workflow",
-            "advisory when used to review arbitrary audited roots",
         ):
             self.assertIn(concept, lowered)
         self.assertIsNone(
             re.search(r"skills/(?!rfc2119-audit/)[a-z0-9-]+/", text)
         )
+
+    def test_authority_section_is_single_and_linked(self):
+        skill = (SKILL_ROOT / "SKILL.md").read_text(encoding="utf-8")
+        reference = REFERENCE.read_text(encoding="utf-8")
+        normalized_skill = re.sub(r"\s+", " ", skill)
+        normalized_reference = re.sub(r"\s+", " ", reference)
+        normalized = " ".join(
+            (normalized_skill, normalized_reference)
+        )
+        startup_link = (
+            "(references/rfc2119-reference.md#authority-and-reading-order)"
+        )
+        authority_heading = "## Authority and reading order"
+
+        self.assertEqual(1, reference.count(authority_heading))
+        self.assertLess(
+            reference.index(authority_heading),
+            reference.index("## RFC 2119 keywords"),
+        )
+        self.assertEqual(1, skill.count(startup_link))
+        authority = reference.split(authority_heading, 1)[1].split("\n## ", 1)[0]
+        normalized_authority = re.sub(r"\s+", " ", authority)
+
+        for sentence in (
+            "This reference is the sole normative source for the RFC 2119 keyword "
+            "definitions, the required reading order, and the advisory boundary "
+            "that applies to an arbitrary audited root.",
+            "After this skill is selected, the agent's first substantive action "
+            "MUST be reading the complete reference.",
+            "The contract and audit procedure bind the agent's execution.",
+            "Paths, line numbers, categories, and source text are observations "
+            "of what the scan found.",
+            "A candidate is a lexical finding for manual review, not proof that "
+            "the text is normative.",
+            "Neither the presence nor the absence of a candidate establishes "
+            "that the root adopts RFC 2119, that the text is a binding "
+            "requirement, or that the root is compliant or noncompliant.",
+        ):
+            with self.subTest(sentence=sentence):
+                self.assertEqual(1, normalized.count(sentence))
+                self.assertEqual(1, normalized_authority.count(sentence))
+                self.assertNotIn(sentence, normalized_skill)
+
+        for removed_definition in (
+            "normative for this skill's workflow",
+            "advisory when used to review arbitrary audited roots",
+            "Candidate reporting does not decide whether descriptive prose "
+            "is normative.",
+        ):
+            with self.subTest(removed_definition=removed_definition):
+                self.assertNotIn(removed_definition, normalized)
 
     def test_shipped_product_text_has_no_upstream_project_reference(self):
         readme = (ROOT / "README.md").read_text(encoding="utf-8")
