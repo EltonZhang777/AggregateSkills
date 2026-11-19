@@ -744,6 +744,60 @@ class PrAndMergeBehaviorTests(unittest.TestCase):
         scenario = section(manual, "## conflict resolution and second approval")
         self.assertIn("merge-after-approval.md#conflict-resolution-approval", scenario)
 
+    def test_manual_permission_matrix_delegates_policy_and_keeps_observations(self):
+        manual = (
+            ROOT / "tests" / "manual" / "pr-and-merge.md"
+        ).read_text(encoding="utf-8").lower().replace(chr(96), "")
+        scenario = " ".join(
+            section(manual, "## base-repository permission gate immediately before merge").split()
+        )
+
+        self.assertIn("merge-after-approval.md#merge-permission-gate", scenario)
+        for required in (
+            "disposable github repository",
+            "fork",
+            "base.repo.full_name",
+            "result category",
+            "started-check count",
+            "pause or retry decision",
+            "refreshed pre-merge gates",
+            "whether gh pr merge was invoked",
+            "positive",
+            "denied",
+            "inconclusive",
+            "transient",
+            "exhausted budget",
+            "user-authorized retry",
+            "rate-limit wait",
+            "authentication or access failure",
+            "batch isolation",
+        ):
+            with self.subTest(required=required):
+                self.assertIn(required, scenario)
+
+        for removed in (
+            "positive: in separate runs return permission=write, role_name=write "
+            "(write), permission=write, role_name=maintain (maintain), "
+            "permission=admin, role_name=admin (admin), and permission=write "
+            "with a custom role_name.",
+            "denied: return permission=read, role_name=read and permission=read, "
+            "role_name=triage in separate runs.",
+            "transient failure: return a recognizable timeout, connection reset, "
+            "or http 408/429/500/502/503/504 before a positive response.",
+            "confirm at most three started checks occur per automatic cycle, "
+            "including the initial check; waiting consumes no check.",
+            "rate limit at or below five minutes: return a primary or secondary "
+            "limit with retry-after or x-ratelimit-reset no more than five "
+            "minutes away.",
+            "confirm the skill waits for the indicated safe time and refreshes "
+            "all existing pre-merge gates before retrying without counting the "
+            "wait as an attempt.",
+            "secondary limit without timing headers: return a secondary "
+            "rate-limit response with neither retry-after nor x-ratelimit-reset.",
+        ):
+            with self.subTest(removed=removed):
+                self.assertNotIn(removed, scenario)
+
 
 class PruneWorktreesBehaviorTests(unittest.TestCase):
     def test_unavailable_evidence_never_produces_safe_to_clean(self):

@@ -102,20 +102,41 @@ merging.
 
 ## Base-repository permission gate immediately before merge
 
-Run these cases through the user-visible `/pr-and-merge` invocation in a disposable GitHub repository. For positive cases, provide explicit approval for the exact PR; the skill may merge it after all live gates pass. Confirm the permission lookup uses `base.repo.full_name` from the PR API and the login from `gh api user`, then queries `repos/BASE_OWNER/BASE_REPO/collaborators/USERNAME/permission` immediately before the merge command.
+Run these cases through the user-visible `/pr-and-merge` invocation in a
+disposable GitHub repository. For positive cases, provide explicit approval for
+the exact PR; the skill may merge it after all live gates pass. Apply the
+canonical [merge permission gate](../../skills/pr-and-merge/references/merge-after-approval.md#merge-permission-gate)
+for permission mapping, retry budgets, rate-limit waits, status classification,
+and renewed-approval rules. This scenario supplies controlled inputs and records
+observations only.
 
-- Fork base: create a PR from a disposable fork into its upstream repository. Give the current `gh` user WRITE on the fork but only READ or TRIAGE on the upstream base. Confirm the permission lookup uses `.base.repo.full_name` and that the base role blocks the PR without invoking `gh pr merge`; this must fail if the lookup uses the head repo or local remote.
-- Positive: in separate runs return `permission=write, role_name=write` (WRITE), `permission=write, role_name=maintain` (MAINTAIN), `permission=admin, role_name=admin` (ADMIN), and `permission=write` with a custom `role_name`. Confirm each positive result allows the documented merge method only with that PR's explicit approval, and the post-merge result is verified.
-- Denied: return `permission=read, role_name=read` and `permission=read, role_name=triage` in separate runs. Confirm the result is reported as READ or TRIAGE, the entry is blocked, and `gh pr merge` is never invoked.
-- Inconclusive: return an empty or malformed permission response, omit `base.repo.full_name` or the identity, return HTTP 404 or `permission=none`, or use an unmappable custom value. Also test conflicting evidence `permission=read, role_name=maintain`, and a recognized base permission with an unrecognized custom role name as a valid mapping. Confirm each inconclusive case pauses immediately and asks whether to retry or skip without automatic retry; it is neither a denial nor approval and never invokes `gh pr merge`.
-- Transient failure: return a recognizable timeout, connection reset, or HTTP 408/429/500/502/503/504 before a positive response. Confirm at most three started checks occur per automatic cycle, including the initial check; waiting consumes no check. If any automatic check returns READ or TRIAGE, including the third, confirm it is reported and blocked immediately without another check or retry prompt. A later positive response is the only path to merge. After the automatic budget is exhausted, confirm the skill pauses and asks whether to authorize one check or skip instead of retrying indefinitely. When a user selects one extra check and it returns READ or TRIAGE, confirm the entry is denied and blocked. When it remains inconclusive, confirm the skill pauses and asks again; each further user choice authorizes one check only, and skipping never merges.
-- Rate limit at or below five minutes: return a primary or secondary limit with `Retry-After` or `x-ratelimit-reset` no more than five minutes away. Exercise each API step in separate runs: base-repository, identity, and permission lookup. Confirm the skill waits for the indicated safe time and refreshes all existing pre-merge gates before retrying without counting the wait as an attempt. If the third started check hits a rate limit, confirm it honors the safe wait but starts no fourth automatic check; after the wait it pauses and asks whether to authorize one check or skip. If a user-authorized check hits a rate limit, confirm it honors the safe delay and pauses again; after that delay, no new permission query starts until the user explicitly authorizes one check. If an approval snapshot or OID changed, confirm the existing refresh and renewed-approval rules are followed before retrying permission.
-- Rate limit over five minutes: return a reset or retry time more than five minutes away. Confirm the skill pauses, reports the earliest safe retry time, and makes no permission or merge call before it. Resume at or after that time; confirm it refreshes all existing pre-merge gates and permits exactly one extra permission check, immediately before any merge.
-- Secondary limit without timing headers: return a secondary rate-limit response with neither `Retry-After` nor `x-ratelimit-reset`. Confirm the skill waits at least one minute and uses increasing backoff if the limit recurs, while retaining the maximum of three started checks per automatic cycle. Confirm a delay longer than five minutes pauses with the earliest safe retry time, and any resumed check refreshes all existing pre-merge gates before the permission check.
-- Authentication, configuration, or unexplained access failure: return a 401/403 without rate-limit evidence or make the identity/configuration lookup fail. Confirm the skill asks whether to retry or skip; after a retry choice, confirm existing pre-merge gates are refreshed before the single extra permission check. A definite denial blocks immediately; an inconclusive result pauses and asks again. Skipping never merges.
-- Batch isolation: run an independent positive entry B beside a denied or inconclusive entry A and a dependent entry C stacked on A. Confirm A and C are blocked, `gh pr merge` is never invoked for either, and B continues through its own live gates and can merge when its permission check is positive and B has explicit per-PR approval.
+Setup:
 
-For every denied or inconclusive result, confirm `gh pr merge` is never invoked, including after automatic retries, rate-limit waits, and skipped or inconclusive user-selected extra checks.
+- Create a PR from a disposable fork into its upstream repository. Give the
+  current `gh` user WRITE on the fork and READ or TRIAGE on the upstream base.
+  Confirm the lookup uses `.base.repo.full_name` and the base role blocks the PR
+  without invoking `gh pr merge`.
+- For every executed case, record the base repository, login, controlled
+  response, result category, started-check count, pause or retry decision,
+  refreshed pre-merge gates, and whether `gh pr merge` was invoked.
+
+| Case | Controlled input | Expected observation |
+| --- | --- | --- |
+| Positive | A controlled response that yields ADMIN, WRITE, or MAINTAIN, including a custom role name | Positive result; record the started-check count; refreshed pre-merge gates; merge allowed only with the exact PR approval; verify the post-merge result |
+| Denied | A controlled response that yields READ or TRIAGE | READ or TRIAGE; entry blocked immediately; no retry prompt; `gh pr merge` not invoked |
+| Inconclusive | Empty or malformed evidence, a missing base or identity, 404, `permission=none`, conflicting fields, or an unmappable custom value | Inconclusive; pause and ask retry or skip; no automatic retry; `gh pr merge` not invoked |
+| Transient | A recognizable timeout, reset, or retryable HTTP response | Transient result; automatic checks stay within the canonical budget; waiting consumes no check; after the budget, pause and ask; merge only after a later positive result and refreshed gates |
+| Exhausted budget | The canonical automatic budget ends without a positive result or known denial | Pause and ask whether to authorize an extra check or skip; start no further automatic check |
+| User-authorized retry | A user-authorized extra check returns positive, READ/TRIAGE, or inconclusive | Positive may proceed after gate refresh; READ/TRIAGE blocks; inconclusive pauses again; skip never merges |
+| Rate-limit wait | A primary or secondary limit within the canonical auto-wait window, a longer delay, and a secondary limit without timing headers | Within the window: wait, refresh gates, and continue within the budget; longer: pause with the earliest safe time and make no call before it; no headers: apply the canonical backoff; waits consume no check |
+| Authentication or access failure | A 401/403 without rate-limit evidence, or an identity or configuration lookup failure | Pause and ask retry or skip; after a retry, refresh gates before the extra check; a definite denial blocks; skip never merges |
+| Batch isolation | Independent positive entry B beside denied or inconclusive entry A and dependent entry C stacked on A | A and C blocked; B continues and may merge under its own approval and live gates; `gh pr merge` not invoked for A or C |
+
+For every denied or inconclusive result, confirm `gh pr merge` is never
+invoked, including after automatic retries, rate-limit waits, and skipped or
+inconclusive user-selected extra checks. Confirm the observed result category,
+started-check count, pause or retry decision, refreshed pre-merge gates, and
+merge invocation for each executed case.
 
 ## Conflict resolution and second approval
 
