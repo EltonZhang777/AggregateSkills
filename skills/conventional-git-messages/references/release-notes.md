@@ -2,8 +2,7 @@
 
 Draft one copy-ready release-notes block from supplied change facts or, when authorized for read-only Git and GitHub evidence inspection, from evidence inspected only within the named repository and release scope from [Scope](#scope). Use only those facts.
 
-## No-write boundary
-
+<a id="no-write-boundary"></a>
 Verification and drafting perform no release or GitHub write. Never stage, commit, or push. Do not create a tag, Release, or CHANGELOG entry; write an issue or pull request; change authentication; post a comment; or perform release-note publication.
 
 ## Inputs

@@ -2288,8 +2288,7 @@ class ReleaseNotesDraftingContractTests(unittest.TestCase):
             return normalized_text(section(raw, heading))
 
         normalized = normalized_text(raw)
-        introduction = normalized_text(raw.split("\n## No-write boundary", 1)[0])
-        no_write = normalized_section("## No-write boundary")
+        introduction = normalized_text(raw.split("\n## ", 1)[0])
         inputs = normalized_section("## Inputs")
         scope = normalized_section("## Scope")
         content_gates = normalized_section("## Content gates")
@@ -2318,7 +2317,9 @@ class ReleaseNotesDraftingContractTests(unittest.TestCase):
             "comment; or perform release-note publication."
         )
         self.assertEqual(1, normalized.count(no_write_rule))
-        self.assertIn(no_write_rule, no_write)
+        self.assertIn(no_write_rule, introduction)
+        self.assertNotIn("## no-write boundary", normalized)
+        self.assertIn('<a id="no-write-boundary"></a>', raw)
         self.assertIn("never recommend a tag", version_safety)
         self.assertIn(
             "tag creation is covered by [no-write boundary](#no-write-boundary)",
