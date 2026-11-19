@@ -162,11 +162,34 @@ Repeat the same single-base batch with no test commands. Confirm the workflow as
 
 ## Multi-PR batch: multiple target bases
 
-In a disposable repository, prepare at least two PRs for each of two distinct target bases, such as `main` and `release`, and specify one test command confirmed to apply to both. In the first merge pass, confirm one PR targeting each base is merged while other entries remain pending or blocked. Fetch each base from its remote, record each `FETCH_HEAD` OID, and create a separate retained worktree for each base at its resulting commit. Run the confirmed command separately in both worktrees. Report each base ref, tested commit OID, worktree path, exact command and observed exit status; mark overall coverage as partial and identify every unresolved entry.
+In a disposable repository, prepare at least two PRs for each of two distinct
+target bases, such as `main` and `release`, and specify one test command
+confirmed to apply to both. Run the user-visible `/pr-and-merge` invocation and
+follow the canonical [verify each distinct target
+base](../../skills/pr-and-merge/references/multi-pr-batch.md#verify-each-distinct-target-base)
+for fetching, retained worktrees, command execution, result tracking, and
+failure isolation.
 
-Repeat with the command's applicability to `release` unclear. Confirm the workflow asks before running a test command when its applicability to a base is unclear, records the not-run reason, and does not report that base as passed. Confirm each failed command includes a concise relevant output excerpt when available; give a reason for every test not run, and report a test as passed only after observing a successful exit status.
+In the first merge pass, confirm one PR targeting each base is merged while
+other entries remain pending or blocked. For each base, record the base ref,
+tested commit OID, a separate retained worktree path, exact command and observed
+exit status, coverage status, and every unresolved entry. Mark overall coverage
+as partial while any entry remains unresolved.
 
-Resume the batch and merge one more entry for each base. Confirm each new resulting base commit is fetched and verified in its own new retained worktree. Confirm a completed same-base and same-OID validation is not rerun solely because the batch resumed; allow a same-commit rerun only on explicit user request or to retry a blocked or interrupted attempt after its cause is resolved. Keep verification results separate from PR merge states. Do not execute this scenario outside a disposable repository.
+Repeat with the command's applicability to `release` unclear. Confirm the
+workflow asks before running a test command when its applicability to a base is
+unclear, records the not-run reason, and does not report that base as passed.
+Confirm each failed command includes a concise relevant output excerpt when
+available; give a reason for every test not run, and report a test as passed
+only after observing a successful exit status.
+
+Resume the batch and merge one more entry for each base. Confirm each new
+resulting base commit is verified separately in a new retained worktree.
+Confirm a completed same-base and same-OID validation is not rerun solely
+because the batch resumed; allow a same-commit rerun only on explicit user
+request or to retry a blocked or interrupted attempt after its cause is
+resolved. Keep validation outcomes separate from PR merge states. Do not execute
+this scenario outside a disposable repository.
 
 ## Multi-PR batch: post-merge validation failure isolation
 

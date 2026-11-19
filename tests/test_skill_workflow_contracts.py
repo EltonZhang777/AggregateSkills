@@ -469,13 +469,19 @@ class PrAndMergeBehaviorTests(unittest.TestCase):
 
     def test_manual_multi_base_verification_covers_partial_progress_and_resume(self):
         manual = (ROOT / "tests" / "manual" / "pr-and-merge.md").read_text(encoding="utf-8").lower()
-        scenario = section(manual, "## multi-pr batch: multiple target bases")
+        scenario = " ".join(
+            section(manual, "## multi-pr batch: multiple target bases").split()
+        )
 
+        self.assertIn(
+            "multi-pr-batch.md#verify-each-distinct-target-base",
+            scenario,
+        )
         for requirement in (
             "disposable repository",
             "two distinct target bases",
             "at least two prs for each of two distinct target bases",
-            "separate retained worktree for each base",
+            "separate retained worktree",
             "mark overall coverage as partial",
             "asks before running a test command when its applicability to a base is unclear",
             "exact command and observed exit status",
@@ -487,6 +493,17 @@ class PrAndMergeBehaviorTests(unittest.TestCase):
             "completed same-base and same-oid validation is not rerun",
         ):
             self.assertIn(requirement, scenario)
+
+        for removed in (
+            "fetch each base from its remote, record each `fetch_head` oid, and "
+            "create a separate retained worktree for each base at its resulting "
+            "commit.",
+            "run the confirmed command separately in both worktrees.",
+            "confirm each new resulting base commit is fetched and verified in "
+            "its own new retained worktree.",
+        ):
+            with self.subTest(removed=removed):
+                self.assertNotIn(removed, scenario)
 
     def test_multi_pr_post_merge_verification_asks_before_running_without_test_commands(self):
         text = skill_reference("pr-and-merge", "multi-pr-batch.md").lower().replace(chr(96), "")
