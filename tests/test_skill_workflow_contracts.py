@@ -909,8 +909,12 @@ class RequirementsToSpecTicketsBehaviorTests(unittest.TestCase):
 
         self.assertNotIn("normalized_target", template)
         self.assertNotIn("normalized target", template)
-        self.assertNotIn("handoff approval record", template)
-        self.assertIn("authorization evidence exactly as supplied by the parent", fill_instructions)
+        self.assertNotIn("invalidators", template)
+        self.assertTrue(sentence_with_concepts(
+            fill_instructions, ("target repository",), ("root agents.md",),
+            ("complete",), ("handoff approval",), ("by reference",),
+        ))
+        self.assertIn("exactly as supplied by the parent", fill_instructions)
 
         self.assertTrue(sentence_with_concepts(
             assembly, ("static", "approved group"), ("inapplicable", "does not apply"),
