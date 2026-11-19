@@ -729,16 +729,28 @@ class PrAndMergeBehaviorTests(unittest.TestCase):
             "blocks that operation until the scope is reviewed.",
             normalized_gate,
         )
-        self.assertNotIn("use the main skill's conflict-resolution procedure", normalized_gate)
+        self.assertNotIn(
+            "use the main skill's conflict-resolution procedure and run the "
+            "required checks on the resolved worktree.",
+            normalized_gate,
+        )
         for shared_rule in (
-            "complete unstaged conflict-resolution diff",
-            "stage only the approved files",
-            "if it differs from the approved diff",
-            "after the push, confirm the pr diff still matches",
-            "changed path outside the conflict resolution",
+            "run required local checks on the resolved worktree and inspect its "
+            "status and complete unstaged conflict-resolution diff.",
+            "after approval, stage only the approved files and inspect the staged "
+            "diff.",
+            "if it differs from the approved diff, stop and get renewed approval "
+            "before any commit, push, or merge.",
+            "after the push, confirm the pr diff still matches the approved "
+            "resolution and record its head and base oids.",
+            "if any changed path is outside the conflict resolution, stop.",
         ):
             self.assertNotIn(shared_rule, gate)
-        self.assertNotIn("without defining failure isolation", multi)
+        self.assertNotIn(
+            "the rules below extend verification to multiple bases without "
+            "defining failure isolation.",
+            multi,
+        )
         self.assertIn("define failure isolation", multi)
 
         skill_text = skill("pr-and-merge").lower().replace(chr(96), "")
@@ -2446,30 +2458,33 @@ class ReleaseNotesDraftingContractTests(unittest.TestCase):
                 self.assertIn(link, text)
 
         for removed in (
-            "require one explicit release scope as defined under evidence",
-            "version and release-date metadata are optional",
-            "use only supplied or evidence-backed product, version, and date fields",
-            "never recommend or create a tag",
+            "require one explicit release scope as defined under evidence.",
+            "version and release-date metadata are optional. use supplied or "
+            "evidence-backed metadata only.",
+            "use only supplied or evidence-backed product, version, and date fields.",
+            "never recommend or create a tag.",
         ):
             with self.subTest(removed=removed):
                 self.assertNotIn(removed, normalized)
 
         removed_duplicates = (
             (
-                "Content gates no longer repeats the redaction list",
+                "Content gates no longer repeats the redaction restriction",
                 content_gates,
-                "credentials, tokens, customer pii, private urls, internal hostnames, "
-                "and sensitive internal identifiers",
+                "include a qa step only when it can be rewritten as an external "
+                "user action without exposing internal systems, credentials, or "
+                "sensitive process information.",
             ),
             (
                 "Classification no longer repeats metadata field selection",
                 classification,
-                "use only supplied or evidence-backed product, version, and date fields",
+                "use only supplied or evidence-backed product, version, and date "
+                "fields.",
             ),
             (
                 "Draft basis no longer repeats the redacted-locator rule",
                 draft_basis,
-                "use redacted locators rather than private links or tokens",
+                "use redacted locators rather than private links or tokens.",
             ),
         )
         for name, text, duplicate in removed_duplicates:
@@ -2774,6 +2789,90 @@ class ReleaseNotesDraftingContractTests(unittest.TestCase):
         ):
             with self.subTest(required=required):
                 self.assertIn(required, scenario)
+
+
+class ContractCoverageTests(unittest.TestCase):
+    def test_changed_contracts_map_to_current_assertions_and_evidence(self):
+        manuals = {
+            "pr-and-merge": (
+                ROOT / "tests" / "manual" / "pr-and-merge.md"
+            ).read_text(encoding="utf-8"),
+            "conventional-git-messages": (
+                ROOT / "tests" / "manual" / "conventional-git-messages.md"
+            ).read_text(encoding="utf-8"),
+        }
+        contracts = (
+            (
+                "#368 shared merge and conflict rules",
+                (
+                    PrAndMergeBehaviorTests,
+                    "test_post_approval_reference_owns_shared_permission_and_conflict_rules",
+                ),
+                ("pr-and-merge", "## Conflict resolution and second approval"),
+                "#368 acceptance evidence recorded 2026-11-19T06:42:32Z",
+            ),
+            (
+                "#371 PR-title syntax reuse",
+                (
+                    ConventionalGitMessagesBehaviorTests,
+                    "test_pr_titles_delegate_commit_subject_syntax_and_keep_pr_specific_rules",
+                ),
+                (
+                    "conventional-git-messages",
+                    "## Pull request title conventions",
+                ),
+                None,
+            ),
+            (
+                "#372 release-note single source",
+                (
+                    ReleaseNotesDraftingContractTests,
+                    "test_release_note_rules_have_single_canonical_sections_and_backlinks",
+                ),
+                (
+                    "conventional-git-messages",
+                    "## Release notes from supplied facts",
+                ),
+                None,
+            ),
+            (
+                "#373 permission outcome matrix",
+                (
+                    PrAndMergeBehaviorTests,
+                    "test_manual_permission_matrix_delegates_policy_and_keeps_observations",
+                ),
+                (
+                    "pr-and-merge",
+                    "## Base-repository permission gate immediately before merge",
+                ),
+                None,
+            ),
+            (
+                "#374 multi-base outcome matrix",
+                (
+                    PrAndMergeBehaviorTests,
+                    "test_manual_multi_base_verification_covers_partial_progress_and_resume",
+                ),
+                (
+                    "pr-and-merge",
+                    "## Multi-PR batch: multiple target bases",
+                ),
+                None,
+            ),
+        )
+
+        for contract, (owner, assertion), scenario, reused in contracts:
+            with self.subTest(contract=contract):
+                self.assertTrue(callable(getattr(owner, assertion, None)))
+                self.assertTrue(scenario is not None or reused is not None)
+                if scenario is not None:
+                    filename, heading = scenario
+                    self.assertIn(heading, manuals[filename])
+                if reused is not None:
+                    self.assertRegex(
+                        reused,
+                        r"#\d+.*\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z",
+                    )
 
 
 class ReadmeBehaviorTests(unittest.TestCase):
