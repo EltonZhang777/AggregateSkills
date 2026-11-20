@@ -102,26 +102,348 @@ merging.
 
 ## Base-repository permission gate immediately before merge
 
-Run these cases through the user-visible `/pr-and-merge` invocation in a disposable GitHub repository. For positive cases, provide explicit approval for the exact PR; the skill may merge it after all live gates pass. Confirm the permission lookup uses `base.repo.full_name` from the PR API and the login from `gh api user`, then queries `repos/BASE_OWNER/BASE_REPO/collaborators/USERNAME/permission` immediately before the merge command.
+Run these cases through the user-visible `/pr-and-merge` invocation in a
+disposable GitHub repository. For positive cases, provide explicit approval for
+the exact PR; the skill may merge it after all live gates pass. Apply the
+canonical [merge permission gate](../../skills/pr-and-merge/references/merge-after-approval.md#merge-permission-gate)
+for permission mapping, retry budgets, rate-limit waits, status classification,
+and renewed-approval rules. This scenario supplies controlled inputs and records
+observations only.
 
-- Fork base: create a PR from a disposable fork into its upstream repository. Give the current `gh` user WRITE on the fork but only READ or TRIAGE on the upstream base. Confirm the permission lookup uses `.base.repo.full_name` and that the base role blocks the PR without invoking `gh pr merge`; this must fail if the lookup uses the head repo or local remote.
-- Positive: in separate runs return `permission=write, role_name=write` (WRITE), `permission=write, role_name=maintain` (MAINTAIN), `permission=admin, role_name=admin` (ADMIN), and `permission=write` with a custom `role_name`. Confirm each positive result allows the documented merge method only with that PR's explicit approval, and the post-merge result is verified.
-- Denied: return `permission=read, role_name=read` and `permission=read, role_name=triage` in separate runs. Confirm the result is reported as READ or TRIAGE, the entry is blocked, and `gh pr merge` is never invoked.
-- Inconclusive: return an empty or malformed permission response, omit `base.repo.full_name` or the identity, return HTTP 404 or `permission=none`, or use an unmappable custom value. Also test conflicting evidence `permission=read, role_name=maintain`, and a recognized base permission with an unrecognized custom role name as a valid mapping. Confirm each inconclusive case pauses immediately and asks whether to retry or skip without automatic retry; it is neither a denial nor approval and never invokes `gh pr merge`.
-- Transient failure: return a recognizable timeout, connection reset, or HTTP 408/429/500/502/503/504 before a positive response. Confirm at most three started checks occur per automatic cycle, including the initial check; waiting consumes no check. If any automatic check returns READ or TRIAGE, including the third, confirm it is reported and blocked immediately without another check or retry prompt. A later positive response is the only path to merge. After the automatic budget is exhausted, confirm the skill pauses and asks whether to authorize one check or skip instead of retrying indefinitely. When a user selects one extra check and it returns READ or TRIAGE, confirm the entry is denied and blocked. When it remains inconclusive, confirm the skill pauses and asks again; each further user choice authorizes one check only, and skipping never merges.
-- Rate limit at or below five minutes: return a primary or secondary limit with `Retry-After` or `x-ratelimit-reset` no more than five minutes away. Exercise each API step in separate runs: base-repository, identity, and permission lookup. Confirm the skill waits for the indicated safe time and refreshes all existing pre-merge gates before retrying without counting the wait as an attempt. If the third started check hits a rate limit, confirm it honors the safe wait but starts no fourth automatic check; after the wait it pauses and asks whether to authorize one check or skip. If a user-authorized check hits a rate limit, confirm it honors the safe delay and pauses again; after that delay, no new permission query starts until the user explicitly authorizes one check. If an approval snapshot or OID changed, confirm the existing refresh and renewed-approval rules are followed before retrying permission.
-- Rate limit over five minutes: return a reset or retry time more than five minutes away. Confirm the skill pauses, reports the earliest safe retry time, and makes no permission or merge call before it. Resume at or after that time; confirm it refreshes all existing pre-merge gates and permits exactly one extra permission check, immediately before any merge.
-- Secondary limit without timing headers: return a secondary rate-limit response with neither `Retry-After` nor `x-ratelimit-reset`. Confirm the skill waits at least one minute and uses increasing backoff if the limit recurs, while retaining the maximum of three started checks per automatic cycle. Confirm a delay longer than five minutes pauses with the earliest safe retry time, and any resumed check refreshes all existing pre-merge gates before the permission check.
-- Authentication, configuration, or unexplained access failure: return a 401/403 without rate-limit evidence or make the identity/configuration lookup fail. Confirm the skill asks whether to retry or skip; after a retry choice, confirm existing pre-merge gates are refreshed before the single extra permission check. A definite denial blocks immediately; an inconclusive result pauses and asks again. Skipping never merges.
-- Batch isolation: run an independent positive entry B beside a denied or inconclusive entry A and a dependent entry C stacked on A. Confirm A and C are blocked, `gh pr merge` is never invoked for either, and B continues through its own live gates and can merge when its permission check is positive and B has explicit per-PR approval.
+### Controlled-response shim
 
-For every denied or inconclusive result, confirm `gh pr merge` is never invoked, including after automatic retries, rate-limit waits, and skipped or inconclusive user-selected extra checks.
+Supply controlled responses through a temporary `gh` executable created outside the reviewed repository. On POSIX create an executable `gh`; on Windows create `gh.cmd`. Select a non-secret case selector such as `PR_MERGE_SHIM_CASE`; store the selected plan and response fixtures only in the temporary run directory. Do not make the wrapper inspect credentials, tokens, or the real `gh` configuration. Capture the real executable path before changing `PATH`, pass it as `PR_MERGE_REAL_GH`, and forward every invocation whose exact API path is not in the selected case to that executable with the original arguments unchanged. Forwarded commands include the live `gh pr view`, `gh pr checks`, and `gh pr merge` gates; only the exact permission-gate API paths named by the case are controlled.
+
+Keep the shim active for the complete user-visible `/pr-and-merge` invocation. Set up the shim in a dedicated PowerShell process or an isolated test host, start the complete invocation from a child of that process (or import the same four variables into the isolated host process), capture the observations even when the workflow throws, and only then restore the environment and clean up. A setup block that exits before the invocation starts is invalid.
+
+The plan is JSON. Each case maps an exact invoked API path to an ordered list of response fixtures. State is keyed by the exact route, so entries that use the same route consume one ordered queue. Each fixture supplies `stdout`, `stderr`, and `exit_status`; relative fixture paths resolve under the shim directory. The dispatcher consumes the next fixture for the exact path and repeats the last fixture after the sequence ends. For `transient-then-positive`, the permission route lists two 503 fixtures followed by an ADMIN fixture. For `batch-isolation`, entries A, B, and dependent C use the same exact repository; reuse the same shim directory and state across entries A, B, and C. A receives READ and B receives the next ADMIN response on the shared permission route. Do not reset `state.json` between A and B.
+
+Create a distinct open merge-capable PR for each row whose final result merges, including retry, rate-limit, and batch-isolation rows. The plan below uses PRs 12-15 for the four `positive-*` cases, 16-20 for the remaining merge-positive retry and rate-limit cases, and 21-23 for batch entries A, B, and C. Replace `OWNER`, `REPO`, `USER`, and each PR number with the actual disposable-repository values before writing the plan. Do not reuse a PR after a positive case has merged it.
+
+```powershell
+function Invoke-WithPermissionShim {
+    param(
+        [Parameter(Mandatory)][string]$Case,
+        [Parameter(Mandatory)][scriptblock]$PopulateShim,
+        [Parameter(Mandatory)][scriptblock]$Workflow
+    )
+
+    $shimDir = Join-Path ([IO.Path]::GetTempPath()) "pr-merge-gh-$([guid]::NewGuid())"
+    $null = New-Item -ItemType Directory -Path $shimDir
+    $names = @('PATH', 'PR_MERGE_REAL_GH', 'PR_MERGE_SHIM_PLAN', 'PR_MERGE_SHIM_CASE')
+    $present = @{}
+    $previous = @{}
+    foreach ($name in $names) {
+        $present[$name] = Test-Path -LiteralPath "Env:$name"
+        $previous[$name] = [Environment]::GetEnvironmentVariable($name, 'Process')
+    }
+
+    $workflowResult = $null
+    $workflowError = $null
+    $mergeCalls = @()
+    try {
+        & $PopulateShim $shimDir
+        $env:PR_MERGE_REAL_GH = (Get-Command gh -CommandType Application -ErrorAction Stop).Source
+        $env:PR_MERGE_SHIM_PLAN = Join-Path $shimDir "plan.json"
+        $env:PR_MERGE_SHIM_CASE = $Case
+        $previousPath = $previous['PATH']
+        $env:PATH = "$shimDir$([IO.Path]::PathSeparator)$previousPath"
+
+        try {
+            # Start the complete /pr-and-merge invocation here and wait for it.
+            $workflowResult = & $Workflow
+        } catch {
+            $workflowError = $_
+        }
+    } finally {
+        if (Test-Path -LiteralPath (Join-Path $shimDir 'merge-calls.log')) {
+            $mergeCalls = @(Get-Content -LiteralPath (Join-Path $shimDir 'merge-calls.log'))
+        }
+        foreach ($name in $names) {
+            if ($present[$name]) {
+                [Environment]::SetEnvironmentVariable($name, $previous[$name], 'Process')
+            } else {
+                [Environment]::SetEnvironmentVariable($name, $null, 'Process')
+            }
+        }
+        Remove-Item -LiteralPath $shimDir -Recurse -Force
+    }
+    [pscustomobject]@{
+        WorkflowResult = $workflowResult
+        WorkflowError = $workflowError
+        MergeCalls = $mergeCalls
+    }
+}
+
+$record = Invoke-WithPermissionShim -Case "<case>" -PopulateShim {
+    param($shimDir)
+    # Materialize plan.json, the selected fixtures, the gh or gh.cmd
+    # launcher, gh_shim.py on Windows, and any required state.json here.
+} -Workflow {
+    # Start the complete /pr-and-merge invocation in this process or a child
+    # process that inherits this environment; return only after it finishes.
+    Read-Host 'Press Enter after the complete /pr-and-merge invocation returns'
+}
+$record | Format-List WorkflowResult, WorkflowError, MergeCalls
+```
+
+```json
+{
+  "positive-admin": {
+    "repos/OWNER/REPO/pulls/12": ["pull.json"],
+    "user": ["user.json"],
+    "repos/OWNER/REPO/collaborators/USER/permission": ["permission-admin.json"]
+  },
+  "positive-write": {
+    "repos/OWNER/REPO/pulls/13": ["pull.json"],
+    "user": ["user.json"],
+    "repos/OWNER/REPO/collaborators/USER/permission": ["permission-write.json"]
+  },
+  "positive-maintain": {
+    "repos/OWNER/REPO/pulls/14": ["pull.json"],
+    "user": ["user.json"],
+    "repos/OWNER/REPO/collaborators/USER/permission": ["permission-maintain.json"]
+  },
+  "positive-custom": {
+    "repos/OWNER/REPO/pulls/15": ["pull.json"],
+    "user": ["user.json"],
+    "repos/OWNER/REPO/collaborators/USER/permission": ["permission-custom.json"]
+  },
+  "denied-read": {
+    "repos/OWNER/REPO/pulls/12": ["pull.json"],
+    "user": ["user.json"],
+    "repos/OWNER/REPO/collaborators/USER/permission": ["permission-read.json"]
+  },
+  "denied-triage": {
+    "repos/OWNER/REPO/pulls/12": ["pull.json"],
+    "user": ["user.json"],
+    "repos/OWNER/REPO/collaborators/USER/permission": ["permission-triage.json"]
+  },
+  "inconclusive-404": {
+    "repos/OWNER/REPO/pulls/12": ["pull.json"],
+    "user": ["user.json"],
+    "repos/OWNER/REPO/collaborators/USER/permission": ["permission-404.json"]
+  },
+  "inconclusive-empty": {
+    "repos/OWNER/REPO/pulls/12": ["pull.json"],
+    "user": ["user.json"],
+    "repos/OWNER/REPO/collaborators/USER/permission": ["permission-empty.json"]
+  },
+  "inconclusive-missing-base": {
+    "repos/OWNER/REPO/pulls/12": ["pull-missing-base.json"],
+    "user": ["user.json"]
+  },
+  "inconclusive-missing-identity": {
+    "repos/OWNER/REPO/pulls/12": ["pull.json"],
+    "user": ["user-missing-login.json"]
+  },
+  "inconclusive-none": {
+    "repos/OWNER/REPO/pulls/12": ["pull.json"],
+    "user": ["user.json"],
+    "repos/OWNER/REPO/collaborators/USER/permission": ["permission-none.json"]
+  },
+  "inconclusive-conflict": {
+    "repos/OWNER/REPO/pulls/12": ["pull.json"],
+    "user": ["user.json"],
+    "repos/OWNER/REPO/collaborators/USER/permission": ["permission-conflict.json"]
+  },
+  "inconclusive-unmappable": {
+    "repos/OWNER/REPO/pulls/12": ["pull.json"],
+    "user": ["user.json"],
+    "repos/OWNER/REPO/collaborators/USER/permission": ["permission-unmappable.json"]
+  },
+  "transient-then-positive": {
+    "repos/OWNER/REPO/pulls/16": ["pull.json"],
+    "user": ["user.json"],
+    "repos/OWNER/REPO/collaborators/USER/permission": ["permission-503.json", "permission-503.json", "permission-admin.json"]
+  },
+  "timeout-then-positive": {
+    "repos/OWNER/REPO/pulls/17": ["pull.json"],
+    "user": ["user.json"],
+    "repos/OWNER/REPO/collaborators/USER/permission": ["permission-timeout.json", "permission-admin.json"]
+  },
+  "exhausted-budget": {
+    "repos/OWNER/REPO/pulls/12": ["pull.json"],
+    "user": ["user.json"],
+    "repos/OWNER/REPO/collaborators/USER/permission": ["permission-503.json"]
+  },
+  "user-authorized-retry": {
+    "repos/OWNER/REPO/pulls/18": ["pull.json"],
+    "user": ["user.json"],
+    "repos/OWNER/REPO/collaborators/USER/permission": ["permission-503.json", "permission-503.json", "permission-503.json", "permission-admin.json"]
+  },
+  "rate-limit-auto-wait": {
+    "repos/OWNER/REPO/pulls/19": ["pull.json"],
+    "user": ["user.json"],
+    "repos/OWNER/REPO/collaborators/USER/permission": ["permission-rate-limit-short.json", "permission-admin.json"]
+  },
+  "rate-limit-long": {
+    "repos/OWNER/REPO/pulls/12": ["pull.json"],
+    "user": ["user.json"],
+    "repos/OWNER/REPO/collaborators/USER/permission": ["permission-rate-limit-long.json"]
+  },
+  "rate-limit-no-headers": {
+    "repos/OWNER/REPO/pulls/20": ["pull.json"],
+    "user": ["user.json"],
+    "repos/OWNER/REPO/collaborators/USER/permission": ["permission-rate-limit-no-headers.json", "permission-admin.json"]
+  },
+  "auth-failure": {
+    "repos/OWNER/REPO/pulls/12": ["pull.json"],
+    "user": ["user.json"],
+    "repos/OWNER/REPO/collaborators/USER/permission": ["permission-auth-failure.json"]
+  },
+  "batch-isolation": {
+    "repos/OWNER/REPO/pulls/21": ["pull.json"],
+    "repos/OWNER/REPO/pulls/22": ["pull.json"],
+    "repos/OWNER/REPO/pulls/23": ["pull.json"],
+    "user": ["user.json"],
+    "repos/OWNER/REPO/collaborators/USER/permission": ["permission-read.json", "permission-admin.json"]
+  }
+}
+```
+
+Write each value below to the file named by its key. Each `stdout` is the complete
+`--include` output: status line, headers, a blank line, and the JSON body.
+
+```json
+{
+  "pull.json": {"stdout": "HTTP/2 200\r\nContent-Type: application/json\r\n\r\n{\"base\":{\"repo\":{\"full_name\":\"OWNER/REPO\"}}}\n", "stderr": "", "exit_status": 0},
+  "pull-missing-base.json": {"stdout": "HTTP/2 200\r\nContent-Type: application/json\r\n\r\n{\"number\":12}\n", "stderr": "", "exit_status": 0},
+  "user.json": {"stdout": "HTTP/2 200\r\nContent-Type: application/json\r\n\r\n{\"login\":\"USER\"}\n", "stderr": "", "exit_status": 0},
+  "user-missing-login.json": {"stdout": "HTTP/2 200\r\nContent-Type: application/json\r\n\r\n{\"id\":123}\n", "stderr": "", "exit_status": 0},
+  "permission-admin.json": {"stdout": "HTTP/2 200\r\nContent-Type: application/json\r\n\r\n{\"permission\":\"admin\",\"role_name\":\"admin\"}\n", "stderr": "", "exit_status": 0},
+  "permission-write.json": {"stdout": "HTTP/2 200\r\nContent-Type: application/json\r\n\r\n{\"permission\":\"write\",\"role_name\":\"write\"}\n", "stderr": "", "exit_status": 0},
+  "permission-maintain.json": {"stdout": "HTTP/2 200\r\nContent-Type: application/json\r\n\r\n{\"permission\":\"write\",\"role_name\":\"maintain\"}\n", "stderr": "", "exit_status": 0},
+  "permission-custom.json": {"stdout": "HTTP/2 200\r\nContent-Type: application/json\r\n\r\n{\"permission\":\"write\",\"role_name\":\"release-manager\"}\n", "stderr": "", "exit_status": 0},
+  "permission-read.json": {"stdout": "HTTP/2 200\r\nContent-Type: application/json\r\n\r\n{\"permission\":\"read\",\"role_name\":\"read\"}\n", "stderr": "", "exit_status": 0},
+  "permission-triage.json": {"stdout": "HTTP/2 200\r\nContent-Type: application/json\r\n\r\n{\"permission\":\"read\",\"role_name\":\"triage\"}\n", "stderr": "", "exit_status": 0},
+  "permission-404.json": {"stdout": "HTTP/2 404\r\nContent-Type: application/json\r\n\r\n{\"message\":\"Not Found\"}\n", "stderr": "", "exit_status": 1},
+  "permission-empty.json": {"stdout": "HTTP/2 200\r\nContent-Type: application/json\r\n\r\n\n", "stderr": "", "exit_status": 0},
+  "permission-none.json": {"stdout": "HTTP/2 200\r\nContent-Type: application/json\r\n\r\n{\"permission\":\"none\",\"role_name\":\"none\"}\n", "stderr": "", "exit_status": 0},
+  "permission-conflict.json": {"stdout": "HTTP/2 200\r\nContent-Type: application/json\r\n\r\n{\"permission\":\"read\",\"role_name\":\"maintain\"}\n", "stderr": "", "exit_status": 0},
+  "permission-unmappable.json": {"stdout": "HTTP/2 200\r\nContent-Type: application/json\r\n\r\n{\"permission\":\"custom\",\"role_name\":\"custom\"}\n", "stderr": "", "exit_status": 0},
+  "permission-timeout.json": {"stdout": "", "stderr": "gh: request timed out\n", "exit_status": 124},
+  "permission-503.json": {"stdout": "HTTP/2 503\r\nContent-Type: application/json\r\n\r\n{\"message\":\"Service Unavailable\"}\n", "stderr": "", "exit_status": 1},
+  "permission-rate-limit-short.json": {"stdout": "HTTP/2 429\r\nContent-Type: application/json\r\nRetry-After: 1\r\n\r\n{\"message\":\"secondary rate limit\"}\n", "stderr": "", "exit_status": 1},
+  "permission-rate-limit-long.json": {"stdout": "HTTP/2 429\r\nContent-Type: application/json\r\nRetry-After: 600\r\n\r\n{\"message\":\"secondary rate limit\"}\n", "stderr": "", "exit_status": 1},
+  "permission-rate-limit-no-headers.json": {"stdout": "HTTP/2 403\r\nContent-Type: application/json\r\n\r\n{\"message\":\"You have exceeded a secondary rate limit.\"}\n", "stderr": "", "exit_status": 1},
+  "permission-auth-failure.json": {"stdout": "HTTP/2 401\r\nContent-Type: application/json\r\n\r\n{\"message\":\"Bad credentials\"}\n", "stderr": "", "exit_status": 1}
+}
+```
+
+On POSIX capture `PR_MERGE_REAL_GH="$(command -v gh)"` before prepending the shim directory, write the dispatcher below to `gh`, and run `chmod 700 "$shimDir/gh"`. On Windows write the same dispatcher to `gh_shim.py` and create this `gh.cmd` beside it:
+
+```bat
+@echo off
+python "%~dp0gh_shim.py" %*
+```
+
+Use this dispatcher, or an equivalent that preserves the same route and forwarding contract:
+
+```python
+#!/usr/bin/env python3
+
+import json
+import os
+import pathlib
+import subprocess
+import sys
+
+shim_dir = pathlib.Path(__file__).resolve().parent
+real_gh = os.environ["PR_MERGE_REAL_GH"]
+case_name = os.environ["PR_MERGE_SHIM_CASE"]
+plan = json.loads(pathlib.Path(os.environ["PR_MERGE_SHIM_PLAN"]).read_text(encoding="utf-8"))
+args = sys.argv[1:]
+
+def api_route(arguments):
+    for argument in arguments:
+        if argument == "user":
+            return argument
+        if argument.startswith("repos/") and ("/pulls/" in argument or argument.endswith("/permission")):
+            return argument
+    return None
+
+route = api_route(args)
+responses = plan[case_name].get(route) if route else None
+if not responses:
+    if args[:2] == ["pr", "merge"]:
+        with (shim_dir / "merge-calls.log").open("a", encoding="utf-8") as stream:
+            stream.write("gh " + " ".join(args) + "\n")
+    raise SystemExit(subprocess.run([real_gh, *args]).returncode)
+
+state_path = shim_dir / "state.json"
+state = json.loads(state_path.read_text(encoding="utf-8")) if state_path.exists() else {}
+index = state.get(route, 0)
+fixture = pathlib.Path(responses[min(index, len(responses) - 1)])
+if not fixture.is_absolute():
+    fixture = shim_dir / fixture
+state[route] = index + 1
+state_path.write_text(json.dumps(state), encoding="utf-8")
+response = json.loads(fixture.read_text(encoding="utf-8"))
+sys.stdout.buffer.write(response.get("stdout", "").encode("utf-8"))
+sys.stdout.buffer.flush()
+sys.stderr.buffer.write(response.get("stderr", "").encode("utf-8"))
+sys.stderr.buffer.flush()
+raise SystemExit(response.get("exit_status", 0))
+```
+
+Prepend only the shim directory to `PATH` for the invoked process; do not change a shell profile, user or machine environment, or repository file. The function snapshots both the value and presence of all four changed environment variables and restores or unsets each of them in `finally`. It captures `merge-calls.log` in `finally` before cleanup, including when the workflow throws, and returns the forwarded commands as `MergeCalls`; a non-null `WorkflowError` fails the case. The log records the complete forwarded `gh pr merge` arguments, including the PR number, so batch entries remain distinguishable. After the run, confirm the original environment is restored, the temporary directory is removed, and a later `gh --version` resolves to the real executable.
+
+### Permission fixtures
+
+- For denied cases, create a PR from a disposable fork into its upstream
+  repository. Give the current `gh` user WRITE on the fork and READ or TRIAGE on
+  the upstream base. Confirm the lookup uses `.base.repo.full_name` and the base
+  role blocks the PR without invoking `gh pr merge`.
+- For positive cases, create a PR whose base repository grants the current `gh`
+  user ADMIN, WRITE, or MAINTAIN. Use that merge-capable base for controlled
+  positive responses so the approved merge can complete and be verified.
+- For every executed case, use the matching fixture sequence below and record
+  the base repository, login, controlled response, result category,
+  started-check count, pause or retry decision, refreshed pre-merge gates, and
+  whether `gh pr merge` was invoked.
+
+The expected observations are fixed, not tester-defined. Any different result,
+count, decision, gate refresh, or merge invocation fails that case.
+
+| Case | Fixture sequence | Expected result | Started checks | Decision | Gates refreshed | Merge invoked |
+| --- | --- | --- | ---: | --- | --- | --- |
+| positive-admin | `permission-admin.json` | positive:admin | 1 | continue | yes | yes |
+| positive-write | `permission-write.json` | positive:write | 1 | continue | yes | yes |
+| positive-maintain | `permission-maintain.json` | positive:maintain | 1 | continue | yes | yes |
+| positive-custom | `permission-custom.json` | positive:write (custom role) | 1 | continue | yes | yes |
+| denied-read | `permission-read.json` | denied:read | 1 | block | no | no |
+| denied-triage | `permission-triage.json` | denied:triage | 1 | block | no | no |
+| inconclusive-404 | `permission-404.json` | inconclusive:404 | 1 | pause | no | no |
+| inconclusive-empty | `permission-empty.json` | inconclusive:empty | 1 | pause | no | no |
+| inconclusive-missing-base | `pull-missing-base.json` | inconclusive:missing-base | 1 | pause | no | no |
+| inconclusive-missing-identity | `user-missing-login.json` | inconclusive:missing-identity | 1 | pause | no | no |
+| inconclusive-none | `permission-none.json` | inconclusive:none | 1 | pause | no | no |
+| inconclusive-conflict | `permission-conflict.json` | inconclusive:conflict | 1 | pause | no | no |
+| inconclusive-unmappable | `permission-unmappable.json` | inconclusive:unmappable | 1 | pause | no | no |
+| transient-then-positive | `permission-503.json` x2, `permission-admin.json` | positive:admin after transient | 3 | automatic retry | yes | yes |
+| timeout-then-positive | `permission-timeout.json`, `permission-admin.json` | positive:admin after timeout | 2 | automatic retry | yes | yes |
+| exhausted-budget | `permission-503.json` (repeats) | transient:exhausted | 3 | pause | no | no |
+| user-authorized-retry | `permission-503.json` x3, `permission-admin.json` | positive:admin after authorized retry | 4 | user retry | yes | yes |
+| rate-limit-auto-wait | `permission-rate-limit-short.json`, `permission-admin.json` | positive:admin after wait | 2 | wait, continue | yes | yes |
+| rate-limit-long | `permission-rate-limit-long.json` | transient:rate-limit-long | 1 | pause until safe time | no | no |
+| rate-limit-no-headers | `permission-rate-limit-no-headers.json`, `permission-admin.json` | positive:admin after backoff | 2 | backoff, continue | yes | yes |
+| auth-failure | `permission-auth-failure.json` | access-failure | 1 | pause | no | no |
+| batch-isolation A | `permission-read.json` | denied:read | 1 | block A and C | no | no |
+| batch-isolation B | next `permission-admin.json` on the shared route | positive:admin | 1 | continue | yes | yes |
+| batch-isolation C | none | blocked by A | 0 | block | no | no |
+
+For every denied or inconclusive result, confirm `gh pr merge` is never
+invoked, including after automatic retries, rate-limit waits, and skipped or
+inconclusive user-selected extra checks. Confirm the observed result category,
+started-check count, pause or retry decision, refreshed pre-merge gates, and
+merge invocation for each executed case.
 
 ## Conflict resolution and second approval
 
 Create a branch that conflicts with its target. Prepare its PR, then approve that exact PR for merging. Run conflict resolution in an explicitly supplied, clean worktree for the exact repository and source branch.
 
-Confirm the skill uses `/resolving-merge-conflicts`, runs the required checks, and presents the complete unstaged diff and results without staging. It must pause for explicit approval of that exact diff and write set before staging. After approval, confirm it stages only the approved files and inspects the staged diff. If that diff changed, it must present the change and obtain renewed approval before commit, push, or merge. After the approved push, confirm it checks the PR's required CI gates again and that the published diff matches the approved resolution before merging. Confirm any later head or base OID change requires renewed approval.
+Confirm the run follows the linked canonical [conflict-resolution approval](../../skills/pr-and-merge/references/merge-after-approval.md#conflict-resolution-approval) and record each boundary outcome: it pauses before staging or any write with the complete unstaged diff and check results; after approval, the staged write set matches the approved diff; a changed staged diff pauses before commit, push, or merge; and a later head or base OID change requires renewed approval before merging.
 
 ## Multi-PR batch: ordering, stacked retarget, and failure isolation
 
@@ -141,11 +463,36 @@ Repeat the same single-base batch with no test commands. Confirm the workflow as
 
 ## Multi-PR batch: multiple target bases
 
-In a disposable repository, prepare at least two PRs for each of two distinct target bases, such as `main` and `release`, and specify one test command confirmed to apply to both. In the first merge pass, confirm one PR targeting each base is merged while other entries remain pending or blocked. Fetch each base from its remote, record each `FETCH_HEAD` OID, and create a separate retained worktree for each base at its resulting commit. Run the confirmed command separately in both worktrees. Report each base ref, tested commit OID, worktree path, exact command and observed exit status; mark overall coverage as partial and identify every unresolved entry.
+In a disposable repository, prepare at least two PRs for each of two distinct
+target bases, such as `main` and `release`, and specify one test command
+confirmed to apply to both. Run the user-visible `/pr-and-merge` invocation and
+follow the canonical [verify each distinct target
+base](../../skills/pr-and-merge/references/multi-pr-batch.md#verify-each-distinct-target-base)
+for fetching, retained worktrees, command execution, result tracking, and
+failure isolation.
 
-Repeat with the command's applicability to `release` unclear. Confirm the workflow asks before running a test command when its applicability to a base is unclear, records the not-run reason, and does not report that base as passed. Confirm each failed command includes a concise relevant output excerpt when available; give a reason for every test not run, and report a test as passed only after observing a successful exit status.
+In the first merge pass, confirm one PR targeting each base is merged while
+other entries remain pending or blocked. For each base, record the base ref,
+tested commit OID, validation provenance (`reused` or `newly executed`), a
+separate retained worktree path, exact command and observed exit status,
+coverage status, and every unresolved entry. Mark overall coverage as partial
+while any entry remains unresolved. A newly advanced base OID is newly executed.
 
-Resume the batch and merge one more entry for each base. Confirm each new resulting base commit is fetched and verified in its own new retained worktree. Confirm a completed same-base and same-OID validation is not rerun solely because the batch resumed; allow a same-commit rerun only on explicit user request or to retry a blocked or interrupted attempt after its cause is resolved. Keep verification results separate from PR merge states. Do not execute this scenario outside a disposable repository.
+Repeat with the command's applicability to `release` unclear. Confirm the
+workflow asks before running a test command when its applicability to a base is
+unclear, records the not-run reason, and does not report that base as passed.
+Confirm each failed command includes a concise relevant output excerpt when
+available; give a reason for every test not run, and report a test as passed
+only after observing a successful exit status.
+
+Resume the batch and merge one more entry for each base. Confirm each new
+resulting base commit is reported as newly executed and verified separately in
+a new retained worktree. Confirm a completed same-base and same-OID validation
+is not rerun solely because the batch resumed; report its provenance as reused.
+Allow a same-commit rerun only on explicit user request or to retry a blocked or
+interrupted attempt after its cause is resolved. Keep validation outcomes
+separate from PR merge states. Do not execute this scenario outside a disposable
+repository.
 
 ## Multi-PR batch: post-merge validation failure isolation
 

@@ -2,7 +2,7 @@
 
 ## Issue titles
 
-- Reuse the [pull request title rules](pull-request-text.md#pull-request-titles) for the Conventional Commit format, type, scope, breaking `!`, capitalization, imperative summary, and punctuation.
+- Reuse the [pull request title rules](pull-request-text.md#pull-request-titles) for type, scope, breaking `!`, imperative summary, no trailing period, and capitalization; this reuse is the issue-title contract, not a separate Conventional syntax contract.
 - Resolve issue-title prefixes from explicit repository guidance that applies to issues, then same-type issue titles supplied in context. Do not infer an issue prefix from PR titles or commit subjects.
 - Add an issue prefix only when that evidence supports it. If evidence conflicts, is stale, or is too sparse to establish the convention, ask a brief question. If no issue prefix convention is evident, omit it.
 - Do not apply commit-specific title-length or body-wrapping limits.

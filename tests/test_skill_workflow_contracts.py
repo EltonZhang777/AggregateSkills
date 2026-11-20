@@ -352,7 +352,7 @@ class PrAndMergeBehaviorTests(unittest.TestCase):
         self.assertNotIn("present a separate approval snapshot for each pr", batch)
         self.assertNotIn("finish preparing every eligible pr before merging any", batch)
         self.assertIn("never stash or clean a supplied worktree", batch)
-        self.assertIn("stage its conflict-resolution files only after explicit approval of the exact diff", batch)
+        self.assertIn("references/merge-after-approval.md#conflict-resolution-approval", batch)
 
         source_resolution = section(skill("pr-and-merge").lower(), "## resolve the source and target")
         self.assertIn("already dirty at this initial source-resolution check", source_resolution)
@@ -381,10 +381,8 @@ class PrAndMergeBehaviorTests(unittest.TestCase):
         self.assertIn("git remote -v", conflicts)
         self.assertIn("git status --porcelain=v1 --untracked-files=all", conflicts)
         self.assertIn("never stage, commit, stash, discard, or push automatically", conflicts)
-        self.assertIn("complete unstaged conflict-resolution diff", conflicts)
-        self.assertIn("before staging or any other write", conflicts)
-        self.assertIn("stage only the approved files", conflicts)
-        self.assertIn("staged diff differs from the approved diff", conflicts)
+        self.assertIn("merge-after-approval.md#conflict-resolution-approval", conflicts)
+        self.assertIn("keep the conflict-specific approval separate from the batch authorization", conflicts)
 
         refresh = section(text, "## refresh after source or base changes")
         self.assertIn("head and base oids", refresh)
@@ -402,9 +400,11 @@ class PrAndMergeBehaviorTests(unittest.TestCase):
         self.assertIn("retain the batch-plan order through merging", merge)
         self.assertIn("conflict-free entries before conflict candidates", merge)
         self.assertIn("only to break ties within either group", merge)
-        self.assertIn("before staging or any other write", merge)
-        self.assertIn("stage only the approved files", merge)
-        self.assertIn("if it differs from the approved diff", merge)
+        conflict_approval = section(merge, "## conflict-resolution approval")
+        self.assertIn("complete unstaged conflict-resolution diff", conflict_approval)
+        self.assertIn("before staging or any other write", conflict_approval)
+        self.assertIn("stage only the approved files", conflict_approval)
+        self.assertIn("if it differs from the approved diff", conflict_approval)
 
     def test_multi_pr_post_merge_verification_uses_the_confirmed_single_base_result(self):
         text = skill_reference("pr-and-merge", "multi-pr-batch.md").lower().replace(chr(96), "")
@@ -451,7 +451,7 @@ class PrAndMergeBehaviorTests(unittest.TestCase):
             "run the batch's confirmed test set separately in each eligible base worktree",
             "if a command's applicability to a base is unclear, ask the user before running it for that base",
             "report that base's verification as incomplete until applicability is resolved",
-            "report the base ref, tested commit oid, retained worktree path, and each test outcome",
+            "report the base ref, tested commit oid, validation provenance (reused or newly executed), retained worktree path, and each test outcome",
             "mark overall coverage as partial",
             "identify every unresolved entry",
         ):
@@ -461,21 +461,33 @@ class PrAndMergeBehaviorTests(unittest.TestCase):
         text = skill_reference("pr-and-merge", "multi-pr-batch.md").lower().replace(chr(96), "")
         verification = section(text, "## verify the merged base")
 
-        self.assertIn("record completed multi-base validation results by base ref, commit oid, and test command", verification)
+        self.assertIn("record completed multi-base validation results by base ref, commit oid, test command, and validation provenance", verification)
+        self.assertIn("validation provenance", verification)
         self.assertIn("when a resumed batch adds a confirmed merge", verification)
-        self.assertIn("verify the new resulting base oid in a separate retained worktree", verification)
+        self.assertIn("record its new resulting base oid as newly executed", verification)
+        self.assertIn("record its new resulting base oid as newly executed and verify it in a separate retained worktree", verification)
         self.assertIn("do not rerun a completed validation for the same base ref and commit oid solely because the batch resumed", verification)
+        self.assertIn("report an existing same-base and same-oid result as reused", verification)
         self.assertIn("retry a blocked or interrupted attempt only after its cause is resolved", verification)
 
     def test_manual_multi_base_verification_covers_partial_progress_and_resume(self):
         manual = (ROOT / "tests" / "manual" / "pr-and-merge.md").read_text(encoding="utf-8").lower()
-        scenario = section(manual, "## multi-pr batch: multiple target bases")
+        scenario = " ".join(
+            section(manual, "## multi-pr batch: multiple target bases").split()
+        )
 
+        self.assertIn(
+            "multi-pr-batch.md#verify-each-distinct-target-base",
+            scenario,
+        )
         for requirement in (
             "disposable repository",
             "two distinct target bases",
             "at least two prs for each of two distinct target bases",
-            "separate retained worktree for each base",
+            "separate retained worktree",
+            "validation provenance",
+            "reused",
+            "newly executed",
             "mark overall coverage as partial",
             "asks before running a test command when its applicability to a base is unclear",
             "exact command and observed exit status",
@@ -484,9 +496,26 @@ class PrAndMergeBehaviorTests(unittest.TestCase):
             "passed only after observing a successful exit status",
             "resume the batch",
             "new resulting base commit",
+            "reported as newly executed",
+            "provenance as reused",
             "completed same-base and same-oid validation is not rerun",
         ):
             self.assertIn(requirement, scenario)
+        self.assertIn(
+            "for each base, record the base ref, tested commit oid, validation provenance",
+            scenario,
+        )
+
+        for removed in (
+            "fetch each base from its remote, record each `fetch_head` oid, and "
+            "create a separate retained worktree for each base at its resulting "
+            "commit.",
+            "run the confirmed command separately in both worktrees.",
+            "confirm each new resulting base commit is fetched and verified in "
+            "its own new retained worktree.",
+        ):
+            with self.subTest(removed=removed):
+                self.assertNotIn(removed, scenario)
 
     def test_multi_pr_post_merge_verification_asks_before_running_without_test_commands(self):
         text = skill_reference("pr-and-merge", "multi-pr-batch.md").lower().replace(chr(96), "")
@@ -649,6 +678,303 @@ class PrAndMergeBehaviorTests(unittest.TestCase):
         self.assertIn("merge each pr only after the user explicitly approves that exact pr", merge)
         self.assertIn("immediately before each merge, recheck that pr's head and base", merge)
         self.assertIn("when an approved merge encounters a conflict, use /resolving-merge-conflicts", merge)
+
+    def test_post_approval_reference_owns_shared_permission_and_conflict_rules(self):
+        merge = skill_reference("pr-and-merge", "merge-after-approval.md").lower().replace(chr(96), "")
+        permission_heading = "## merge permission gate"
+        conflict_heading = "## conflict-resolution approval"
+        self.assertIn(permission_heading, merge)
+        self.assertIn(conflict_heading, merge)
+        self.assertLess(merge.index(permission_heading), merge.index(conflict_heading))
+
+        permission = section(merge, permission_heading)
+        for requirement in (
+            "immediately before invoking gh pr merge",
+            "current github cli identity's effective permission",
+            "exact repository that owns the pr's base branch",
+            "read .base.repo.full_name and .login",
+            "known read or triage result is a definite denial",
+            "never invoke gh pr merge for a denied or inconclusive result",
+        ):
+            self.assertIn(requirement, permission)
+
+        conflict = section(merge, conflict_heading)
+        for requirement in (
+            "complete unstaged conflict-resolution diff",
+            "before staging or any other write",
+            "stage only the approved files",
+            "if it differs from the approved diff",
+            "stop and get renewed approval",
+            "renewed approval",
+            "if any changed path is outside the conflict resolution, stop",
+            "after the push, confirm the pr diff still matches the approved resolution",
+            "any later oid or diff change requires renewed approval",
+        ):
+            self.assertIn(requirement, conflict)
+
+        multi = skill_reference("pr-and-merge", "multi-pr-batch.md").lower().replace(chr(96), "")
+        gate = section(multi, "## gate conflict resolution")
+        normalized_gate = " ".join(gate.split())
+        normalized_multi = " ".join(multi.split())
+        for requirement in (
+            ".wt",
+            "dirty worktree",
+            "exact repository",
+            "exact source branch",
+            "git rev-parse --show-toplevel",
+            "git remote -v",
+            "git branch --show-current",
+            "git status --porcelain=v1 --untracked-files=all",
+            "never clean a worktree to proceed",
+            "never stage, commit, stash, discard, or push automatically",
+            "keep the conflict-specific approval separate from the batch authorization",
+            "merge-after-approval.md#conflict-resolution-approval",
+        ):
+            self.assertIn(requirement, gate)
+        self.assertNotIn(
+            "inspect the complete unstaged conflict-resolution diff and worktree status, "
+            "run the required checks, then present the diff, check results, and intended "
+            "commit, push, and merge. obtain explicit approval for that exact diff and "
+            "write set before staging or any other write. after approval, stage only the "
+            "approved files and inspect the staged diff. if the staged diff differs from "
+            "the approved diff, stop, present the changed diff, and obtain renewed "
+            "approval before proceeding. a changed path outside the conflict resolution "
+            "blocks that operation until the scope is reviewed.",
+            normalized_gate,
+        )
+        self.assertNotIn(
+            "use the main skill's conflict-resolution procedure and run the "
+            "required checks on the resolved worktree.",
+            normalized_gate,
+        )
+        for shared_rule in (
+            "run required local checks on the resolved worktree and inspect its "
+            "status and complete unstaged conflict-resolution diff.",
+            "after approval, stage only the approved files and inspect the staged "
+            "diff.",
+            "if it differs from the approved diff, stop and get renewed approval "
+            "before any commit, push, or merge.",
+            "after the push, confirm the pr diff still matches the approved "
+            "resolution and record its head and base oids.",
+            "if any changed path is outside the conflict resolution, stop.",
+        ):
+            self.assertNotIn(shared_rule, normalized_gate)
+        self.assertNotIn(
+            "the rules below extend verification to multiple bases without "
+            "defining failure isolation.",
+            normalized_multi,
+        )
+        self.assertIn("define failure isolation", normalized_multi)
+
+        skill_text = skill("pr-and-merge").lower().replace(chr(96), "")
+        batch = " ".join(section(skill_text, "## process a batch").split())
+        source = " ".join(section(skill_text, "## resolve the source and target").split())
+        self.assertNotIn(
+            "stage its conflict-resolution files only after explicit approval of the exact "
+            "diff, and only as described in the [conflict-resolution gate]"
+            "(references/multi-pr-batch.md#gate-conflict-resolution).",
+            batch,
+        )
+        self.assertIn("references/merge-after-approval.md#conflict-resolution-approval", batch)
+        self.assertNotIn(
+            "follow the separate approval-before-staging rules in the multi-pr batch reference.",
+            source,
+        )
+        self.assertIn("references/merge-after-approval.md#conflict-resolution-approval", source)
+
+        manual = (ROOT / "tests" / "manual" / "pr-and-merge.md").read_text(encoding="utf-8").lower()
+        scenario = section(manual, "## conflict resolution and second approval")
+        self.assertIn("merge-after-approval.md#conflict-resolution-approval", scenario)
+
+    def test_manual_permission_matrix_delegates_policy_and_keeps_observations(self):
+        manual = (
+            ROOT / "tests" / "manual" / "pr-and-merge.md"
+        ).read_text(encoding="utf-8").lower().replace(chr(96), "")
+        scenario = " ".join(
+            section(manual, "## base-repository permission gate immediately before merge").split()
+        )
+
+        self.assertIn("merge-after-approval.md#merge-permission-gate", scenario)
+        for required in (
+            "disposable github repository",
+            "fork",
+            "temporary gh executable created outside the reviewed repository",
+            "non-secret case selector",
+            "do not make the wrapper inspect credentials, tokens, or the real gh configuration",
+            "pr_merge_real_gh",
+            "pr_merge_shim_plan",
+            "ordered list of response fixtures",
+            "each case maps an exact invoked api path",
+            "relative fixture paths resolve under the shim directory",
+            "consumes the next fixture for the exact path",
+            "repeats the last fixture after the sequence ends",
+            "keep the shim active for the complete user-visible /pr-and-merge invocation",
+            "a setup block that exits before the invocation starts is invalid",
+            "capture the observations even when the workflow throws",
+            "state.json",
+            "reuse the same shim directory and state across entries a, b, and c",
+            "do not reset state.json between a and b",
+            "forward every invocation whose exact api path is not in the selected case",
+            "original arguments unchanged",
+            "gh pr view, gh pr checks, and gh pr merge",
+            "only the exact permission-gate api paths named by the case are controlled",
+            "create a distinct open merge-capable pr for each row whose final result merges",
+            "the plan below uses prs 12-15",
+            "16-20 for the remaining merge-positive retry and rate-limit cases",
+            "21-23 for batch entries a, b, and c",
+            "replace owner, repo, user, and each pr number",
+            "do not reuse a pr after a positive case has merged it",
+            "#!/usr/bin/env python3",
+            'chmod 700 "$shimdir/gh"',
+            "@echo off",
+            'python "%~dp0gh_shim.py" %*',
+            "transient-then-positive",
+            '"permission-503.json", "permission-503.json", "permission-admin.json"',
+            "timeout-then-positive",
+            '"permission-timeout.json", "permission-admin.json"',
+            "batch-isolation",
+            "entries a, b, and dependent c use the same exact repository",
+            "shared permission route",
+            '"repos/owner/repo/collaborators/user/permission": ["permission-read.json", "permission-admin.json"]',
+            "prepend only the shim directory to path for the invoked process",
+            "do not change a shell profile, user or machine environment, or repository file",
+            "snapshots both the value and presence of all four changed environment variables",
+            "restores or unsets each of them in finally",
+            "merge-calls.log",
+            "captures merge-calls.log in finally before cleanup",
+            "including when the workflow throws",
+            "a non-null workflowerror fails the case",
+            "the log records the complete forwarded gh pr merge arguments",
+            "args[:2] == [\"pr\", \"merge\"]",
+            "stream.write(\"gh \" + \" \".join(args) + \"\\n\")",
+            "sys.stdout.buffer.write",
+            "sys.stderr.buffer.write",
+            "original environment is restored",
+            "temporary directory is removed",
+            "a later gh --version resolves to the real executable",
+            "for denied cases, create a pr from a disposable fork",
+            "for positive cases, create a pr whose base repository grants the current gh user admin, write, or maintain",
+            "merge-capable base",
+            "base.repo.full_name",
+            "result category",
+            "started-check count",
+            "pause or retry decision",
+            "refreshed pre-merge gates",
+            "whether gh pr merge was invoked",
+            "positive",
+            "denied",
+            "inconclusive",
+            "transient",
+            "exhausted-budget",
+            "user-authorized-retry",
+            "rate-limit wait",
+            "auth-failure",
+            "batch-isolation",
+        ):
+            with self.subTest(required=required):
+                self.assertIn(required, scenario)
+        self.assertNotIn("owner-a/repo-a", scenario)
+        self.assertNotIn("owner-b/repo-b", scenario)
+        for fixture_body in (
+            '"permission-admin.json": {"stdout": "http/2 200',
+            '{\\"permission\\":\\"admin\\",\\"role_name\\":\\"admin\\"}',
+            '{\\"permission\\":\\"read\\",\\"role_name\\":\\"read\\"}',
+            '{\\"permission\\":\\"write\\",\\"role_name\\":\\"maintain\\"}',
+            '"permission-timeout.json": {"stdout": "", "stderr": "gh: request timed out',
+            "retry-after: 1",
+            "retry-after: 600",
+            '{\\"message\\":\\"bad credentials\\"}',
+        ):
+            with self.subTest(fixture_body=fixture_body):
+                self.assertIn(fixture_body, scenario)
+        for distinct_pr_route in (
+            '"transient-then-positive": { "repos/owner/repo/pulls/16"',
+            '"timeout-then-positive": { "repos/owner/repo/pulls/17"',
+            '"user-authorized-retry": { "repos/owner/repo/pulls/18"',
+            '"rate-limit-auto-wait": { "repos/owner/repo/pulls/19"',
+            '"rate-limit-no-headers": { "repos/owner/repo/pulls/20"',
+            '"batch-isolation": { "repos/owner/repo/pulls/21": ["pull.json"], "repos/owner/repo/pulls/22": ["pull.json"], "repos/owner/repo/pulls/23"',
+        ):
+            with self.subTest(distinct_pr_route=distinct_pr_route):
+                self.assertIn(distinct_pr_route, scenario)
+        for expected_row in (
+            "| positive-admin | permission-admin.json | positive:admin | 1 | continue | yes | yes |",
+            "| positive-write | permission-write.json | positive:write | 1 | continue | yes | yes |",
+            "| positive-maintain | permission-maintain.json | positive:maintain | 1 | continue | yes | yes |",
+            "| positive-custom | permission-custom.json | positive:write (custom role) | 1 | continue | yes | yes |",
+            "| denied-read | permission-read.json | denied:read | 1 | block | no | no |",
+            "| denied-triage | permission-triage.json | denied:triage | 1 | block | no | no |",
+            "| inconclusive-404 | permission-404.json | inconclusive:404 | 1 | pause | no | no |",
+            "| inconclusive-empty | permission-empty.json | inconclusive:empty | 1 | pause | no | no |",
+            "| inconclusive-missing-base | pull-missing-base.json | inconclusive:missing-base | 1 | pause | no | no |",
+            "| inconclusive-missing-identity | user-missing-login.json | inconclusive:missing-identity | 1 | pause | no | no |",
+            "| inconclusive-none | permission-none.json | inconclusive:none | 1 | pause | no | no |",
+            "| inconclusive-conflict | permission-conflict.json | inconclusive:conflict | 1 | pause | no | no |",
+            "| inconclusive-unmappable | permission-unmappable.json | inconclusive:unmappable | 1 | pause | no | no |",
+            "| transient-then-positive | permission-503.json x2, permission-admin.json | positive:admin after transient | 3 | automatic retry | yes | yes |",
+            "| timeout-then-positive | permission-timeout.json, permission-admin.json | positive:admin after timeout | 2 | automatic retry | yes | yes |",
+            "| exhausted-budget | permission-503.json (repeats) | transient:exhausted | 3 | pause | no | no |",
+            "| user-authorized-retry | permission-503.json x3, permission-admin.json | positive:admin after authorized retry | 4 | user retry | yes | yes |",
+            "| rate-limit-auto-wait | permission-rate-limit-short.json, permission-admin.json | positive:admin after wait | 2 | wait, continue | yes | yes |",
+            "| rate-limit-long | permission-rate-limit-long.json | transient:rate-limit-long | 1 | pause until safe time | no | no |",
+            "| rate-limit-no-headers | permission-rate-limit-no-headers.json, permission-admin.json | positive:admin after backoff | 2 | backoff, continue | yes | yes |",
+            "| auth-failure | permission-auth-failure.json | access-failure | 1 | pause | no | no |",
+            "| batch-isolation a | permission-read.json | denied:read | 1 | block a and c | no | no |",
+            "| batch-isolation b | next permission-admin.json on the shared route | positive:admin | 1 | continue | yes | yes |",
+            "| batch-isolation c | none | blocked by a | 0 | block | no | no |",
+        ):
+            with self.subTest(expected_row=expected_row):
+                self.assertIn(expected_row, scenario)
+        self.assertIn(
+            "for every denied or inconclusive result, confirm gh pr merge is never invoked",
+            scenario,
+        )
+
+        for removed in (
+            "select one fixed response per run",
+            "the shim must return only the selected case's fixed output",
+            "sys.stdout.write(response.get(\"stdout\", \"\"))",
+            "sys.stderr.write(response.get(\"stderr\", \"\"))",
+            "positive: in separate runs return permission=write, role_name=write "
+            "(write), permission=write, role_name=maintain (maintain), "
+            "permission=admin, role_name=admin (admin), and permission=write "
+            "with a custom role_name.",
+            "denied: return permission=read, role_name=read and permission=read, "
+            "role_name=triage in separate runs.",
+            "transient failure: return a recognizable timeout, connection reset, "
+            "or http 408/429/500/502/503/504 before a positive response.",
+            "confirm at most three started checks occur per automatic cycle, "
+            "including the initial check; waiting consumes no check.",
+            "rate limit at or below five minutes: return a primary or secondary "
+            "limit with retry-after or x-ratelimit-reset no more than five "
+            "minutes away.",
+            "confirm the skill waits for the indicated safe time and refreshes "
+            "all existing pre-merge gates before retrying without counting the "
+            "wait as an attempt.",
+            "secondary limit without timing headers: return a secondary "
+            "rate-limit response with neither retry-after nor x-ratelimit-reset.",
+            "- rate limit over five minutes: return a reset or retry time more "
+            "than five minutes away. confirm the skill pauses, reports the "
+            "earliest safe retry time, and makes no permission or merge call "
+            "before it. resume at or after that time; confirm it refreshes all "
+            "existing pre-merge gates and permits exactly one extra permission "
+            "check, immediately before any merge.",
+            "- authentication, configuration, or unexplained access failure: "
+            "return a 401/403 without rate-limit evidence or make the "
+            "identity/configuration lookup fail. confirm the skill asks whether "
+            "to retry or skip; after a retry choice, confirm existing pre-merge "
+            "gates are refreshed before the single extra permission check. a "
+            "definite denial blocks immediately; an inconclusive result pauses "
+            "and asks again. skipping never merges.",
+            "- batch isolation: run an independent positive entry b beside a "
+            "denied or inconclusive entry a and a dependent entry c stacked on a. "
+            "confirm a and c are blocked, gh pr merge is never invoked for "
+            "either, and b continues through its own live gates and can merge "
+            "when its permission check is positive and b has explicit per-pr "
+            "approval.",
+        ):
+            with self.subTest(removed=removed):
+                self.assertNotIn(removed, scenario)
 
 
 class PruneWorktreesBehaviorTests(unittest.TestCase):
@@ -2344,6 +2670,106 @@ class ConventionalGitMessagesBehaviorTests(unittest.TestCase):
                 for heading in headings:
                     self.assertIn(heading, reference_text)
 
+    def test_pr_titles_delegate_commit_subject_syntax_and_keep_pr_specific_rules(self):
+        def normalized(text):
+            return " ".join(text.lower().replace(chr(96), "").split())
+
+        pull_request = skill_reference(
+            "conventional-git-messages", "pull-request-text.md"
+        ).replace(chr(96), "")
+        titles = normalized(section(pull_request, "## Pull request titles"))
+        descriptions = normalized(section(pull_request, "## Pull request descriptions"))
+        issue = skill_reference(
+            "conventional-git-messages", "issue-text.md"
+        ).replace(chr(96), "")
+        issue_titles = normalized(section(issue, "## Issue titles"))
+        manual = (
+            ROOT / "tests" / "manual" / "conventional-git-messages.md"
+        ).read_text(encoding="utf-8").replace(chr(96), "")
+
+        self.assertIn(
+            "delegate only type, scope, breaking !, imperative summary, and no "
+            "trailing period to the canonical "
+            "[commit subject](commit-messages.md#commit-subject) rules",
+            titles,
+        )
+        self.assertNotIn("delegate all conventional commit subject syntax", titles)
+        self.assertNotIn("<type>(<scope>): <imperative summary>", titles)
+        self.assertIn(
+            "add a repository-specific prefix only when explicit pr-title guidance "
+            "or consistent same-type pr titles supplied in context support it",
+            titles,
+        )
+        self.assertIn("never infer a pr-title prefix from commit subjects", titles)
+        self.assertIn(
+            "follow explicit repository capitalization guidance; if none exists, "
+            "follow consistent same-type pr titles supplied in context",
+            titles,
+        )
+        self.assertIn("do not infer pr-title capitalization from commit subjects", titles)
+        self.assertIn(
+            "do not apply the canonical commit-subject length limits to pr titles",
+            titles,
+        )
+        self.assertIn(
+            "do not apply commit-specific title-length or body-wrapping limits",
+            descriptions,
+        )
+
+        self.assertIn(
+            "reuse the [pull request title rules](pull-request-text.md#pull-request-titles)",
+            issue_titles,
+        )
+        self.assertIn(
+            "this reuse is the issue-title contract, not a separate "
+            "conventional syntax contract",
+            issue_titles,
+        )
+        self.assertNotIn("<type>(<scope>)", issue_titles)
+        self.assertIn(
+            "do not apply commit-specific title-length or body-wrapping limits",
+            issue_titles,
+        )
+
+        manual_titles = normalized(
+            section(manual, "## Pull request title conventions")
+        )
+        self.assertIn(
+            "delegates type, scope, breaking !, imperative summary, and no trailing "
+            "period to the canonical commit-subject rules",
+            manual_titles,
+        )
+        self.assertIn("same-type pr titles", manual_titles)
+        self.assertIn("never infers a pr-title prefix from commit subjects", manual_titles)
+        self.assertIn(
+            "in a fresh invocation, ask for a pr title with no applicable prefix "
+            "guidance or examples, but supply the commit subject release: "
+            "feat(mail): add retry header. confirm the title omits the prefix",
+            manual_titles,
+        )
+        self.assertIn(
+            "does not apply commit-subject length limits to pr titles",
+            manual_titles,
+        )
+
+        manual_issue_titles = normalized(
+            section(manual, "## Issue title conventions")
+        )
+        self.assertIn("reuses the pr-title rules", manual_issue_titles)
+        self.assertIn(
+            "which delegate only type, scope, breaking !, imperative summary, and "
+            "no trailing period to the canonical commit-subject rules",
+            manual_issue_titles,
+        )
+        self.assertIn(
+            "does not create a separate conventional syntax contract",
+            manual_issue_titles,
+        )
+        self.assertIn(
+            "does not apply commit-subject length limits to issue titles",
+            manual_issue_titles,
+        )
+
     def test_issue_reference_semantics_are_centralized_and_reused(self):
         def normalized(filename):
             return " ".join(
@@ -2518,6 +2944,136 @@ class ReleaseNotesDraftingContractTests(unittest.TestCase):
             reference,
         )
 
+    def test_release_note_rules_have_single_canonical_sections_and_backlinks(self):
+        raw = skill_reference("conventional-git-messages", "release-notes.md")
+
+        def normalized_text(text):
+            return " ".join(text.lower().replace(chr(96), "").split())
+
+        def normalized_section(heading):
+            return normalized_text(section(raw, heading))
+
+        normalized = normalized_text(raw)
+        introduction = normalized_text(raw.split("\n## ", 1)[0])
+        inputs = normalized_section("## Inputs")
+        scope = normalized_section("## Scope")
+        content_gates = normalized_section("## Content gates")
+        classification = normalized_section("## Classification and copy-ready output")
+        draft_basis = normalized_section("## Draft basis")
+        version_safety = normalized_section("## Version safety")
+
+        metadata = (
+            "accept optional product, version, and date metadata only when supplied "
+            "or evidence-backed. do not invent missing metadata"
+        )
+        self.assertEqual(1, normalized.count(metadata))
+        self.assertEqual(1, inputs.count(metadata))
+
+        self.assertIn(
+            "from supplied change facts or, when authorized for read-only git and "
+            "github evidence inspection, from evidence inspected only within the "
+            "named repository and release scope from [scope](#scope). use only "
+            "those facts.",
+            introduction,
+        )
+        no_write_rule = (
+            "verification and drafting perform no release or github write. never "
+            "stage, commit, or push. do not create a tag, release, or changelog "
+            "entry; write an issue or pull request; change authentication; post a "
+            "comment; or perform release-note publication."
+        )
+        self.assertEqual(1, normalized.count(no_write_rule))
+        self.assertIn(no_write_rule, introduction)
+        self.assertNotIn("## no-write boundary", normalized)
+        self.assertIn('<a id="no-write-boundary"></a>', raw)
+        self.assertIn("never recommend a tag", version_safety)
+        self.assertIn(
+            "tag creation is covered by [no-write boundary](#no-write-boundary)",
+            version_safety,
+        )
+        self.assertNotIn("\n## evidence\n", raw.lower())
+
+        cross_references = (
+            ("Scope -> Inputs", scope, "[inputs](#inputs)"),
+            (
+                "Scope -> No-write boundary",
+                scope,
+                "[no-write boundary](#no-write-boundary)",
+            ),
+            (
+                "Content gates -> Audience and language",
+                content_gates,
+                "[audience and language](#audience-and-language)",
+            ),
+            (
+                "Content gates -> Disclosure and redaction",
+                content_gates,
+                "[disclosure and redaction](#disclosure-and-redaction)",
+            ),
+            (
+                "Classification -> Inputs",
+                classification,
+                "[inputs](#inputs)",
+            ),
+            (
+                "Classification -> Disclosure and redaction",
+                classification,
+                "[disclosure and redaction](#disclosure-and-redaction)",
+            ),
+            (
+                "Classification -> No-write boundary",
+                classification,
+                "[no-write boundary](#no-write-boundary)",
+            ),
+            (
+                "Draft basis -> Disclosure and redaction",
+                draft_basis,
+                "[disclosure and redaction](#disclosure-and-redaction)",
+            ),
+            (
+                "Version safety -> No-write boundary",
+                version_safety,
+                "[no-write boundary](#no-write-boundary)",
+            ),
+        )
+        for name, text, link in cross_references:
+            with self.subTest(cross_reference=name):
+                self.assertIn(link, text)
+
+        for removed in (
+            "require one explicit release scope as defined under evidence.",
+            "version and release-date metadata are optional. use supplied or "
+            "evidence-backed metadata only.",
+            "use only supplied or evidence-backed product, version, and date fields.",
+            "never recommend or create a tag.",
+        ):
+            with self.subTest(removed=removed):
+                self.assertNotIn(removed, normalized)
+
+        removed_duplicates = (
+            (
+                "Content gates no longer repeats the redaction restriction",
+                content_gates,
+                "include a qa step only when it can be rewritten as an external "
+                "user action without exposing internal systems, credentials, or "
+                "sensitive process information.",
+            ),
+            (
+                "Classification no longer repeats metadata field selection",
+                classification,
+                "use only supplied or evidence-backed product, version, and date "
+                "fields.",
+            ),
+            (
+                "Draft basis no longer repeats the redacted-locator rule",
+                draft_basis,
+                "use redacted locators rather than private links or tokens.",
+            ),
+        )
+        for name, text, duplicate in removed_duplicates:
+            with self.subTest(removed_duplicate=name):
+                self.assertNotIn(duplicate, text)
+
     def test_manual_release_notes_scenario_covers_supplied_facts_and_no_writes(self):
         manual = (
             ROOT / "tests" / "manual" / "conventional-git-messages.md"
@@ -2571,8 +3127,7 @@ class ReleaseNotesDraftingContractTests(unittest.TestCase):
             "exact ref set or tag pair",
             "containment or merge evidence",
             "user attestation",
-            "version and release-date metadata are optional",
-            "accept optional product, version, and date metadata when supplied or evidence-backed",
+            "accept optional product, version, and date metadata only when supplied or evidence-backed",
             "do not invent missing metadata",
             "if the supplied or inspected facts do not support",
             "session, meeting, or theme",
@@ -2591,7 +3146,6 @@ class ReleaseNotesDraftingContractTests(unittest.TestCase):
             "squash commit",
             "authorized pr or issue evidence",
             "include a level-one title only when the supplied or evidence-backed facts support it",
-            "use only supplied or evidence-backed product, version, and date fields",
             "draft basis",
             "in addition to the copy-ready block",
             "outside the fenced copy-ready block",
@@ -2676,7 +3230,6 @@ class ReleaseNotesDraftingContractTests(unittest.TestCase):
             "security marker and draft basis follow the same disclosure authorization rule as the security item",
             "when disclosure is authorized, place a security fix under fixes with a visible security marker",
             "never calculate or assert a major, minor, or patch bump",
-            "never recommend or create a tag",
             "repeat only supplied or evidence-backed semver implications",
             "explicitly states that the project uses semver and supplies its release policy",
             "otherwise no versioning scheme is inferred",
@@ -2819,6 +3372,78 @@ class ReleaseNotesDraftingContractTests(unittest.TestCase):
         ):
             with self.subTest(required=required):
                 self.assertIn(required, scenario)
+
+
+class ContractCoverageTests(unittest.TestCase):
+    def test_changed_contracts_map_to_current_assertions_and_manual_scenarios(self):
+        manuals = {
+            "pr-and-merge": (
+                ROOT / "tests" / "manual" / "pr-and-merge.md"
+            ).read_text(encoding="utf-8"),
+            "conventional-git-messages": (
+                ROOT / "tests" / "manual" / "conventional-git-messages.md"
+            ).read_text(encoding="utf-8"),
+        }
+        contracts = (
+            (
+                "#368 shared merge and conflict rules",
+                (
+                    PrAndMergeBehaviorTests,
+                    "test_post_approval_reference_owns_shared_permission_and_conflict_rules",
+                ),
+                ("pr-and-merge", "## Conflict resolution and second approval"),
+            ),
+            (
+                "#371 PR-title syntax reuse",
+                (
+                    ConventionalGitMessagesBehaviorTests,
+                    "test_pr_titles_delegate_commit_subject_syntax_and_keep_pr_specific_rules",
+                ),
+                (
+                    "conventional-git-messages",
+                    "## Pull request title conventions",
+                ),
+            ),
+            (
+                "#372 release-note single source",
+                (
+                    ReleaseNotesDraftingContractTests,
+                    "test_release_note_rules_have_single_canonical_sections_and_backlinks",
+                ),
+                (
+                    "conventional-git-messages",
+                    "## Release notes from supplied facts",
+                ),
+            ),
+            (
+                "#373 permission outcome matrix",
+                (
+                    PrAndMergeBehaviorTests,
+                    "test_manual_permission_matrix_delegates_policy_and_keeps_observations",
+                ),
+                (
+                    "pr-and-merge",
+                    "## Base-repository permission gate immediately before merge",
+                ),
+            ),
+            (
+                "#374 multi-base outcome matrix",
+                (
+                    PrAndMergeBehaviorTests,
+                    "test_manual_multi_base_verification_covers_partial_progress_and_resume",
+                ),
+                (
+                    "pr-and-merge",
+                    "## Multi-PR batch: multiple target bases",
+                ),
+            ),
+        )
+
+        for contract, (owner, assertion), scenario in contracts:
+            with self.subTest(contract=contract):
+                self.assertTrue(callable(getattr(owner, assertion, None)))
+                filename, heading = scenario
+                self.assertIn(heading, manuals[filename])
 
 
 class ReadmeBehaviorTests(unittest.TestCase):
