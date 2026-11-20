@@ -33,7 +33,7 @@ Before starting the workflow, confirm that the `skillroute` command is callable 
 
 Follow the [multi-PR batch reference](references/multi-pr-batch.md) for batch discovery, planning, authorization, ordering, and orchestration.
 
-Treat every supplied source as an entry identified by its exact repository and branch or worktree. Resolve authentication, repository identity, target, existing PR, and required checks for each entry separately. If the repository for the whole batch is unclear, pause the batch. If one entry is unclear, ask about it in plain text, block that entry and its dependents, and continue unrelated entries whose inputs are clear. Never stash or clean a supplied worktree. Stage its conflict-resolution files only after explicit approval of the exact diff, and only as described in the [conflict-resolution gate](references/multi-pr-batch.md#gate-conflict-resolution).
+Treat every supplied source as an entry identified by its exact repository and branch or worktree. Resolve authentication, repository identity, target, existing PR, and required checks for each entry separately. If the repository for the whole batch is unclear, pause the batch. If one entry is unclear, ask about it in plain text, block that entry and its dependents, and continue unrelated entries whose inputs are clear. Never stash or clean a supplied worktree. For conflict resolution, follow the [conflict-resolution approval](references/merge-after-approval.md#conflict-resolution-approval).
 
 A dirty worktree, failed or unknown required check, or other blocking condition blocks only that entry and its dependents. Skip dependent entries whose required upstream is blocked, but continue independent entries.
 
@@ -41,7 +41,7 @@ At every pause, stop, or batch completion, return one outcome summary with each 
 
 ## Resolve the source and target
 
-Require an exact source repository and branch or worktree. From that checkout, inspect `git rev-parse --show-toplevel`, `git remote -v`, `git branch --show-current`, `git rev-parse HEAD`, and `git status --porcelain=v1 --untracked-files=all`; record the source OID. Verify the supplied worktree belongs to the intended repository and branch. If the repository, source branch, target, or existing stacked relationship is ambiguous for this entry, ask before acting on this entry. A worktree that is already dirty at this initial source-resolution check blocks the entry; do not stash, stage, or clean it to bypass the gate. If conflict resolution later makes the worktree dirty, follow the separate approval-before-staging rules in the multi-PR batch reference.
+Require an exact source repository and branch or worktree. From that checkout, inspect `git rev-parse --show-toplevel`, `git remote -v`, `git branch --show-current`, `git rev-parse HEAD`, and `git status --porcelain=v1 --untracked-files=all`; record the source OID. Verify the supplied worktree belongs to the intended repository and branch. If the repository, source branch, target, or existing stacked relationship is ambiguous for this entry, ask before acting on this entry. A worktree that is already dirty at this initial source-resolution check blocks the entry; do not stash, stage, or clean it to bypass the gate. If conflict resolution later makes the worktree dirty, follow the [conflict-resolution approval](references/merge-after-approval.md#conflict-resolution-approval).
 
 For GitHub, verify `gh auth status --hostname github.com` and resolve the exact `OWNER/REPO`. Read the default branch with:
 

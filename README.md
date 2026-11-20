@@ -23,13 +23,16 @@ After installation, follow your coding agent's skill workflow to activate a skil
 ## Skill catalog
 
 - [compress-docs](skills/compress-docs/SKILL.md) compresses approved documents into candidates and applies them through version-conditional storage backends.
-- [conventional-git-messages](skills/conventional-git-messages/SKILL.md) drafts concise commit, pull request, and issue text without performing Git or GitHub operations.
+- [conventional-git-messages](skills/conventional-git-messages/SKILL.md) drafts concise commit, pull request, issue, and release-note text without performing Git or GitHub writes.
+- [extra-setup-matt-pocock-skills](skills/extra-setup-matt-pocock-skills/SKILL.md) extends an existing repository setup with portable checkout, issue, handoff, and closure rules.
 - [grill-duo](skills/grill-duo/SKILL.md) coordinates an independent reviewer during a multi-round grilling session.
 - [grill-duo-with-docs](skills/grill-duo-with-docs/SKILL.md) records confirmed project terms and decisions during two-agent grilling.
+- [parallel-code-review](skills/parallel-code-review/SKILL.md) freezes one review scope, validates its routing contract, and runs `/code-review` and `/ponytail-review` as independent routed tracks.
 - [pr-and-merge](skills/pr-and-merge/SKILL.md) prepares GitHub pull requests and merges only after approval for each pull request.
 - [prune-worktrees-and-branches](skills/prune-worktrees-and-branches/SKILL.md) previews cleanup candidates and removes only approved worktrees or eligible branches.
 - [requirements-to-spec-tickets](skills/requirements-to-spec-tickets/SKILL.md) turns ideas into clarified specs and independently scoped implementation tickets.
 - [review-duo](skills/review-duo/SKILL.md) runs a strict code review across independent review axes.
+- [rfc2119-audit](skills/rfc2119-audit/SKILL.md) audits an explicit Markdown root for likely missing or inconsistent RFC 2119 markers and reports candidates read-only.
 - [skill-scout](skills/skill-scout/SKILL.md) finds and compares skills, with optional discovery through a local SkillRoute catalog.
 - [spec-implement-loop](skills/spec-implement-loop/SKILL.md) carries an explicitly approved spec or ticket tree through implementation, verification, and bounded review remediation.
 

@@ -1,3 +1,4 @@
 # Auto detect text files and perform LF normalization
 * text=auto
 skills/review-duo/references/acceptance-fixture.patch -text
+skills/parallel-code-review/references/acceptance-fixture.patch -text
