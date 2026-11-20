@@ -22,13 +22,15 @@ Before dispatch, confirm that the `skillroute` command and the host's independen
 
 Use this skill for an explicit `/parallel-code-review` request, a request for parallel review, combined review tracks, multiple independent reviewers over one frozen scope, or `/spec-implement-loop` final review. Do not select it for a generic single-path review request; those requests continue to use their named single review path.
 
-The objective is one reproducible orchestration pass over one frozen code scope. The routing table decides which tracks run and in what order. This entrypoint owns preflight, freezing, dispatch, envelope validation, and presentation. It does not own any upstream track's review criteria.
+The objective is one reproducible orchestration pass over one frozen code scope. The routing table decides which tracks run and in what order. The contract is the sole normative source for [Frozen scope and tree](references/contract.md#frozen-scope-and-tree), [Output boundary](references/contract.md#output-boundary), [Upstream resolution and pins](references/contract.md#upstream-resolution-and-pins), the [Common report envelope](references/contract.md#common-report-envelope), [Evidence boundary](references/contract.md#evidence-boundary), [Coordinator run aggregation](references/contract.md#coordinator-run-aggregation), and [One-track partial results](references/contract.md#one-track-partial-results). This entry point owns activation, preflight order, command forms, dispatch sequence, and links to those sections; it does not own any upstream track's review criteria.
 
 ## Preflight the routed contract
 
 Read [the route table](references/routing-table.md) and [the contract](references/contract.md). The route table is the only activation registry. Its row order defines dispatch, collection, and aggregation order. Do not infer tracks from adapter files and do not hardcode a track count.
 
-Resolve every routed upstream through the host first, then run the package validator with those resolution inputs:
+For every routed row, read its fixed-marker JSON metadata, resolve the declared upstream skill through the current host and SkillRoute, and collect its required manifest inputs. Apply [Upstream resolution and pins](references/contract.md#upstream-resolution-and-pins) for identity, contract version, exact-byte pinning, failure aggregation, and diagnostic order. Report every missing shared or routed dependency together, and do not dispatch while a required dependency or input other than standalone `requirements` is unresolved.
+
+Run the package validator with the coordinator-resolved inputs:
 
 ```text
 python scripts/review_contract.py preflight --skill-root <skill package root> \
@@ -39,23 +41,13 @@ python scripts/review_contract.py preflight --skill-root <skill package root> \
   [--upstream-sha /code-review=<normalized-text-sha256>]
 ```
 
-The validator pins the route table, every routed adapter, and every resolved upstream by exact-byte SHA-256 and exact byte size. It retains a normalized-text SHA-256 as separate attestation when text normalization is needed. It rejects an empty route table and any missing, duplicate, unreadable, malformed, version-mismatched, or orphan adapter metadata. It also rejects duplicate metadata blocks, unknown metadata fields, unsafe adapter paths, unknown required-input categories, and unresolved upstreams. Any of these failures blocks the run before dispatch.
-
-An upstream identity is `(name, source)`. Adapters may share the same identity, but a declared name must not map to multiple sources; that conflict fails with `upstream_identity_conflict` before resolution or pin creation.
-
-For every routed row, read its fixed-marker JSON metadata, resolve the declared upstream skill through the current host and SkillRoute, and collect its required manifest inputs. Report every adapter metadata error, missing upstream dependency, and missing or unreadable supplied input file together, then stop. Do not dispatch a track while any required dependency or input other than standalone `requirements` is unresolved. Verify that every metadata block uses the exact shared contract version before starting work.
-
-The validator does not run SkillRoute or fetch remote text. Pass the coordinator-resolved upstream source explicitly. A local skill file or skill directory is read and hashed by the validator. A remote URI must be paired with the exact-byte SHA-256 and exact byte size returned by the host resolution; a normalized-text SHA-256 is optional separate attestation and cannot substitute for exact identity. Missing, unreadable, empty, size-mismatched, or hash-mismatched resolutions block the run.
+The validator does not run SkillRoute or fetch remote text. Pass each coordinator-resolved source explicitly; [Upstream resolution and pins](references/contract.md#upstream-resolution-and-pins) defines how local and remote resolutions are validated and pinned. Any failure blocks the run before dispatch.
 
 ## Freeze one review scope
 
-Freeze one immutable patch/tree snapshot before starting any track. The snapshot must originate from exactly one of:
+Before any track starts, freeze one immutable patch/tree snapshot. [Frozen scope and tree](references/contract.md#frozen-scope-and-tree) defines the permitted scope sources, bundle and tree mechanics, exclusions, non-regular entry rejection, pins, freshness, and staleness. Apply [Output boundary](references/contract.md#output-boundary) before selecting the bundle path.
 
-- a Git range;
-- an explicit patch plus its frozen code tree;
-- the current uncommitted worktree state.
-
-Use the package script with an output directory outside the reviewed repository:
+Use the package script:
 
 ```text
 python scripts/review_contract.py freeze --repo <repo> --output <external bundle> --range <base...head> \
@@ -72,15 +64,7 @@ python scripts/review_contract.py freeze --repo <repo> --output <external bundle
   --upstream /ponytail-review=<resolved source>
 ```
 
-For each routed remote URI, also pass `--upstream-exact-sha <track>=<exact digest>` and `--upstream-size <track>=<exact bytes>`; `--upstream-sha` is optional normalized attestation. Supply pinned requirements and standards with repeatable `--requirements` and `--standards`. When the routed adapters require `checks`, supply at least one `--check NAME=RESULT` or `--not-run NAME=REASON`; `--check` accepts `passed`, `failed`, or `not_assessed`, while `not_run` must use `--not-run` with a non-empty reason. Record every exclusion with `--exclude PATH=REASON`.
-
-A standalone freeze may omit `--requirements`; the manifest records `requirements` as `not_assessed`. A `/spec-implement-loop` final-review freeze must pass `--require-requirements`; missing pinned requirements block with `manifest_input_missing`, and empty or whitespace-only pinned requirements block with `manifest_input_invalid`.
-
-The bundle contains the exact patch, the frozen code tree, pinned input snapshots, a canonical manifest, and a separate patch/manifest attestation. The manifest records the manifest digest source, included sources, checks, exclusions, routing/adapter/upstream pins, and the scope identity. For an explicit patch, every non-deleted changed path must exist in the supplied tree, and the tree must match the patch's exact post-image, or the freeze fails. Do not reconstruct inputs from live workspace reads after the freeze.
-
-Both tree sources accept only regular-file Git modes `100644` and `100755`. Symlinks fail with `tree_symlink_unsupported`; gitlinks and every other unsupported mode fail closed with `tree_entry_unsupported` before copying or post-image validation.
-
-Every supplied `--repo` path is resolved immediately to its Git top level. The output directory must stay outside that reviewed repository and outside any Git repository containing the frozen tree.
+For each routed remote URI, also pass `--upstream-exact-sha <track>=<exact digest>` and `--upstream-size <track>=<exact bytes>`; `--upstream-sha` is optional normalized attestation. Supply pinned requirements and standards with repeatable `--requirements` and `--standards`. When the routed adapters require `checks`, supply `--check NAME=RESULT` or `--not-run NAME=REASON`; record every exclusion with `--exclude PATH=REASON`. A `/spec-implement-loop` final-review freeze also passes `--require-requirements`. See the [Required input registry](references/contract.md#required-input-registry) for accepted values and required-input semantics.
 
 Before each track starts, run:
 
@@ -95,9 +79,7 @@ python scripts/review_contract.py verify --bundle <bundle> --patch <patch> \
   --upstream /ponytail-review=<resolved source>
 ```
 
-Git-range and uncommitted scopes require `--repo`; explicit-patch scope requires `--patch`. Omitting the required live locator blocks verification and never returns current. Verify re-hashes every pinned input snapshot and its original recorded source path, plus every tree-source snapshot. A changed or unreadable source, snapshot, patch, tree source, manifest, route table, adapter document, or upstream pin makes the run stale. Stop and report stale; do not present stale findings as current and do not silently re-freeze mid-run.
-
-Verify and `validate-envelope` always require `--upstream`; do not fall back to the manifest copy. For a remote upstream, pass the same exact digest and size pin used by freeze.
+The contract defines which live locator each scope requires and every freshness check. Treat anything other than a current result as blocked; do not present stale findings as current or silently re-freeze mid-run. For a remote upstream, pass the same exact digest and size pin used by freeze.
 
 ## Dispatch each review track
 
@@ -109,9 +91,7 @@ Never simulate a missing reviewer or substitute a single agent for an independen
 
 ## Validate the common envelope
 
-Every track returns the versioned common report envelope defined in the contract. It includes its track ID, launch status, coverage, native report extras, manifest and patch attestation, and findings in original order.
-
-Every finding includes its native axis, ID, severity, and group when the upstream track supplies them; an evidence-based P0/P1/P2 severity; a one-sentence severity rationale; a title and exact location; `What this is`; `Problem`; `Fix`; `If we skip it`; and exact source citations. Use `Not stated by the source track` when an upstream section did not state a required presentation field.
+Validate every routed track report against the [Common report envelope](references/contract.md#common-report-envelope). The contract defines the required fields, source matching, coverage-check equality, and finding-preservation rules; a report that fails validation blocks the run.
 
 Run:
 
@@ -122,9 +102,7 @@ python scripts/review_contract.py validate-envelope --bundle <bundle> --envelope
   --upstream /ponytail-review=<resolved source>
 ```
 
-The coordinator validates the schema, routed track ID, contract version, and attestation. Each envelope's `coverage.checks` must echo the frozen manifest checks exactly by name, result, reason, and order. It must validate but do not reclassify or reorder findings, change native severity or grouping, merge findings, or choose a cross-track winner. A malformed, truncated, blank, stale, or attestation-mismatched report blocks the run.
-
-Checked source hashes must match the frozen manifest. Every finding location must exist in the frozen tree at a valid line, and every citation must match the exact frozen or pinned source text. A synthetic envelope used by package tests only validates coordinator behavior; it is not evidence that a live model, model discovery, or an independent reviewer ran.
+Only validated reports may proceed to presentation. Apply the contract's preservation and blocking rules, and use `Not stated by the source track` when an upstream section did not state a required presentation field. Apply the [Evidence boundary](references/contract.md#evidence-boundary) when interpreting static or synthetic test data.
 
 Present native track sections separately, preserve route order and finding order, and render each finding as:
 
@@ -155,19 +133,9 @@ python scripts/review_contract.py validate-run --bundle <bundle> --run <run reco
   --upstream /ponytail-review=<resolved source>
 ```
 
-Run aggregation repeats the complete freshness verification used before each track. Git-range and uncommitted scopes require `--repo`; explicit-patch scope requires `--patch`. Omitting the required locator blocks before the run record is read. Changed, removed, or unreadable pinned sources and live tree, head-tree, patch, or contract drift make the result blocked; preserve every valid completed envelope as historical evidence without presenting it as current.
+Use [Coordinator run aggregation](references/contract.md#coordinator-run-aggregation) for run status, freshness and stale-scope precedence, recovery, capability checks, and completed-report preservation. Use [One-track partial results](references/contract.md#one-track-partial-results) for any degraded result after the blocked result is shown.
 
-Stale or unverifiable scope is reported before run-record validity is required. Even when the run record is missing or malformed, return the blocked `scope_stale` result rather than making `run_missing` or `run_invalid` authoritative. If a readable valid run exists, keep its completed reports only as historical, non-current evidence.
-
-A missing, unstarted, invalid, blank, truncated, scope-mismatched, or otherwise unverifiable required track makes the overall status blocked. Preserve every completed track report for a recognized routed track in routing-table order and show the blocked result before asking for any degradation. Duplicate, unknown, unidentified, or non-object track entries and malformed `checks` containers or records are run-level errors; continue aggregation instead of discarding valid reports. Only a run structure that cannot be enumerated or interpreted may fail before aggregation. Never launch a substitute reviewer, synthesize a missing report, or silently continue with fewer tracks.
-
-The command exits zero only for `complete`; treat both `blocked` and `partial` output as non-passing even when the JSON is structurally valid.
-
-The coordinator may make at most one recovery invocation in the whole run, and only when the failed attempt has `transient_runtime` or `transient_transport` evidence shaped as `{"source": "host", "phase": "runtime" | "transport", "detail": "..."}`. Every attempt's `request_sha256` must equal the deterministic digest of the frozen manifest, attestation, and routed track identity. Use a new invocation ID, reference the failed invocation, give the recovery no failed-attempt analysis, and record `analysis_reused: false`. Do not retry a permanent failure or use a changed request. This validates recorded evidence, not hidden host behavior.
-
-After `validate-run` produces a blocked result, save that JSON result as an external artifact. The artifact must contain the complete result schema. The user may then approve a one-track partial result in a separate follow-up run record that references the artifact path and exact SHA-256 and records `approval.source: "user"` plus evidence. The artifact must stay inside the run directory, must be blocked, and must match this run's tracks, coverage, checks, missing tracks, full completed envelopes, and run errors. Its rendered output must exactly equal the canonical render of those values; do not substitute display or summary text. It cannot be the current run record or a hard link to it. Approval before the visible block, inferred from silence, or self-referenced does not count. A partial result must be labeled `partial` and name the missing track, reduced independence, coverage, and the original completed report; it must never claim a complete parallel review. The digest cannot prove wall-clock order or user identity, so never fabricate either.
-
-Keep launch failure and `coverage.status` separate. A report may have `partial` or `not_assessed` coverage without becoming a launch failure. A completed report with `coverage.status: blocked` makes the run blocked because frozen-requirement coverage is incomplete, without relabeling the report or track as a launch failure. Every run records at least one meaningful capability check. A complete result requires `independence_capability` with result `passed`; a run with any recorded recovery also requires `recovery_capability` with result `passed`. If the host cannot demonstrate a capability, record that exact check as `not_run` with the reason; do not report it as passed. A required capability result other than `passed` blocks completion.
+If `validate-run` produces a blocked result, show it before requesting one-track partial approval. The contract owns the partial artifact and follow-up-run requirements; do not restate or relax them here.
 
 ## Read-only boundary
 

@@ -32,4 +32,4 @@ Return the upstream narrative, finding groups, grouping, verdict, Lean, and Not 
 
 Map each actual upstream finding to the common finding layout. Preserve its native ID, group, severity, and original order. Assign an evidence-based P0/P1/P2 severity and write one rationale sentence; use P2 when the evidence does not establish P0 or P1 impact. Keep the native group and severity visible, and cite the exact frozen source path, line, and quoted text.
 
-Do not merge, remove, rerank, or reorder findings. Do not merge findings across tracks or create a cross-track winner. The synthetic static acceptance envelope is only coordinator contract test data; it is not evidence that the upstream skill was resolved, that a model selected this track, or that an independent sub-agent ran.
+Do not merge, remove, rerank, or reorder findings. Do not merge findings across tracks or create a cross-track winner. The synthetic static acceptance envelope is not evidence beyond what the [Evidence boundary](../contract.md#evidence-boundary) permits.
