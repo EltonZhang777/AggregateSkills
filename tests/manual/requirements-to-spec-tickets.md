@@ -26,6 +26,16 @@ from AggregateSkills' root. Confirm new project text follows the target
 repository's rule and the child prompt carries that rule forward; do not apply
 AggregateSkills' rule to the other repository.
 
+## Conditional child-prompt acceptance
+
+Use a disposable repository and test issue tree, with no production issues, branches, or important worktrees. Fill the canonical child prompt and apply its conditional assembly instructions.
+
+For an issue-only group, include the issue-only publication block and omit the local-artifact publication and optional document integration blocks. For a local-artifact group, include the local-artifact publication and optional document integration blocks and omit the issue-only block. Confirm the filled prompts contain no unresolved placeholders and remain self-contained without rereading the template.
+
+Confirm that a statically inapplicable block is omitted while a runtime-dependent block is preserved intact. For unknown applicability, confirm all conditional publication and integration blocks remain present.
+
+Present runtime facts that contradict a static applicability assumption; confirm the child stops through the existing blocker or handoff mechanism, invents no missing rule, and writes no production resource.
+
 ## Issue-only group
 
 Start with a clean checkout on a shared development branch. Approve a group
