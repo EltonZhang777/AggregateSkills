@@ -78,10 +78,10 @@ lowercase summaries, plus the same-type PR title
 `Task: feat(mail): add retry header`. Also supply the commit subject
 `Fix: add retry header`.
 
-Confirm the title follows the PR guidance and Conventional Commit subject
-format, with a supported type, useful scope, imperative lowercase summary,
-and no trailing period. The explicit guidance wins over the conflicting PR
-example; do not borrow the prefix from the commit subject.
+Confirm the title delegates type, scope, breaking `!`, imperative summary,
+and no trailing period to the canonical commit-subject rules. The explicit
+guidance wins over the conflicting PR example, and the skill never infers a
+PR-title prefix from commit subjects.
 
 Then provide these two recent PR titles with a consistent `Work:` prefix and
 no explicit repository rule:
@@ -89,11 +89,19 @@ no explicit repository rule:
 - `Work: feat(mail): add retry header`
 - `Work: feat(mail): retry transient sends`
 
-Confirm the skill infers that prefix and places it before the Conventional
-Commit subject as `Work: feat(mail): ...`.
+Confirm the skill infers that prefix and the lowercase post-colon
+capitalization from the same-type PR titles and places the prefix before the
+delegated subject as `Work: feat(mail): ...`.
 
-Then ask for a PR title with no applicable prefix guidance or examples.
-Confirm the title uses the Conventional Commit subject without a prefix.
+Then provide same-type PR titles with the same prefix but conflicting
+capitalization and no explicit rule. Confirm the skill asks which
+capitalization convention to use instead of inferring it from a commit
+subject.
+
+In a fresh invocation, ask for a PR title with no applicable prefix guidance
+or examples, but supply the commit subject
+`Release: feat(mail): add retry header`. Confirm the title omits the prefix
+and does not infer it from that commit subject.
 
 Ask for a title with no repository rule and only this same-type example from
 an archived release project three years ago: `Legacy: feat(mail): add retry
@@ -103,6 +111,11 @@ of assuming it is current.
 Ask for a title for a breaking API change. Confirm the Conventional Commit
 subject marks it with `!` before the colon, such as `feat(api)!: remove the
 legacy field`.
+
+Ask for a PR title for a change that adds tenant-specific configurable
+retention windows for archived transfer bundles, and request a summary longer
+than 72 characters. Confirm the skill does not apply commit-subject length
+limits to PR titles or shorten the title solely to satisfy them.
 
 ## Conflicting PR title examples
 
@@ -192,10 +205,11 @@ summaries, plus the same-type issue title
 `Task: feat(mail): add retry header`. Also supply the PR title
 `Release: feat(mail): add retry header`.
 
-Confirm the issue title follows the issue guidance and Conventional Commit
-subject format, with a supported type, useful scope, imperative lowercase
-summary, and no trailing period. The explicit issue guidance wins over the
-issue example; do not borrow the PR prefix.
+Confirm the issue title reuses the PR-title rules, which delegate only type,
+scope, breaking `!`, imperative summary, and no trailing period to the
+canonical commit-subject rules; it does not create a separate Conventional
+syntax contract. The explicit issue guidance wins over the issue example, and
+the skill does not borrow the PR prefix.
 
 Then provide these two recent issue titles with a consistent `Work:` prefix
 and no explicit issue-title rule:
@@ -224,6 +238,11 @@ Ask for a new issue title. Confirm the skill asks which convention to use.
 Ask for an issue title for a breaking API change. Confirm the Conventional
 Commit subject marks it with `!` before the colon, such as
 `feat(api)!: remove the legacy field`.
+
+Ask for an issue title for a change that adds tenant-specific configurable
+retention windows for archived transfer bundles, and request a summary longer
+than 72 characters. Confirm the skill does not apply commit-subject length
+limits to issue titles or shorten the title solely to satisfy them.
 
 ## Issue descriptions
 
