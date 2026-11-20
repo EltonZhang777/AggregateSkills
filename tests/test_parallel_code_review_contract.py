@@ -19,6 +19,7 @@ SKILL_ROOT = ROOT / "skills" / "parallel-code-review"
 SCRIPT = SKILL_ROOT / "scripts" / "review_contract.py"
 UPSTREAM_SOURCE = SKILL_ROOT / "references" / "tracks" / "code-review.md"
 PONYTAIL_UPSTREAM_SOURCE = SKILL_ROOT / "references" / "tracks" / "ponytail-review.md"
+CONTRACT = SKILL_ROOT / "references" / "contract.md"
 ROUTING_MARKER = "<!-- parallel-code-review-routing-table -->"
 METADATA_MARKER = "<!-- parallel-code-review-track-metadata -->"
 
@@ -43,6 +44,12 @@ def load_contract_module():
 
 def result_json(completed):
     return json.loads(completed.stdout)
+
+
+def markdown_section(text, heading):
+    start = text.index(heading) + len(heading)
+    end = text.find("\n## ", start)
+    return text[start:] if end == -1 else text[start:end]
 
 
 def git(repo, *args):
@@ -5480,32 +5487,190 @@ class ParallelCodeReviewPackageTests(unittest.TestCase):
         self.assertIn("not evidence", normalized)
         self.assertNotIn("bug:** wrong result", normalized)
 
-    def test_skill_keeps_dispatch_frozen_scope_envelope_and_read_only_boundaries(self):
+    def test_skill_keeps_operating_workflow_commands_and_contract_links(self):
         text = (SKILL_ROOT / "SKILL.md").read_text(encoding="utf-8").lower().replace("`", "")
-        self.assertIn("references/routing-table.md", text)
-        self.assertIn("row order", text)
-        self.assertIn("before dispatch", text)
-        self.assertIn("missing, duplicate, unreadable, malformed, version-mismatched, or orphan", text)
-        self.assertIn("git range", text)
-        self.assertIn("explicit patch", text)
-        self.assertIn("uncommitted", text)
-        self.assertIn("manifest digest", text)
-        self.assertIn("included sources", text)
-        self.assertIn("checks", text)
-        self.assertIn("exclusions", text)
-        self.assertIn("stale", text)
-        self.assertIn("its own independent sub-agent", text)
-        self.assertIn("read the original upstream /code-review skill", text)
-        self.assertIn("standards and spec", text)
-        self.assertIn("original order", text)
-        self.assertIn("validate but do not reclassify or reorder", text)
-        self.assertIn("not run", text)
-        self.assertIn("do not write to the reviewed repository", text)
-        self.assertIn("--upstream", text)
-        self.assertIn("contract-root", text)
-        self.assertIn("hash-mismatched", text)
-        self.assertIn("synthetic envelope", text)
-        self.assertIn("not evidence", text)
+        for phrase in (
+            "references/routing-table.md",
+            "row order",
+            "before dispatch",
+            "preflight --skill-root",
+            "freeze --repo",
+            "freeze --output",
+            "verify --bundle",
+            "validate-envelope",
+            "validate-run",
+            "--range",
+            "--patch",
+            "--uncommitted",
+            "--upstream",
+            "contract-root",
+            "its own independent sub-agent",
+            "read the original upstream /code-review skill",
+            "standards and spec",
+            "original order",
+            "not run",
+            "do not write to the reviewed repository",
+            "evidence boundary",
+            "show it before requesting one-track partial approval",
+        ):
+            self.assertIn(phrase, text)
+
+    def test_contract_owns_canonical_frozen_review_rules_and_skill_links_to_them(self):
+        contract = CONTRACT.read_text(encoding="utf-8")
+        skill = (SKILL_ROOT / "SKILL.md").read_text(encoding="utf-8")
+        canonical_sections = {
+            "## Frozen scope and tree": (
+                "the snapshot must originate from exactly one of",
+                "every supplied `--repo` path is resolved immediately",
+                "tree_symlink_unsupported",
+            ),
+            "## Output boundary": (
+                "the bundle output directory must be outside the reviewed repository and, when an explicit frozen tree is supplied, outside the git repository containing that tree.",
+                "does not check nested lexical-ancestor repositories",
+            ),
+            "## Upstream resolution and pins": (
+                "the pinned upstream record contains",
+                "`upstream_identity_conflict`",
+                "pins the route table and every routed adapter",
+                "orphan adapter metadata",
+            ),
+            "## Common report envelope": (
+                "each track returns one json object with exactly these top-level fields",
+                "`coverage_check_mismatch`",
+                "does not reclassify",
+            ),
+            "## Evidence boundary": (
+                "static and synthetic artifacts establish only",
+                "contract shape",
+                "deterministic validation",
+                "fixture reading",
+                "coordinator behavior",
+                "real reviewer",
+                "model discovery",
+                "live-host behavior",
+                "live caller seam",
+                "upstream resolution",
+                "actual github record",
+            ),
+            "## Coordinator run aggregation": (
+                "`validate-run` derives the overall `status`",
+                "`scope_stale`",
+                "at most one recovery invocation",
+            ),
+            "## One-track partial results": (
+                "separate follow-up run record",
+                "exactly one track must have completed",
+                "partial mode is never a complete parallel review",
+            ),
+        }
+
+        for heading, phrases in canonical_sections.items():
+            with self.subTest(heading=heading):
+                self.assertEqual(1, contract.count(heading))
+                section = " ".join(markdown_section(contract, heading).lower().split())
+                for phrase in phrases:
+                    self.assertIn(phrase, section)
+                label = heading[3:]
+                anchor = label.lower().replace(" ", "-")
+                self.assertIn(
+                    f"[{label}](references/contract.md#{anchor})",
+                    skill,
+                )
+
+    def test_output_boundary_links_use_the_canonical_rule_without_weaker_copies(self):
+        skill_path = SKILL_ROOT / "SKILL.md"
+        scenario_path = SKILL_ROOT / "references" / "acceptance-scenario.md"
+        skill = skill_path.read_text(encoding="utf-8")
+        scenario = scenario_path.read_text(encoding="utf-8")
+
+        self.assertIn(
+            "[Output boundary](references/contract.md#output-boundary)",
+            skill,
+        )
+        self.assertIn("[Output boundary](contract.md#output-boundary)", scenario)
+        old_weaker = (
+            "The output directory must stay outside that reviewed repository and outside "
+            "any Git repository containing the frozen tree."
+        )
+        for text in (skill, scenario, CONTRACT.read_text(encoding="utf-8")):
+            self.assertNotIn(old_weaker, text)
+        self.assertNotIn(
+            "Use the package script with an output directory outside the reviewed repository:",
+            skill,
+        )
+        self.assertNotIn(
+            "Write the bundle outside the reviewed repository.",
+            scenario,
+        )
+
+    def test_evidence_boundary_is_not_nested_inside_report_envelope(self):
+        contract = CONTRACT.read_text(encoding="utf-8")
+        boundary_headings = [
+            line
+            for line in contract.splitlines()
+            if line.startswith("#") and line.lstrip("#").strip() == "Evidence boundary"
+        ]
+        self.assertEqual(["## Evidence boundary"], boundary_headings)
+
+        report_section = markdown_section(contract, "## Common report envelope")
+        nested_headings = [
+            line.lstrip("#").strip()
+            for line in report_section.splitlines()
+            if line.startswith("#")
+        ]
+        self.assertNotIn("Evidence boundary", nested_headings)
+
+    def test_known_complete_rule_copies_are_absent_from_noncanonical_documents(self):
+        canonical_rule_copies = (
+            "The validator pins the route table, every routed adapter, and every resolved upstream by exact-byte SHA-256 and exact byte size.",
+            "The snapshot must originate from exactly one of:",
+            "The bundle output directory must be outside the reviewed repository and, when an explicit frozen tree is supplied, outside the Git repository containing that tree.",
+            "The bundle contains the exact patch, the frozen code tree, pinned input snapshots, a canonical manifest, and a separate patch/manifest attestation.",
+            "Every track returns the versioned common report envelope defined in the contract.",
+            "Run aggregation repeats the complete freshness verification used before each track.",
+            "After `validate-run` produces a blocked result, save that JSON result as an external artifact.",
+            "A partial result must be labeled `partial` and name the missing track, reduced independence, coverage, and the original completed report; it must never claim a complete parallel review.",
+            "A schema-valid synthetic envelope is contract-test data, not evidence of live model discovery or independent execution.",
+            "A synthetic envelope used by package tests only validates coordinator behavior; it is not evidence that a live model, model discovery, or an independent reviewer ran.",
+            "The static acceptance envelope is only a coordinator contract fixture. It does not demonstrate that the upstream skill was resolved live, that model discovery selected this track, or that an independent sub-agent ran.",
+            "The synthetic static acceptance envelope is only coordinator contract test data; it is not evidence that the upstream skill was resolved, that a model selected this track, or that an independent sub-agent ran.",
+            "These records do not demonstrate live model discovery, independent execution, or recovery capability.",
+            "Static records and subprocess contract tests are not live evidence.",
+            "The disposable adapter and static envelope prove activation and coordinator behavior only.",
+            "The automated test helper's static envelopes are only contract-shape test data.",
+            "They must not be reported as a live track result, a model-discovery pass, or evidence that two independent reviewers ran.",
+            "passing the static contract assertions is not live caller evidence.",
+            "Static package evidence does not turn those live checks into passes.",
+        )
+
+        for path in sorted(SKILL_ROOT.rglob("*.md")):
+            if path == CONTRACT:
+                continue
+            text = " ".join(path.read_text(encoding="utf-8").split())
+            for sentence in canonical_rule_copies:
+                with self.subTest(path=path.relative_to(SKILL_ROOT), sentence=sentence):
+                    self.assertNotIn(" ".join(sentence.split()), text)
+
+    def test_evidence_boundary_is_linked_from_entry_point_adapters_and_acceptance(self):
+        documents = (
+            (SKILL_ROOT / "SKILL.md", "references/contract.md#evidence-boundary"),
+            (
+                SKILL_ROOT / "references" / "tracks" / "code-review.md",
+                "../contract.md#evidence-boundary",
+            ),
+            (
+                SKILL_ROOT / "references" / "tracks" / "ponytail-review.md",
+                "../contract.md#evidence-boundary",
+            ),
+            (
+                SKILL_ROOT / "references" / "acceptance-scenario.md",
+                "contract.md#evidence-boundary",
+            ),
+        )
+
+        for path, link in documents:
+            with self.subTest(path=path.relative_to(SKILL_ROOT)):
+                self.assertIn(link, path.read_text(encoding="utf-8"))
 
     def test_acceptance_package_is_review_only_and_renders_both_expected_tracks(self):
         patch = SKILL_ROOT / "references" / "acceptance-fixture.patch"
@@ -5529,7 +5694,7 @@ class ParallelCodeReviewPackageTests(unittest.TestCase):
         self.assertIn("verdict", scenario)
         self.assertIn("no repository writes", scenario)
         self.assertIn("static envelope", scenario)
-        self.assertIn("must not be reported as a live", scenario)
+        self.assertIn("evidence boundary", scenario)
 
         before = snapshot_tree(ROOT)
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -5557,27 +5722,16 @@ class ParallelCodeReviewPackageTests(unittest.TestCase):
         self.assertFalse((ROOT / "src" / "discounts.py").exists())
         self.assertIn(b"src/discounts.py", patch.read_bytes())
 
-    def test_skill_contract_and_scenario_define_failure_recovery_and_partial_mode(self):
+    def test_contract_and_scenario_define_failure_recovery_and_partial_mode(self):
         skill = " ".join(
             (SKILL_ROOT / "SKILL.md").read_text(encoding="utf-8").lower().split()
         )
         for phrase in (
             "validate-run",
-            "overall status blocked",
-            "preserve every completed track report",
-            "at most one recovery invocation",
-            "deterministic digest of the frozen manifest",
-            "new invocation id",
-            "failed-attempt analysis",
-            "save that json result as an external artifact",
-            "separate follow-up run record",
-            "approval.source",
-            "missing track",
-            "reduced independence",
-            "never claim a complete parallel review",
-            "independence_capability",
-            "recovery_capability",
-            "not run",
+            "blocked result",
+            "one-track partial",
+            "coordinator run aggregation",
+            "one-track partial results",
         ):
             self.assertIn(phrase, skill)
 
@@ -5588,7 +5742,8 @@ class ParallelCodeReviewPackageTests(unittest.TestCase):
             .split()
         )
         for phrase in (
-            "coordinator run result",
+            "coordinator run aggregation",
+            "one-track partial results",
             "complete` requires every routed track",
             "transient_runtime",
             "transient_transport",
@@ -5617,8 +5772,7 @@ class ParallelCodeReviewPackageTests(unittest.TestCase):
             "artifact by relative path and exact sha-256",
             "same-pass record is rejected",
             "not run",
-            "static records",
-            "not live evidence",
+            "evidence boundary",
         ):
             self.assertIn(phrase, scenario)
 
@@ -5994,19 +6148,18 @@ class ParallelCodeReviewPackageTests(unittest.TestCase):
         self.assertEqual(positions, sorted(positions))
 
     def test_acceptance_package_covers_spec_loop_seam_and_root_exception(self):
-        scenario = " ".join(
-            (SKILL_ROOT / "references" / "acceptance-scenario.md")
-            .read_text(encoding="utf-8")
-            .lower()
-            .split()
-        )
+        scenario_text = (
+            SKILL_ROOT / "references" / "acceptance-scenario.md"
+        ).read_text(encoding="utf-8")
+        scenario = " ".join(scenario_text.lower().split())
         for phrase in (
             "remediation code change",
             "new freeze",
             "rerun every routed track",
-            "separate per-root exception",
-            "confirmed append-only record",
-            "root status synchronization",
+            "blocked result",
+            "exactly one completed report",
+            "remains labeled `partial`",
+            "exactly as received",
             "root completion checkpoint",
             "one third-track adapter",
             "one routing-table row",
@@ -6020,24 +6173,19 @@ class ParallelCodeReviewPackageTests(unittest.TestCase):
             "not run",
         ):
             self.assertIn(phrase, scenario)
-        for field in (
-            "starting oid",
-            "final oid",
-            "manifest digest",
-            "scope digest",
-            "blocked result path and sha-256",
-            "root-exception approval source and evidence",
+        for anchor in (
+            "../../spec-implement-loop/references/final-review-remediation.md#partial-results-and-per-root-exceptions",
+            "../../spec-implement-loop/references/final-review-remediation.md#permanent-append-only-records",
+            "../../spec-implement-loop/references/final-review-remediation.md#retry-and-reconciliation",
+            "../../spec-implement-loop/references/final-review-remediation.md#completion-gate",
         ):
-            self.assertIn(field, scenario)
-        approval_order = (
-            "show the proposed exception",
-            "obtain the separate per-root exception approval",
-            "add only its exact root-exception approval source and evidence",
-            "freeze and show the final append-only comment series",
-            "separate issue-comment write approval",
-        )
-        positions = [scenario.index(phrase) for phrase in approval_order]
-        self.assertEqual(positions, sorted(positions))
+            self.assertIn(anchor, scenario)
+        for local_copy in (
+            "obtain the separate per-root exception approval. add only its exact root-exception approval source and evidence",
+            "freeze and show the final append-only comment series. then obtain separate issue-comment write approval",
+            "root status synchronization waits until every part of the confirmed append-only record is present",
+        ):
+            self.assertNotIn(local_copy, scenario)
         self.assertIn(
             "<third-review-publisher-source>",
             scenario,
@@ -6045,6 +6193,9 @@ class ParallelCodeReviewPackageTests(unittest.TestCase):
 
         spec = (
             ROOT / "skills" / "spec-implement-loop" / "SKILL.md"
+        ).read_text(encoding="utf-8").lower()
+        remediation = (
+            ROOT / "skills" / "spec-implement-loop" / "references" / "final-review-remediation.md"
         ).read_text(encoding="utf-8").lower()
         self.assertIn(
             "ticket review remains on this `/code-review` path",
@@ -6055,12 +6206,20 @@ class ParallelCodeReviewPackageTests(unittest.TestCase):
             spec,
         )
         self.assertIn(
-            "hand every current complete track report unchanged",
+            "references/final-review-remediation.md#complete-report-handoff",
             spec,
         )
-        self.assertIn("separate per-root user exception", spec)
-        self.assertIn("complete append-only record", spec)
-        self.assertIn("root completion checkpoint remains mandatory", spec)
+        self.assertIn(
+            "references/final-review-remediation.md#completion-gate",
+            spec,
+        )
+        self.assertIn(
+            "hand every current complete track report unchanged",
+            remediation,
+        )
+        self.assertIn("separate per-root user exception", remediation)
+        self.assertIn("complete append-only record", remediation)
+        self.assertIn("root completion checkpoint remains mandatory", remediation)
 
     def test_readme_lists_the_new_skill(self):
         readme = (ROOT / "README.md").read_text(encoding="utf-8")

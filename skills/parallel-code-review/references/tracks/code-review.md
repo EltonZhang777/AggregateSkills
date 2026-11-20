@@ -28,4 +28,4 @@ When a standalone bundle records `requirements` as `not_assessed`, report that l
 
 Return the Standards and Spec sections in their original order. Preserve every finding's native axis, ID, severity, and order in the common report envelope. Normalize each finding to P0/P1/P2 using the shared evidence rules without changing its native meaning.
 
-The static acceptance envelope is only a coordinator contract fixture. It does not demonstrate that the upstream skill was resolved live, that model discovery selected this track, or that an independent sub-agent ran.
+The static acceptance envelope is not evidence beyond what the [Evidence boundary](../contract.md#evidence-boundary) permits.

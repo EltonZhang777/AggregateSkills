@@ -22,9 +22,9 @@ _Avoid_: 总评（会掩盖两个视角之间的差异）
 An outer independent review path, such as `/code-review` or `/ponytail-review`, executed by its own sub-agent. A review track can contain one or more review axes.
 _Avoid_: using "track" for an individual Standards or Spec axis.
 
-**Partial root exception**:
+**Per-root exception**:
 A separately approved exception that lets a root proceed to status synchronization after a one-track partial review, without changing that review into a complete review.
-_Avoid_: treating partial-mode approval as root completion.
+_Avoid_: Partial root exception, treating partial-mode approval as root completion.
 
 **Finding**:
 一项有具体证据和实际影响支撑的评审问题，并保留其所属审阅轴。
